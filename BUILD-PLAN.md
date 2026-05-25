@@ -67,6 +67,65 @@ interactive skills. The audit defines the truth criteria; the bootstrap
 defines what files must exist for audit to operate on. Building both first
 lets every later skill be tested against real fixtures.
 
+Task 2.0 ensures the Items reference fixture is actually a complete,
+audit-passing spec set *before* any audit code is written against it. The
+current `domain-api-template` is missing four spec docs, all the state
+files, the pre-push hook, and the audit workflow — without 2.0 the
+subsequent tasks have nothing valid to test against.
+
+### 2.0 Upgrade `domain-api-template` to v1.0 completeness — [ ]
+
+Author the missing artefacts so the Items fixture (used by Tasks 2.3 and
+onward) is a known-good, audit-passing spec set against the schemas defined
+in `SUITE-DESIGN.md` §4 and §8.
+
+Sub-tasks:
+
+- [ ] Write `docs/specifications/glossary.md` covering every entity and
+      attribute in the existing `domain-model.md`.
+- [ ] Write `docs/specifications/error-catalogue.md` with the error codes
+      referenced in `contracts/openapi.yaml`.
+- [ ] Write `docs/specifications/nfr.md` with concrete measurable thresholds
+      (numbers, percentages, or time units — no aspirational language).
+- [ ] Write `docs/specifications/acceptance-scenarios.md` (Given/When/Then
+      structure) mapping to PRD user stories.
+- [ ] Write `docs/specifications/_progress.yaml` with all eight phases
+      marked passed, `force_advances: []`, and the session_log section.
+- [ ] Write `docs/specifications/_phase-{0..7}-passed.yaml` sidecars in the
+      schema defined in `SUITE-DESIGN.md` §4 (`checks_passed`,
+      `warnings_responded`, `rubric_findings`, `files_signed`). sha256s are
+      seeded by hand for this fixture; `task fixtures:seed-signoffs`
+      (introduced in 2.1) will regenerate them whenever fixture content
+      changes.
+- [ ] Write `docs/specifications/_ambiguities.md` with an empty Resolved
+      section (Items has no open ambiguities by design).
+- [ ] Write `docs/specifications/_bootstrap.yaml` recording the suite and
+      gate version that produced the shell.
+- [ ] Author `.githooks/pre-push` per `SUITE-DESIGN.md` §9 Tier 2 (Spectral
+      on contracts, datacontract-cli, cross-file consistency, <15 s
+      target).
+- [ ] Author `.github/workflows/audit.yml` per §9 Tier 3 (full audit on
+      PR, blocks merge).
+- [ ] Reconcile `.github/instructions/` against the bootstrap manifest. The
+      directory currently contains four files
+      (`api-implementation.instructions.md`,
+      `domain-template.instructions.md`, `specs.instructions.md`,
+      `taskfile.instructions.md`). Decide whether
+      `domain-template.instructions.md` survives the absorption (it
+      describes the template itself, which no longer exists as a separate
+      thing); if dropped, remove it; if kept, list it in the bootstrap
+      manifest authored in 2.2.
+
+**Exit criterion:** A hand-walk of every Phase 7 check enumerated in
+`SUITE-DESIGN.md` §8 passes against `domain-api-template/`. Specifically:
+no template placeholders remain, `_ambiguities.md` has no audit-required
+unresolved items, every `_phase-N-passed.yaml` is present with sha256s
+that match current file contents, and `force_advances:` is empty.
+
+🛑 **Review checkpoint:** Walk through the fixture together. Confirm the
+specs are realistic, the state files are coherent, and the hooks are
+sensible before proceeding to 2.1.
+
 ### 2.1 Scaffold the suite repo itself — [ ]
 
 Create the directory structure for the suite repo:
@@ -105,11 +164,43 @@ the suite *installs* in domain repos):
 - `task test:audit` — test audit skill against fixtures
 - `task lint` — lint suite's own code/configs
 - `task fixtures:reset` — reset test fixtures to known state
+- `task fixtures:seed-signoffs` — regenerate sha256s in every
+  `tests/fixtures/*/docs/specifications/_phase-*-passed.yaml` against
+  current file contents. Run whenever fixture content changes so the
+  fixture's sign-off files stay valid against the staleness check.
+- `task suite:force-advance` — wrapper that calls
+  `shared/scripts/force_advance.py <phase> --reason '<text>'` on the
+  current working domain repo. Used during dev to test the audit's
+  force-advance handling. Writes an entry to `_progress.yaml`'s
+  `force_advances:` array.
+- `task suite:accept-force` — marks a `force_advances:` entry as
+  `accepted: true` with a reason. Required to clear an audit failure
+  caused by a force-advance.
+- `task suite:upgrade-shell` — manifest-aware re-bootstrap that preserves
+  spec content. Reads the target's `_template_manifest.yaml`, diffs
+  against the bootstrap skill's templates, applies updates only to
+  manifest entries. Never touches `docs/specifications/*.md` or
+  `_*.yaml` state files.
+- `task suite:reset-phase <phase>` — for dev only. Deletes the phase's
+  sign-off file and the outputs it produced, so the phase can be re-run
+  from scratch. Useful while iterating on a phase skill.
+
+Also create `CLAUDE.md` at the suite repo root. Per the user's global
+conventions, this is required so future Claude Code sessions know:
+- the suite is Python-based (3.x pinned in `.mise.toml`)
+- Taskfile is the single entry point for every check operation
+- `tests/fixtures/items/` is the canonical reference fixture
+- `SUITE-DESIGN.md` and `BUILD-PLAN.md` are mandatory reading at the start
+  of every session
+- conventional commit messages reference task IDs (e.g. `feat(2.2):
+  bootstrap copies templates`)
 
 Commit the scaffolding.
 
 **Exit criterion:** Directory structure matches the layout above. `task --list`
-runs cleanly even though most tasks are stubs.
+runs cleanly even though most tasks are stubs. `CLAUDE.md` is in place.
+`task fixtures:seed-signoffs` runs against the Items fixture from 2.0 and
+produces no diff (sha256s already match).
 
 🛑 **Review checkpoint:** Confirm directory layout matches user's expectation
 before building skills.
@@ -127,8 +218,9 @@ Sub-tasks:
   - Prerequisites: target directory exists and is empty (or `--force`)
   - Instructions for what to do
 - [ ] Create `skills/domain-bootstrap/templates/` containing every file
-  the bootstrap produces. This is essentially the contents of the existing
-  `domain-api-template` repo, treated as the canonical shell.
+  the bootstrap produces. Seed it once from `domain-api-template/` (the
+  template is being absorbed into the suite per SUITE-DESIGN §1). From
+  this point forward, all shell changes happen here.
   - `Taskfile.yml` (domain-repo Taskfile, with linting and docs tasks)
   - `.spectral-openapi.yaml`
   - `.spectral-asyncapi.yaml`
@@ -140,19 +232,33 @@ Sub-tasks:
   - `docs/specifications/_template/*` (the blank spec templates)
   - `scripts/generate_domain_overview.py`
   - `.githooks/pre-commit`
-  - `.githooks/pre-push`
-  - `.github/workflows/audit.yml`
+  - `.githooks/pre-push` (authored in 2.0)
+  - `.github/workflows/audit.yml` (authored in 2.0)
   - `.github/CODEOWNERS`
   - `AGENTS.md`
-  - `.github/instructions/specs.instructions.md`
-  - `.github/instructions/api-implementation.instructions.md`
-  - `.github/instructions/taskfile.instructions.md`
+  - Instruction files — mirror whatever survives the 2.0 reconciliation
+    of `domain-api-template/.github/instructions/`. By default this is
+    `specs.instructions.md`, `api-implementation.instructions.md`,
+    `taskfile.instructions.md`, and optionally
+    `domain-template.instructions.md` if 2.0 kept it.
+- [ ] Author `skills/domain-bootstrap/template_manifest.yaml` listing
+  every file the bootstrap owns (path + expected sha256). The bootstrap's
+  `--force` re-run consults this manifest to decide what may be
+  overwritten; `task suite:upgrade-shell` consults the same manifest to
+  compute its diff. The manifest is the *contract* between the suite and
+  any domain repo it has bootstrapped.
 - [ ] Implement the bootstrap logic: walk templates dir, copy each file to
   the target, substitute placeholders where present, create empty
-  `_progress.yaml` with Phase 0 marked passed, create `_bootstrap.yaml`
-  recording suite/gate versions.
+  `_progress.yaml` (with `force_advances: []`) with Phase 0 marked passed,
+  create `_bootstrap.yaml` recording suite/gate versions, copy the
+  manifest into the target as `_template_manifest.yaml`.
+- [ ] Implement non-empty-directory handling: refuse by default with a
+  message pointing at `--force` or `task suite:upgrade-shell`; `--force`
+  overwrites only files listed in the manifest, never spec content or
+  `_*.yaml` state.
 - [ ] Write a test (`task test:bootstrap`) that runs bootstrap in a temp
-  directory and diffs the output against an expected snapshot.
+  directory and diffs the output against an expected snapshot. Also test
+  the non-empty-directory paths (refuse, `--force`, manifest-respecting).
 
 **Exit criterion:** Running the bootstrap skill in an empty directory
 produces a repo whose contents match the canonical shell. `task test:bootstrap`
@@ -165,30 +271,54 @@ cross-reference check defined across all phases.
 
 Sub-tasks:
 
-- [ ] Create `skills/domain-conformance-audit/SKILL.md`
-- [ ] Create `skills/domain-conformance-audit/gate.yaml` enumerating every
-  check the audit runs. Categories:
+- [ ] **Populate `shared/checks/` first.** Per SUITE-DESIGN §5.5 and §8,
+  every cross-phase check lives here once as a Python module with the
+  standard `metadata` block (id, category, phases, severity_by_phase,
+  prerequisites) and `run(repo_root)` function. The audit skill references
+  these check ids; M3 contracts skill reuses the same modules. No
+  duplication. Modules to author at minimum:
+  - `entity_in_glossary.py` — domain-model ↔ glossary
+  - `entity_in_openapi_schema.py` — domain-model ↔ contracts/openapi
+  - `field_match_domain_openapi.py` — field names align
+  - `write_op_has_asyncapi_channel.py` — OpenAPI ↔ contracts/asyncapi
+  - `event_in_datacontract.py` — asyncapi ↔ contracts/datacontract
+  - `auth_matrix_openapi_match.py` — auth-matrix ↔ openapi
+  - `error_code_in_catalogue.py` — openapi responses ↔ error-catalogue
+  - `story_persona_exists.py` — prd stories ↔ prd personas
+  - `lifecycle_in_flows.py` — domain-model lifecycles ↔ sequence-diagrams
+  - `no_template_placeholders.py` — no `[Resource1]`, `[Domain]`, `{{`
+  - `signoff_sha256_matches.py` — `_phase-N-passed.yaml` ↔ file sha256s
+  - `ambiguities_no_audit_required.py` — `_ambiguities.md` has no
+    audit-required open items
+  - `force_advances_all_accepted.py` — `_progress.yaml` `force_advances:`
+    has no `accepted: false` entries
+- [ ] Create `skills/domain-conformance-audit/SKILL.md` referencing the
+  prompting style in §7 and the rubric handling in §5.5 (audit itself has
+  no rubric checks — it's purely mechanical re-verification).
+- [ ] Create `skills/domain-conformance-audit/gate.yaml` listing the
+  shared-check ids the audit runs, in order. Categories the audit covers:
   - Structural integrity (all expected files present, all parse)
-  - Cross-reference (entity names match across files, etc.)
-  - Tool checks (Spectral, datacontract-cli)
-  - Sign-off integrity (`_phase-N-passed.yaml` sha256s match file contents)
-  - No unresolved deferrals (`_ambiguities.md` has no audit-required items
-    still open)
-  - No template placeholders remain
-- [ ] Implement each check as a script in
-  `skills/domain-conformance-audit/checks/`. Where possible, factor shared
-  check logic into `shared/checks/` so the contracts skill (Milestone 3)
-  can reuse it.
+  - Cross-reference (the shared modules above)
+  - Tool checks (Spectral on OpenAPI/AsyncAPI, datacontract-cli)
+  - Sign-off integrity (`signoff_sha256_matches`)
+  - No unresolved deferrals (`ambiguities_no_audit_required`)
+  - No unaccepted force-advances (`force_advances_all_accepted`)
+  - No template placeholders (`no_template_placeholders`)
+  - Generator script produces clean output, per the tightened SUITE-DESIGN
+    §8 Phase 7 definition (exit 0, no placeholders, every entity present,
+    no stderr noise). Author this as a Python script that invokes the
+    generator and verifies the four conditions.
 - [ ] The skill produces a structured report:
   - Pass/fail per check
   - Failure messages phrased as interview questions (not lint diagnostics)
   - Summary of total counts
-- [ ] Set up a test fixture: copy the existing `domain-api-template` repo
-  (with the Items example specs filled in) into `tests/fixtures/items/`.
-  This is the "known-good" reference spec set.
+- [ ] Set up the test fixture: copy `domain-api-template/` (now in its
+  v1.0-complete state from Task 2.0) into `tests/fixtures/items/`. This
+  is the known-good reference spec set.
 
 **Exit criterion:** Running the audit against the Items fixture produces
-"audit passed" with all checks green.
+"audit passed" with all checks green. Every shared module has at least one
+unit test in the suite's own test suite.
 
 ### 2.4 Validate audit catches breaks — [ ]
 
@@ -232,18 +362,22 @@ consistency, refusing sign-off unless all checks pass.
 
 ### 3.1 Build the contracts skill — [ ]
 
-- [ ] Create `skills/domain-contracts/SKILL.md`
-- [ ] Create `skills/domain-contracts/gate.yaml` with:
+- [ ] Create `skills/domain-contracts/SKILL.md`. No rubric checks for
+  contracts (purely mechanical).
+- [ ] Create `skills/domain-contracts/gate.yaml` referencing shared-check
+  ids authored in 2.3. **Reuse only — do not duplicate.** The same
+  `auth_matrix_openapi_match`, `entity_in_openapi_schema`, etc., modules
+  that the audit consumes are the ones contracts consumes; their
+  `phases:` metadata already lists `contracts`. The contracts skill adds
+  only:
   - Tool checks: Spectral on OpenAPI, Spectral on AsyncAPI, datacontract-cli
-  - Cross-reference checks: domain-model entities match OpenAPI schemas,
-    write operations have AsyncAPI channels, event payloads match
-    datacontract, auth-matrix operations match OpenAPI, error codes match
-    error-catalogue
+    (these are wrapped as shared modules too:
+    `spectral_openapi.py`, `spectral_asyncapi.py`, `datacontract_lint.py`
+    — author them under `shared/checks/` here if they weren't already
+    needed by the audit).
 - [ ] Implement: skill loads contracts (or copies templates if absent),
-  runs the gate loop (Section 5 of SUITE-DESIGN.md), and refuses sign-off
-  while any check fails.
-- [ ] Where checks duplicate audit checks, use shared library code from
-  `shared/checks/`.
+  runs the §5 gate loop, and refuses sign-off via `shared/sign_off.py`
+  while any check fails (the mechanical-enforcement path per §5.5).
 - [ ] Sign-off writes `_phase-6-passed.yaml` with sha256s and timestamp.
 
 **Exit criterion:** Skill against the Items fixture produces clean sign-off.
@@ -252,14 +386,24 @@ and refuses sign-off.
 
 ### 3.2 Validate hard gate enforcement — [ ]
 
-- [ ] Confirm skill cannot be told to sign off while checks fail.
-- [ ] Confirm the only escape is the explicit `--force-advance` mechanism,
-  which gets logged in `_progress.yaml`.
-- [ ] Confirm the audit (Milestone 2) catches a forced advance as a
-  finding.
+- [ ] Confirm the skill cannot produce a sign-off file while
+  `task gate:contracts` exits non-zero. The test should attempt every
+  obvious bypass (asking the agent nicely, providing a hand-rolled
+  sign-off file path) and confirm none of them works — only
+  `shared/sign_off.py` writes the file, and it refuses on non-zero exit.
+- [ ] Confirm the only escape is `task suite:force-advance contracts
+  --reason '<text>'`. The test verifies:
+  - A `force_advances:` entry is appended to `_progress.yaml` with
+    `accepted: false`.
+  - The phase is signed off despite the failure.
+  - Running the audit immediately reports
+    `force_advances_all_accepted` as FAIL with an actionable message.
+  - `task suite:accept-force contracts --reason '<text>'` flips the
+    entry to `accepted: true` and a re-audit then passes.
 
 **Exit criterion:** Hard gate is genuinely hard. No path to false sign-off
-exists.
+exists. The force-advance escape is honest — visible in `_progress.yaml`
+and fails the audit until explicitly accepted.
 
 🛑 **Review checkpoint:** Demo contracts skill, including failure mode and
 the `--force-advance` audit trail.
@@ -295,18 +439,35 @@ empty domain repo correctly prompts to begin Phase 1.
 This is the most design-heavy skill because the question bank drives PRD
 elicitation quality.
 
-- [ ] Create `skills/domain-discovery/SKILL.md`
-- [ ] Create `skills/domain-discovery/gate.yaml` with the structural and
-  rubric checks listed in SUITE-DESIGN.md Section 8 Phase 1
-- [ ] Create `skills/domain-discovery/questions.md` — the elicitation bank.
-  This is a structured set of questions per gate check, with example good
-  and bad answers, and follow-up probes for vague responses.
-- [ ] Implement the loop:
+- [ ] Create `skills/domain-discovery/SKILL.md`. Include a `## Rubric
+  checks` section with prose for the two Phase 1 rubric rules (problem
+  statement describes user pain rather than solution; success metrics are
+  measurable rather than aspirational). See SUITE-DESIGN §5.5 for how
+  the agent emits `rubric_findings:` from this prose.
+- [ ] Create `skills/domain-discovery/gate.yaml` referencing the
+  structural check ids listed in SUITE-DESIGN §8 Phase 1
+  (`PRD-PROBLEM-USER-PAIN`, `PRD-PERSONA-EXISTS`, `PRD-PERSONA-GOAL`,
+  `PRD-PERSONA-FRUSTRATION`, `PRD-NON-GOAL`, `PRD-STORY-ACCEPTANCE`,
+  `PRD-STORY-PERSONA-LINK`, `PRD-METRICS-MEASURABLE`). Author the
+  corresponding modules under `skills/domain-discovery/checks/` (these
+  are phase-local — they only run in Discovery; the audit re-runs them
+  via the shared signoff/cross-ref modules).
+- [ ] Create `skills/domain-discovery/questions.md` per the rich schema in
+  SUITE-DESIGN §7.5 — one entry per gate-check id. The
+  `PRD-PERSONA-FRUSTRATION` example in §7.5 is the template. Coverage is
+  enforced by a build-time check that fails if any check id is missing
+  a question. ~10 questions total for Phase 1.
+- [ ] Implement the loop per SUITE-DESIGN §5:
   - Load `prd.md` if exists, else copy from template
   - Run checks, collect failures
-  - For each failure, pick the question from `questions.md` and ask
-  - Receive answer, reflect-before-writing, apply edit, re-run checks
-  - When all checks pass, write sign-off, return to orchestrator
+  - Evaluate the rubric checks from SKILL.md prose, emit findings
+  - For each failure/finding, look up the question by `binds_to_check`
+  - Ask `lead_in`; on vague answers, walk the `probes` in order; if still
+    vague after two probes, route to defer/n-a
+  - Reflect-before-writing using `reflect_template`, apply edit, re-run
+    checks
+  - When all checks pass and every warning/finding has a response,
+    invoke `shared/sign_off.py` (which writes the sidecar)
 - [ ] Implement reflect-before-writing for structural changes
   (adding/removing personas, stories, metrics). Trivial edits (typo fixes)
   can be quiet writes.
@@ -314,7 +475,8 @@ elicitation quality.
 **Exit criterion:** Starting from an empty bootstrapped repo, the
 orchestrator + discovery skill can drive a user through producing a valid
 `prd.md` that passes Phase 1's hard gate. Test on a new domain (not Items —
-choose something different to avoid overfitting).
+choose something different to avoid overfitting). Confirm `rubric_findings:`
+appear in the resulting `_phase-1-passed.yaml` with the user's responses.
 
 ### 4.3 Test resumption — [ ]
 

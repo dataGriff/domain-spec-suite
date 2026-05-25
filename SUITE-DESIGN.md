@@ -20,8 +20,10 @@
 3. [The Orchestrator](#3-the-orchestrator)
 4. [The Progress Schema](#4-the-progress-schema)
 5. [The Phase Skill Pattern](#5-the-phase-skill-pattern)
+5.5. [Execution Model](#55-execution-model)
 6. [Update Mode](#6-update-mode)
 7. [The Prompting Style](#7-the-prompting-style)
+7.5. [Question-Bank Format](#75-question-bank-format)
 8. [Per-Phase Specifications](#8-per-phase-specifications)
 9. [Hooks and CI Integration](#9-hooks-and-ci-integration)
 10. [Versioning Policy](#10-versioning-policy)
@@ -74,10 +76,24 @@ drive implementations.
 ### The target repo
 
 The suite operates on **empty** repositories. There is no pre-existing template
-the user must apply. Phase 0 (Bootstrap) of the suite produces the entire
-repository shell. This is a deliberate design choice: the suite is the single
-source of truth for what a domain repo should look like, eliminating drift
-between a separate template and the skills that operate on it.
+the user must apply. Phase 0 (Bootstrap) copies a canonical shell from
+`skills/domain-bootstrap/templates/` into the target directory, then runs its
+gate. This shell is the **single source of truth** for what a domain repo
+should look like, eliminating drift between a separate template and the
+skills that operate on it.
+
+The legacy standalone `domain-api-template` repo is being absorbed into the
+suite during the v1.0.0 build: its contents become the seed for
+`skills/domain-bootstrap/templates/`, and the standalone repo will be
+archived once v1.0.0 ships. From then on, any change to the canonical shell
+happens inside the suite (and bumps the suite or gate version
+accordingly — see §10).
+
+Bootstrap refuses to run in a non-empty directory by default. The `--force`
+flag honours `skills/domain-bootstrap/template_manifest.yaml` and only
+overwrites files listed there; user-authored specs in
+`docs/specifications/*.md` and the `_*.yaml` state files are never touched.
+This makes shell upgrades safe (see also `task suite:upgrade-shell` in §9).
 
 ---
 
@@ -123,6 +139,12 @@ Bootstrap is mechanical, not interactive. The only user interaction is a
 confirmation at the start: "I'm about to set up this directory as a domain
 spec repo. This will create [N files]. Proceed?"
 
+If the target directory already contains files, bootstrap refuses by default
+and exits with a message pointing to `--force` (manifest-aware re-bootstrap
+for shell upgrades) or `task suite:upgrade-shell` (the same operation
+wrapped behind a clearer name). Neither path overwrites spec content; both
+consult `template_manifest.yaml`.
+
 Bootstrap produces:
 
 - Repository structure (`docs/`, `docs/specifications/`,
@@ -142,6 +164,9 @@ Bootstrap produces:
 - Empty `_progress.yaml` with Phase 0 marked complete and Phase 1 ready
 - `_bootstrap.yaml` recording the suite and gate versions that produced
   the shell
+- `_template_manifest.yaml` listing every file bootstrap owns (used by
+  `--force` re-bootstrap and `task suite:upgrade-shell` to know what may
+  be overwritten)
 
 After Bootstrap, the orchestrator immediately prompts to start Phase 1.
 
@@ -231,6 +256,19 @@ phases:
   audit:
     status: not-started
 
+# Force-advance entries — written by `task suite:force-advance`.
+# Audit fails on any unaccepted entry; clear with `task suite:accept-force`.
+force_advances: []
+# Example entry:
+# force_advances:
+#   - phase: contracts
+#     reason: "Spectral install blocked on upstream bug X"
+#     forced_at: "2026-05-26T10:00:00Z"
+#     operator: "griff182uk"
+#     accepted: false
+#     accepted_reason: null
+#     accepted_at: null
+
 session_log:
   - timestamp: "2026-05-25T14:00:00Z"
     event: suite-initialized
@@ -262,15 +300,38 @@ checks_passed:
   - PRD-STORY-ACCEPTANCE
   - PRD-STORY-PERSONA-LINK
   - PRD-METRICS-MEASURABLE
+
+# Soft-gate warnings that were explicitly responded to. Silent dismissal
+# is impossible — every warning surfaced by the gate must appear here with
+# a response.
+warnings_responded:
+  - id: MOD-LIFECYCLE-DEFINED
+    response: deferred            # resolved | deferred | n-a
+    reason: "lifecycle TBD pending UX review"
+    required_by: audit            # only set when response == deferred
+    ts: "2026-05-25T14:40:00Z"
+
+# Findings produced by the agent's rubric evaluation per §5.5 and §7.
+# Same engagement model as warnings: every finding needs a response.
+rubric_findings:
+  - id: RUBRIC-PROBLEM-USER-PAIN
+    verdict: warn                 # pass | warn
+    detail: "problem statement still reads solution-first"
+    response: resolved
+    reason: "rewrote to lead with user pain (see commit abc)"
+    ts: "2026-05-25T14:42:00Z"
+
 files_signed:
   - path: docs/specifications/prd.md
-    mtime: "2026-05-25T14:44:30Z"
     sha256: "abc123..."
-deferred_items: []
+    mtime: "2026-05-25T14:44:30Z"   # human readability only — not consulted
 ```
 
-The sha256 on file signoff matters: if the file is hand-edited later, the
-hash mismatch is how staleness is detected.
+The sha256 on file sign-off is authoritative: if the file is hand-edited
+later, the hash mismatch is how staleness is detected (see §6). `mtime` is
+recorded for human readers but is never used in the staleness check —
+it would produce false positives on `git checkout`, IDE saves, or fresh
+clones.
 
 ### The ambiguities file
 
@@ -380,6 +441,116 @@ bypassing dependency checks.
 
 ---
 
+## 5.5. Execution Model
+
+Phase skills are markdown — they instruct the agent — but **gate enforcement
+is mechanical**. The agent does not get to decide whether a check passed.
+This section pins down how that works.
+
+### Tooling
+
+- Python 3.x, pinned in the domain repo's `.mise.toml`.
+- Taskfile is the single entry point for every check operation. Skills,
+  hooks, and CI all invoke the same `task gate:<phase>` and `task audit`
+  targets, so versions and behaviour stay consistent across contexts.
+
+### Where checks live
+
+- **`shared/checks/<id>.py`** — checks consumed by more than one phase
+  (cross-reference checks, audit-time integrity checks).
+- **`skills/<phase>/checks/<id>.py`** — checks unique to a single phase.
+
+Both types follow the same module shape:
+
+```python
+# shared/checks/auth_matrix_openapi_match.py
+
+metadata = {
+    "id": "AUTH-OPENAPI-MATCH",
+    "category": "cross-reference",        # structural | cross-reference
+    "phases": ["access-control", "contracts", "audit"],
+    "severity_by_phase": {
+        "access-control": "warning",      # soft-gate phase
+        "contracts": "error",             # hard-gate phase
+        "audit": "error",
+    },
+    "prerequisites": [
+        {"file_exists": "docs/specifications/contracts/openapi.yaml"},
+    ],
+}
+
+def run(repo_root: Path) -> CheckResult:
+    ...
+```
+
+A check whose `prerequisites` are not met is **skipped** (not failed). This
+is what lets Phase 3 list `AUTH-OPENAPI-MATCH` — it's a no-op there until
+the OpenAPI file appears in Phase 6, at which point the same module runs
+with `error` severity.
+
+### Rubric checks
+
+Rubric checks (e.g. *"problem statement describes user pain rather than
+solution"*) are the exception: they cannot be evaluated in Python. They
+live as prose in the phase skill's `SKILL.md` under a clearly marked
+`## Rubric checks` section. When the phase runs:
+
+1. The agent reads the prose rubric and the spec file.
+2. For each rubric rule it emits a finding with verdict `pass` or `warn`.
+3. Findings are written into the phase's `_phase-N-passed.yaml` under
+   `rubric_findings:` (schema in §4).
+4. Each `warn` finding feeds the soft-gate engagement loop — the user must
+   resolve, defer, or mark non-applicable with reason before sign-off.
+
+This keeps rubric checks honest (the user must see and respond to every
+finding) while not pretending the agent's verdict is mechanically
+reproducible. Mechanical checks remain the load-bearing ones; rubric checks
+are a quality nudge with a paper trail.
+
+### The runner
+
+`shared/run_phase.py` is the single check runner:
+
+```
+task gate:<phase>
+  → loads skills/<phase>/gate.yaml (the manifest of check ids)
+  → loads each check module, evaluates prerequisites
+  → runs applicable checks, collects results
+  → exits 0 only if every applicable check passes
+    at the phase-appropriate severity
+```
+
+### Sign-off
+
+`shared/sign_off.py` is the **only** way `_phase-N-passed.yaml` is written.
+It does this:
+
+1. Runs `task gate:<phase>`.
+2. If exit code is non-zero: refuse, print failing check ids, exit non-zero.
+3. If exit code is zero: prompt the agent to attach `warnings_responded:`
+   and `rubric_findings:` blocks. Refuse to proceed until every surfaced
+   warning and `warn` finding has a response.
+4. Compute sha256 for every file the phase signed.
+5. Write `_phase-N-passed.yaml`, update `_progress.yaml`.
+
+The only way to bypass step 2 is `task suite:force-advance` (Decision 5 /
+§9), which writes an entry to `_progress.yaml`'s `force_advances:` array
+that the audit will surface as a finding until cleared by
+`task suite:accept-force`.
+
+### Implications
+
+- Tests for the suite (in its own repo) are Python tests that import the
+  check modules directly. No need to stand up a real domain repo for unit
+  testing.
+- Hooks (§9) invoke the same `task gate:<phase>` and `task audit` targets
+  the skill uses. There is no separate "hook-only" check path.
+- A new check is added by writing one Python module, adding its id to the
+  relevant phase `gate.yaml` files, and writing a question for it in
+  `questions.md` (§7.5).
+
+---
+
 ## 6. Update Mode
 
 After a spec set has passed audit, users will edit it. The suite supports
@@ -387,9 +558,15 @@ this through targeted update mode.
 
 ### Detection
 
-On every orchestrator invocation, compare each spec file's mtime and sha256
-against the corresponding `_phase-N-passed.yaml` record. Any mismatch marks
-that phase as `stale`.
+On every orchestrator invocation, compute each spec file's current sha256 and
+compare against the value recorded in the corresponding
+`_phase-N-passed.yaml`. Any mismatch marks that phase as `stale`.
+
+`mtime` is **not** consulted. It's recorded in the sign-off file for human
+readability only. mtime resets on `git checkout`, IDE saves, fresh clones,
+`rsync`, and anything that re-materialises the working tree, all of which
+produce false-positive staleness. sha256 is the only signal that survives
+those operations and only changes when the content actually changes.
 
 ### On detection of staleness
 
@@ -500,6 +677,101 @@ just works.
 
 ---
 
+## 7.5. Question-Bank Format
+
+Every phase skill carries a `questions.md` file. It is the elicitation
+script the skill uses when a gate check surfaces a failure or warning —
+the §7 rules say *what* the prompting should feel like; this section says
+how each individual question is structured so any agent running the skill
+behaves the same way.
+
+### Schema
+
+Each entry binds one question to one gate-check id. The order of fields is
+fixed.
+
+```yaml
+- id: PRD-PERSONA-FRUSTRATION
+  binds_to_check: PRD-PERSONA-FRUSTRATION
+
+  # The opening question. One sentence, business language, names the
+  # specific subject. Use {{placeholders}} for values the runner
+  # interpolates from the file under inspection.
+  lead_in: |
+    What specifically frustrates {{persona_name}} about how they work today?
+
+  # Vagueness-pushback. Listed in priority order; the agent picks the
+  # first probe whose trigger matches the user's previous answer. Probes
+  # never batch — one probe per turn, per §7 Hard Rule 1.
+  probes:
+    - trigger: "answer describes a desired feature rather than current pain"
+      ask: |
+        That sounds like a feature wish. What's the current pain that
+        creates the wish?
+    - trigger: "answer is qualitative ('it's slow', 'annoying')"
+      ask: |
+        Slow at what task, and by how much? Give me a number if you can.
+    - trigger: "answer is hypothetical"
+      ask: |
+        Has this happened? How often, in the last month?
+
+  # One concrete answer that would pass the check. Used as a worked
+  # example when the user gets stuck — never spoken back to them verbatim
+  # unless they ask.
+  good_example: |
+    "Contributors spend ~20 minutes a day re-typing item IDs across the
+     spreadsheet, the ticket system, and the warehouse app."
+
+  # One concrete answer that would fail the check, paired with the
+  # rebuttal the agent should give. Trains the agent to recognise the
+  # failure mode in unfamiliar phrasings.
+  bad_example:
+    answer: "It's slow."
+    rebuttal: |
+      "Slow" doesn't help me write a frustration into the PRD. Slow at
+      what task, and by how much?
+
+  # The reflect-before-writing template (§7 Hard Rule 3). The agent
+  # interpolates the user's resolved answer and asks for confirmation
+  # before committing anything to the file.
+  reflect_template: |
+    So {{persona_name}} is frustrated by {{summary}}. I'll capture that
+    as the frustration. Sound right?
+```
+
+### Authoring rules
+
+1. **One entry per gate check.** Coverage is enforced: the build task fails
+   if any check id in a phase's `gate.yaml` lacks a `questions.md` entry.
+2. **`lead_in` reads as an interview question, never a lint diagnostic**
+   (§7 Hard Rule 10). The check id never appears in user-facing text.
+3. **At least two probes**, ordered most-likely first. Don't pad — a probe
+   that never triggers is dead weight.
+4. **Examples come from the domain.** When authoring a question, pull the
+   `good_example` and `bad_example` from real conversations or from the
+   Items fixture. Invented examples drift.
+5. **`reflect_template` always closes with a confirmation request.** Never
+   write to file silently after a free-text answer.
+
+### Runtime contract
+
+The phase skill loads `questions.md` once at start, indexes by
+`binds_to_check`, and uses entries as follows during the §5 loop:
+
+1. Run gate checks → collect failures/warnings.
+2. For each finding, look up its question by `binds_to_check`.
+3. Ask `lead_in`. If the answer is vague, ask the matching probe. Repeat
+   probes up to twice; if still vague, defer or mark non-applicable per
+   the soft-gate engagement loop.
+4. Run `reflect_template` against the user's resolved answer.
+5. On confirmation, write the edit. Re-run affected checks.
+
+This pattern is identical across phases. Anything skill-specific (the
+templates, the gate manifest, the rubric prose) lives elsewhere in the
+skill directory; `questions.md` is the elicitation contract.
+
+---
+
 ## 8. Per-Phase Specifications
 
 This section captures the gate criteria summary per phase. The full question
@@ -598,12 +870,26 @@ Cross-reference checks:
 ### Phase 7: Audit — Hard gate
 
 Runs all phases 1-6 cross-reference checks simultaneously. Additionally:
-- Verifies no unreplaced template placeholders
+- Verifies no unreplaced template placeholders (no `[Resource1]`, `[Domain]`,
+  or `{{` strings remain in any spec file or rendered output)
 - Verifies `_ambiguities.md` has no items marked `required-by: audit` that
   remain unresolved
 - Verifies all `_phase-N-passed.yaml` sidecars are present and not stale
+  (sha256 comparison per §6)
+- Verifies `_progress.yaml`'s `force_advances:` array contains no entries
+  with `accepted: false`. Any unaccepted force-advance fails the audit and
+  surfaces a finding instructing the user to either resolve the underlying
+  check failures or run `task suite:accept-force <phase> --reason '<text>'`
+  to record an explicit acceptance.
 - Runs `task domain:check` and confirms it passes
-- Verifies generator script produces clean `domain-overview.html`
+- Runs the generator script and verifies the output is **clean**, defined
+  as:
+  - exit code 0
+  - no `[Resource1]`, `[Domain]`, or `{{` placeholder strings in the
+    rendered `domain-overview.html`
+  - every entity named in `domain-model.md` appears in the rendered
+    overview (cross-reference)
+  - no Python tracebacks or warnings on stderr
 
 On pass: writes `_audit-passed.yaml` with the full check manifest, timestamp,
 and gate-version. Declares spec set complete.
@@ -700,6 +986,8 @@ bumps; gate-version bumps are rarer and more deliberate.
   against.
 - `_progress.yaml` records the `gate_version` of the suite when the domain
   was started.
+- `_bootstrap.yaml` records the `gate_version` of the shell that was
+  initially copied into the repo.
 - The orchestrator, on detecting that the suite's current gate-version is
   newer than the spec set's, says: "This spec set was audited under
   gate-version 1.0. The current suite is at gate-version 1.1, which added
@@ -707,6 +995,13 @@ bumps; gate-version bumps are rarer and more deliberate.
 - If yes, only the audit phase needs to re-run; that's the gate that
   enforces everything.
 - If no, the spec set remains valid at its original gate version.
+
+After a re-audit, per-phase sign-off files may carry a different
+`gate_version` from `_bootstrap.yaml` and from each other (e.g. discovery
+re-signed under 1.1 while modeling is still at 1.0). This is **expected
+and correct** — it reflects the actual audit history of the spec set.
+The orchestrator never rewrites historical `gate_version` values; it only
+appends.
 
 ### How gate versions are bumped
 
@@ -747,27 +1042,14 @@ in one entity" updates still trigger full phase re-runs. Acceptable for v1.
 
 ### Open questions to resolve during build
 
-1. **What happens if the user invokes a phase skill directly outside the
-   orchestrator?** Decision: phase skill detects no orchestrator state,
-   refuses, and points the user to the orchestrator. Don't allow standalone
-   phase invocation.
-
-2. **What if a phase skill itself has a bug and produces broken output?**
+1. **What if a phase skill itself has a bug and produces broken output?**
    The audit will catch it. But during the build, we need a way to manually
    reset a phase: `task suite:reset-phase modeling` or similar, in the
    suite's own Taskfile. Worth building early for our own testing.
 
-3. **Manual override of hard gates.** A `--force-advance` mechanism that
-   bypasses one gate, logs the bypass with reason in `_progress.yaml`, and
-   surfaces it loudly in the conformance audit later. This isn't a weakness
-   — it's an honesty mechanism. Users will bypass things one way or another;
-   better to capture it than pretend it doesn't happen. Implementation
-   detail to confirm during build.
-
-4. **Bootstrap re-run on a non-empty directory.** What does the bootstrap
-   skill do if it finds files already exist? Recommend: detect the
-   situation, refuse to overwrite by default, offer `--force` flag that's
-   explicit and loud.
+(Previous items 1, 3, and 4 — standalone phase invocation, manual override
+of hard gates, and bootstrap re-run on a non-empty directory — have all
+been resolved and folded into §5, §5.5, §1, and §9.)
 
 ---
 
