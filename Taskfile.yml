@@ -67,6 +67,11 @@ tasks:
     cmds:
       - "{{.PYTHON}} shared/run_phase.py audit {{.CLI_ARGS}}"
 
+  init:contracts:
+    desc: 'Copy blank contract templates into docs/specifications/contracts/ (only if absent — never overwrites). Usage: task init:contracts -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} scripts/init_phase.py contracts {{.CLI_ARGS}}"
+
   gate:contracts:
     desc: 'Run the Phase 6 contracts gate against a target domain repo. Usage: task gate:contracts -- --repo /path/to/domain'
     cmds:

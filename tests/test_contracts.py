@@ -26,7 +26,7 @@ ITEMS_FIXTURE = REPO / "tests" / "fixtures" / "items"
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from scripts import accept_force, force_advance  # noqa: E402
+from scripts import accept_force, force_advance, init_phase  # noqa: E402
 from shared import run_phase, sign_off  # noqa: E402
 
 pytestmark = pytest.mark.contracts
@@ -174,6 +174,74 @@ def test_accept_force_errors_when_no_unaccepted_entry(tmp_path: pathlib.Path) ->
     target = _copy_fixture(tmp_path)
     rc = accept_force.accept_force(target, "contracts", "nothing to accept")
     assert rc == 1
+
+
+# ── init_phase (authoring half) ──────────────────────────────────
+
+
+def test_init_phase_copies_missing_contracts(tmp_path: pathlib.Path) -> None:
+    """When contracts/ is empty, init_phase copies the three blank
+    skeletons from _template/contracts/."""
+    target = _copy_fixture(tmp_path)
+    contracts_dir = target / "docs/specifications/contracts"
+
+    # Wipe the existing contracts so init has work to do.
+    for f in ("openapi.yaml", "asyncapi.yaml", "datacontract.yaml"):
+        (contracts_dir / f).unlink()
+
+    rc = init_phase.init_phase(target, "contracts")
+    assert rc == 0
+
+    import re
+
+    placeholder = re.compile(r"\[[A-Za-z][A-Za-z0-9 ]*\]")
+    for f in ("openapi.yaml", "asyncapi.yaml", "datacontract.yaml"):
+        path = contracts_dir / f
+        assert path.is_file(), f"init didn't copy {f}"
+        # The copied file should be the _template version (carries
+        # [Resource1] / [Domain Name] / [resource1] etc. placeholders).
+        assert placeholder.search(path.read_text()), (
+            f"copied {f} has no placeholders — was the wrong source used?"
+        )
+
+
+def test_init_phase_never_overwrites_existing(tmp_path: pathlib.Path) -> None:
+    """A file that already exists is left strictly alone."""
+    target = _copy_fixture(tmp_path)
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    original = openapi.read_text()
+
+    rc = init_phase.init_phase(target, "contracts")
+    assert rc == 0
+    assert openapi.read_text() == original, "init clobbered user-authored content"
+
+
+def test_init_phase_is_idempotent(tmp_path: pathlib.Path) -> None:
+    """Running init twice produces the same outcome as running it once."""
+    target = _copy_fixture(tmp_path)
+    contracts_dir = target / "docs/specifications/contracts"
+    (contracts_dir / "openapi.yaml").unlink()
+
+    rc1 = init_phase.init_phase(target, "contracts")
+    snapshot = (contracts_dir / "openapi.yaml").read_text()
+    rc2 = init_phase.init_phase(target, "contracts")
+    assert rc1 == rc2 == 0
+    assert (contracts_dir / "openapi.yaml").read_text() == snapshot
+
+
+def test_init_phase_template_path_mapping() -> None:
+    """The canonical mapping converts docs/specifications/X to
+    docs/specifications/_template/X."""
+    assert (
+        init_phase.template_path_for("docs/specifications/contracts/openapi.yaml")
+        == "docs/specifications/_template/contracts/openapi.yaml"
+    )
+    assert (
+        init_phase.template_path_for("docs/specifications/domain-model.md")
+        == "docs/specifications/_template/domain-model.md"
+    )
+    # Paths outside docs/specifications/ have no template convention.
+    assert init_phase.template_path_for("README.md") is None
 
 
 # ── integration: force-advance → audit fails → accept-force → audit passes ──

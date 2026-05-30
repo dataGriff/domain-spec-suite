@@ -23,45 +23,106 @@ trigger_phrases:
 
 # Phase 6 — Contracts
 
-This skill is **purely mechanical**. There are no rubric checks and
-no question bank — contracts are right or they aren't. The skill's
-job is to run the gate against the target repo and either write the
-sign-off sidecar (`_phase-6-passed.yaml`) or report exactly which
-checks failed.
+This skill has two halves: **author** (produce three contract YAML
+files from upstream specs) and **validate + sign-off** (mechanical
+gate against the result). The validate half is purely mechanical —
+contracts are right or they aren't, no rubric checks. The author half
+is interactive: the skill reads upstream specs and walks the user
+through filling in the templates.
 
 ## What this skill does
 
 1. Resolves the target repo (current working directory by default).
 2. Verifies all earlier phases (1-5) have signed off — refuses if not.
-3. Invokes the runner (`shared/run_phase.py contracts --repo <target>`)
-   which runs every check listed in `gate.yaml`.
-4. If every check passes: invokes `shared/sign_off.py contracts` which
-   computes sha256s for the three contract files and writes
+3. **Author half.** If any of `contracts/openapi.yaml`,
+   `contracts/asyncapi.yaml`, `contracts/datacontract.yaml` is missing,
+   runs `task init:contracts -- --repo <target>` to copy the blank
+   `_template/contracts/*.yaml` skeletons into place. Never
+   overwrites existing files (the user's authored work is safe).
+   Then walks the user through populating each section using the
+   upstream specs as the source of truth (see "Authoring" below).
+4. **Validate half.** Invokes the runner
+   (`shared/run_phase.py contracts --repo <target>`), which runs
+   every check listed in `gate.yaml`.
+5. If every check passes: invokes `shared/sign_off.py contracts`
+   which computes sha256s for the three contract files and writes
    `_phase-6-passed.yaml`.
-5. If any check fails: reports the failing check ids verbatim. Does
+6. If any check fails: reports the failing check ids verbatim. Does
    not write the sign-off file. Tells the user to either fix the
    underlying issues or, in genuine emergencies, run
    `task suite:force-advance contracts --reason '<text>'` (which
    writes a `force_advances` entry to `_progress.yaml` that the audit
    surfaces until cleared via `task suite:accept-force`).
 
+## Authoring
+
+The three contracts are largely *derivable* from upstream specs — the
+job is mechanical synthesis, not creative writing. Walk the user
+through each contract in order. Reflect each significant edit back
+to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
+
+### `contracts/openapi.yaml`
+
+- **`info`**: title from the PRD's domain name; version starts at
+  `1.0.0`; contact uses the RFC 2606 example-domain pattern for
+  Spectral's `info-contact` rule.
+- **`paths`**: one path per row in `auth-matrix.md`'s operations
+  table. Method, path, and rough operationId are all there.
+- **`components.schemas`**: one schema per entity in
+  `domain-model.md`, with one property per attribute. Use the type
+  hints from the domain-model attribute table (`UUID` → `string` +
+  `format: uuid`, `ISO 8601` → `string` + `format: date-time`,
+  enum strings → `enum`). Sensitive attributes (e.g. password hashes)
+  belong in a `<Entity>Summary` projection, not the bare entity.
+- **`components.responses`**: one entry per `4xx`/`5xx` code from
+  `error-catalogue.md`, all bound to a generic `Error` shape
+  (`{code, message}`) plus `ValidationError` for 400 (which
+  additionally has `details[]`).
+
+### `contracts/asyncapi.yaml`
+
+- **`channels`**: one channel per domain event row in
+  `domain-model.md`'s Domain Events table. Channel name comes from
+  the table directly (e.g. `items.item.added`).
+- **`components.messages`**: one message per channel. CloudEvents 1.0
+  envelope (`specversion`, `type`, `source`, `id`, `time`,
+  `datacontenttype`) wrapping a `data` payload that matches the
+  entity's domain-model attributes.
+- **`info.contact`**: same RFC 2606 example values as openapi.yaml.
+
+### `contracts/datacontract.yaml`
+
+- **`schema[*]`**: one record per *family* of channels (typically
+  one per entity, plus reduced-payload variants for removal events).
+  Field names + types come straight from the AsyncAPI message
+  payload.
+- **`slaProperties`**: `availability` and `retention` come from
+  `nfr.md` (NFR-AVAIL-002, NFR-DATA-001 in the Items example).
+
+After every contract section, run `task gate:contracts -- --repo
+<target>` to surface lint and cross-reference errors early. Iterate
+until clean, then sign off.
+
 ## How to run
 
 From any directory:
 
 ```bash
+# Lay down blank templates if contracts/ doesn't exist yet
+mise exec -- task init:contracts -- --repo <target-dir>
+
+# Validate (no side-effects beyond the runner's exit code)
 mise exec -- task gate:contracts -- --repo <target-dir>
+
+# Sign off (refuses if the gate fails)
+mise exec -- task sign-off:contracts -- --repo <target-dir>
 ```
 
 Or directly:
 
 ```bash
+python <suite-root>/scripts/init_phase.py contracts --repo <target-dir>
 python <suite-root>/shared/run_phase.py contracts --repo <target-dir>
-```
-
-Sign-off (only proceeds if the gate passes):
-
-```bash
 python <suite-root>/shared/sign_off.py contracts --repo <target-dir>
 ```
 
