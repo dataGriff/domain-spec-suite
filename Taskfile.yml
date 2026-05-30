@@ -77,8 +77,18 @@ tasks:
     cmds:
       - echo "stub — see BUILD-PLAN Task 3.2; will call scripts/accept_force.py"
 
+  suite:bootstrap:
+    desc: 'Lay down the canonical domain repo shell in a target directory. Usage: task suite:bootstrap -- --target /path --domain-name "Items" [--force]'
+    cmds:
+      - "{{.PYTHON}} scripts/bootstrap.py {{.CLI_ARGS}}"
+
+  suite:regenerate-manifest:
+    desc: Rebuild skills/domain-bootstrap/template_manifest.yaml from the current templates/ directory
+    cmds:
+      - "{{.PYTHON}} scripts/regenerate_manifest.py"
+
   suite:upgrade-shell:
-    desc: Manifest-aware re-bootstrap that preserves spec content (stub — Task 2.2)
+    desc: Manifest-aware re-bootstrap that preserves spec content (stub — Task 2.2 follow-up)
     cmds:
       - echo "stub — see BUILD-PLAN Task 2.2; will call scripts/upgrade_shell.py"
 

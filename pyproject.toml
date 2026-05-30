@@ -32,7 +32,12 @@ py-modules = []
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["tests/fixtures"]
+extend-exclude = [
+  "tests/fixtures",
+  # Files under skills/*/templates/ are copied verbatim into target
+  # domain repos and are not part of the suite's own Python codebase.
+  "skills/*/templates",
+]
 
 [tool.ruff.lint]
 select = [
