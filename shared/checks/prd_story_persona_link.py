@@ -45,6 +45,11 @@ GENERIC_ACTORS = {
     "registered team member",
     "team member",
     "user",
+    "new client",
+    "new customer",
+    "client",
+    "customer",
+    "invited user",
 }
 
 

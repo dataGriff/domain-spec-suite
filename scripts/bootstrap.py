@@ -205,6 +205,31 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
     write("_bootstrap.yaml", yaml.safe_dump(bootstrap_record, sort_keys=False))
     write("_ambiguities.md", ambiguities)
 
+    # Phase 0 sign-off sidecar. Bootstrap is its own sign-off — there's
+    # no upstream sign_off.py path because bootstrap creates the file
+    # shape every other phase relies on. Sidecar shape mirrors what
+    # shared/sign_off.py writes for later phases so the orchestrator
+    # and audit treat every phase uniformly.
+    import hashlib  # local import — only needed here
+
+    bootstrap_sha = hashlib.sha256((specs_dir / "_bootstrap.yaml").read_bytes()).hexdigest()
+    sidecar = {
+        "phase": "bootstrap",
+        "signed_off_at": now,
+        "gate_version": GATE_VERSION,
+        "checks_passed": list(PHASE_0_CHECKS),
+        "warnings_responded": [],
+        "rubric_findings": [],
+        "files_signed": [
+            {
+                "path": "docs/specifications/_bootstrap.yaml",
+                "sha256": bootstrap_sha,
+                "mtime": now,
+            }
+        ],
+    }
+    write("_phase-0-passed.yaml", yaml.safe_dump(sidecar, sort_keys=False))
+
     # Carry a copy of the manifest into the target so upgrade-shell knows
     # which files were originally installed and what their hashes were.
     shutil.copyfile(MANIFEST_PATH, specs_dir / "_template_manifest.yaml")
