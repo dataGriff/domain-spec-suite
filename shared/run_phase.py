@@ -112,9 +112,14 @@ def prerequisites_met(metadata: dict, repo: pathlib.Path) -> bool:
     """Returns True if every prerequisite passes (or there are none).
     A failing prerequisite is *not* a check failure — it means the
     check is no-op'd at this phase."""
+    import shutil  # local import — only needed when binary_exists is used
+
     for prereq in metadata.get("prerequisites", []):
         if "file_exists" in prereq:
             if not (repo / prereq["file_exists"]).is_file():
+                return False
+        elif "binary_exists" in prereq:
+            if shutil.which(prereq["binary_exists"]) is None:
                 return False
         else:
             raise ValueError(f"unknown prerequisite shape: {prereq}")

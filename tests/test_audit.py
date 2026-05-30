@@ -113,8 +113,8 @@ def test_check_metadata_shape(module_name: str) -> None:
             f"{meta['id']}: phase '{phase}' missing from severity_by_phase"
         )
     for prereq in meta.get("prerequisites", []):
-        assert "file_exists" in prereq, (
-            f"{meta['id']}: only file_exists prerequisites currently supported"
+        assert "file_exists" in prereq or "binary_exists" in prereq, (
+            f"{meta['id']}: only file_exists / binary_exists prerequisites supported"
         )
 
 
