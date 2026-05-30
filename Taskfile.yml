@@ -40,6 +40,18 @@ tasks:
     cmds:
       - pytest
 
+  check:
+    desc: 'Full pre-commit / pre-push / CI check: lint + tests. Single source of truth for "is the suite green?"'
+    cmds:
+      - task: lint
+      - task: test
+
+  hooks:install:
+    desc: Wire .githooks/ into this clone (run once after cloning)
+    cmds:
+      - git config core.hooksPath .githooks
+      - echo "Git hooks installed from .githooks/"
+
   test:bootstrap:
     desc: Tests for the bootstrap skill (stub — implemented in BUILD-PLAN Task 2.2)
     cmds:

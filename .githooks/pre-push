@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-push hook for the domain-spec-suite. Runs the same `task check`
+# command that CI and the Claude PostToolUse hook invoke, so behaviour
+# is consistent across all three contexts (developer machine, CI,
+# agent session).
+#
+# Skip in genuine emergencies with `git push --no-verify`. CI is the
+# safety net.
+set -e
+
+if ! command -v task >/dev/null 2>&1; then
+  echo "pre-push: 'task' not on PATH. Install via mise (see .mise.toml) or skip with --no-verify." >&2
+  exit 1
+fi
+
+echo "pre-push: running 'task check' (lint + tests)…"
+# Use `mise exec --` so the hook works whether or not the user has
+# mise auto-activated in their interactive shell. mise resolves the
+# Python + tool versions pinned in .mise.toml + pyproject.toml.
+if command -v mise >/dev/null 2>&1; then
+  exec mise exec -- task check
+else
+  exec task check
+fi

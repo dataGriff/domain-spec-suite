@@ -1,0 +1,42 @@
+name: CI
+
+# Runs `task check` (lint + tests) on every push to main and on every
+# pull request. This is the same command developers run locally via
+# `task check` or `.githooks/pre-push`, and the same command the
+# Claude PostToolUse hook runs after Write/Edit/MultiEdit on .py
+# files. Single source of truth for "is the suite green?".
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: task check (lint + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Task
+        run: sh -c "$(curl -L https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+
+      - name: Install Python dev dependencies
+        run: mise exec -- python -m pip install -e '.[dev]'
+
+      - name: task check
+        run: mise exec -- task check
