@@ -18,7 +18,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 SPECS_DIR = os.path.join(REPO_ROOT, "docs", "specifications")
 CONTRACTS_DIR = os.path.join(SPECS_DIR, "contracts")
-OUTPUT_FILE = os.path.join(SPECS_DIR, "domain-overview.html")
+# Output path is overridable via env so the audit's GENERATOR-CLEAN-OUTPUT
+# check can render to a tmp location without churning the on-disk file.
+OUTPUT_FILE = os.environ.get("DOMAIN_OVERVIEW_OUTPUT") or os.path.join(
+    SPECS_DIR, "domain-overview.html"
+)
 
 
 # ---------------------------------------------------------------------------

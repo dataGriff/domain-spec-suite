@@ -65,4 +65,4 @@ files:
   - path: "mkdocs.yml.template"
     sha256: "2c150ba4775e527b7d6df5c2e2435f4dbd29d97fdff8844400cbc2f9082fa868"
   - path: "scripts/generate_domain_overview.py"
-    sha256: "53bdd62782b2b5fa4c0016152b1369c8031232d2baba6468dec987c3a7b00df1"
+    sha256: "67a0c03c47a2727652b6d47f605c9209ebd44dd9004ebdaf415d455c7fc5863a"

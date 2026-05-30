@@ -8,17 +8,21 @@ Per SUITE-DESIGN §8 Phase 7, "clean" means:
    overview.
 4. No stderr noise (Python tracebacks / warnings).
 
-Implementation: subprocess the generator with the target as cwd. We
-deliberately do NOT use `task docs:generate` here — the generator
-script is the contract; what wraps it varies per repo.
+Implementation: subprocess the generator with the target as cwd,
+redirecting its output to a tmp file via the DOMAIN_OVERVIEW_OUTPUT
+env var. We deliberately do NOT use `task docs:generate` (which would
+write to the canonical on-disk path) — that would churn the spec
+repo's domain-overview.html on every audit run.
 """
 
 from __future__ import annotations
 
+import os
 import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 from shared.check_result import CheckResult
 
@@ -58,45 +62,59 @@ def _domain_entities(domain_model: pathlib.Path) -> list[str]:
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
-    overview_path = repo_root / "docs" / "specifications" / "domain-overview.html"
     generator = repo_root / "scripts" / "generate_domain_overview.py"
 
-    proc = subprocess.run(
-        [sys.executable, str(generator)],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        return CheckResult.fail(
-            "The domain-overview generator exited with a non-zero status. "
-            "What's the underlying error? Run "
-            "`python scripts/generate_domain_overview.py` from the repo "
-            "root to reproduce, then fix the offending spec or contract.",
-            details=[
-                f"exit code: {proc.returncode}",
-                *[f"stderr: {line}" for line in proc.stderr.splitlines()],
-                *[f"stdout: {line}" for line in proc.stdout.splitlines()],
-            ],
-        )
+    # Render into a tmp file rather than the canonical on-disk path,
+    # so re-running the audit (e.g. inside `task check`) doesn't churn
+    # the repo's domain-overview.html on every run.
+    with tempfile.NamedTemporaryFile(
+        prefix="domain-overview-", suffix=".html", delete=False
+    ) as tmp:
+        tmp_output = pathlib.Path(tmp.name)
 
-    if proc.stderr.strip():
-        return CheckResult.fail(
-            "The generator produced stderr noise (warnings / tracebacks). "
-            "The audit treats stderr as a soft failure even on a zero "
-            "exit code — clean output means clean output. What's the "
-            "underlying warning?",
-            details=[f"stderr: {line}" for line in proc.stderr.splitlines()],
+    try:
+        env = os.environ.copy()
+        env["DOMAIN_OVERVIEW_OUTPUT"] = str(tmp_output)
+        proc = subprocess.run(
+            [sys.executable, str(generator)],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
         )
+        if proc.returncode != 0:
+            return CheckResult.fail(
+                "The domain-overview generator exited with a non-zero status. "
+                "What's the underlying error? Run "
+                "`python scripts/generate_domain_overview.py` from the repo "
+                "root to reproduce, then fix the offending spec or contract.",
+                details=[
+                    f"exit code: {proc.returncode}",
+                    *[f"stderr: {line}" for line in proc.stderr.splitlines()],
+                    *[f"stdout: {line}" for line in proc.stdout.splitlines()],
+                ],
+            )
 
-    if not overview_path.is_file():
-        return CheckResult.fail(
-            "The generator did not write docs/specifications/domain-overview.html. "
-            "Check that the script's OUTPUT_FILE path matches the expected location.",
-        )
+        if proc.stderr.strip():
+            return CheckResult.fail(
+                "The generator produced stderr noise (warnings / tracebacks). "
+                "The audit treats stderr as a soft failure even on a zero "
+                "exit code — clean output means clean output. What's the "
+                "underlying warning?",
+                details=[f"stderr: {line}" for line in proc.stderr.splitlines()],
+            )
 
-    rendered = overview_path.read_text(encoding="utf-8")
+        if not tmp_output.is_file():
+            return CheckResult.fail(
+                "The generator did not write to the DOMAIN_OVERVIEW_OUTPUT "
+                "path. Check that the script honours the "
+                "DOMAIN_OVERVIEW_OUTPUT env variable when set.",
+            )
+
+        rendered = tmp_output.read_text(encoding="utf-8")
+    finally:
+        tmp_output.unlink(missing_ok=True)
 
     placeholders = [
         f"line {i}: {line.strip()[:80]}"
