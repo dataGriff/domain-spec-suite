@@ -87,7 +87,7 @@ Listed in `gate.yaml`. Categories:
   - `EVENT-IN-DATACONTRACT`
   - `AUTH-MATRIX-OPENAPI-MATCH`
   - `ERROR-CODE-IN-CATALOGUE`
-  - `STORY-PERSONA-EXISTS`
+  - `PRD-STORY-PERSONA-LINK`
   - `LIFECYCLE-IN-FLOWS`
 
 Each check lives in `shared/checks/<id>.py` and exposes a `metadata`

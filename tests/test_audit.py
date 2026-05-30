@@ -57,7 +57,7 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "EVENT-IN-DATACONTRACT",
         "AUTH-MATRIX-OPENAPI-MATCH",
         "ERROR-CODE-IN-CATALOGUE",
-        "STORY-PERSONA-EXISTS",
+        "PRD-STORY-PERSONA-LINK",
         "LIFECYCLE-IN-FLOWS",
         "GENERATOR-CLEAN-OUTPUT",
     }
@@ -83,7 +83,7 @@ CHECK_MODULES = [
     "event_in_datacontract",
     "auth_matrix_openapi_match",
     "error_code_in_catalogue",
-    "story_persona_exists",
+    "prd_story_persona_link",
     "lifecycle_in_flows",
     "generator_clean_output",
 ]

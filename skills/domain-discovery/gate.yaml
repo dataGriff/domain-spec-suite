@@ -1,0 +1,36 @@
+phase: discovery
+description: |
+  Phase 1. Hard gate. Mechanical structural checks on `prd.md` plus
+  the cross-reference check that user stories name real personas.
+  Two rubric judgements (problem-statement-leads-with-pain, metrics-
+  are-realistic) live in SKILL.md prose — the agent emits them as
+  `rubric_findings:` per SUITE-DESIGN §5.5.
+
+prerequisites:
+  - phase: bootstrap
+    must_be: passed
+
+# Files whose sha256 sign_off.py records in _phase-1-passed.yaml on a
+# successful gate run. The audit's SIGNOFF-SHA256-MATCHES check
+# verifies these haven't drifted.
+signs_files:
+  - docs/specifications/prd.md
+
+# Reporting order: cheap shape checks first, then field-level checks
+# inside personas/stories, then the cross-reference.
+checks:
+  # Whole-document shape
+  - id: PRD-PROBLEM-USER-PAIN
+  - id: PRD-PERSONA-EXISTS
+  - id: PRD-NON-GOAL
+
+  # Per-persona field completeness
+  - id: PRD-PERSONA-GOAL
+  - id: PRD-PERSONA-FRUSTRATION
+
+  # Per-story field completeness + cross-reference
+  - id: PRD-STORY-ACCEPTANCE
+  - id: PRD-STORY-PERSONA-LINK
+
+  # Metrics measurability
+  - id: PRD-METRICS-MEASURABLE

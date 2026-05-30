@@ -60,4 +60,5 @@ markers = [
   "audit: tests for the domain-conformance-audit skill (M2.3)",
   "contracts: tests for the domain-contracts skill (M3.1, M3.2)",
   "discovery: tests for the domain-discovery skill (M4.2)",
+  "orchestrator: tests for the domain-orchestrator skill (M4.1)",
 ]

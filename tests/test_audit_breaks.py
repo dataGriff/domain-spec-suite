@@ -261,7 +261,7 @@ BREAKS = [
     Break(
         "user_story_with_nonexistent_persona",
         _user_story_nonexistent_persona,
-        "STORY-PERSONA-EXISTS",
+        "PRD-STORY-PERSONA-LINK",
         "wizard",
     ),
     Break(

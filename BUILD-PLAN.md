@@ -286,7 +286,7 @@ Sub-tasks:
   - `event_in_datacontract.py` — asyncapi ↔ contracts/datacontract
   - `auth_matrix_openapi_match.py` — auth-matrix ↔ openapi
   - `error_code_in_catalogue.py` — openapi responses ↔ error-catalogue
-  - `story_persona_exists.py` — prd stories ↔ prd personas
+  - `prd_story_persona_link.py` — prd stories ↔ prd personas
   - `lifecycle_in_flows.py` — domain-model lifecycles ↔ sequence-diagrams
   - `no_template_placeholders.py` — no `[Resource1]`, `[Domain]`, `{{`
   - `signoff_sha256_matches.py` — `_phase-N-passed.yaml` ↔ file sha256s
@@ -418,67 +418,65 @@ the `--force-advance` audit trail.
 in an empty directory and be walked through Bootstrap + Discovery, ending
 with a valid `prd.md`.
 
-### 4.1 Build the orchestrator — [ ]
+### 4.1 Build the orchestrator — [x]
 
-- [ ] Create `skills/domain-orchestrator/SKILL.md`. Description triggers on
+- [x] Create `skills/domain-orchestrator/SKILL.md`. Description triggers on
   starting any spec work or being invoked by name.
-- [ ] Implement state reading: parse `_progress.yaml`, identify current
-  phase, identify staleness.
-- [ ] Implement phase routing: prompt user with phase description and
-  confirmation, hand off to phase skill, accept sign-off, prompt for next
-  phase.
-- [ ] Implement update mode (Section 6 of SUITE-DESIGN.md): on detecting
-  staleness, present the three options and route accordingly.
-- [ ] Stub-friendly: phase skills not yet implemented should be invoked
-  gracefully and the orchestrator should handle "phase not yet implemented"
-  responses by reporting honestly to the user.
+- [x] Implement state reading via `scripts/orchestrator_status.py` — the
+  script is the single mechanical-enforcement path (sha256-based
+  staleness per §6); SKILL.md instructs the agent to invoke it via
+  `task suite:status -- --json` and render in §7 voice.
+- [x] Implement phase routing: SKILL.md walks each `next_action` value
+  (bootstrap / start / resume / update-mode / accept-force-advances /
+  not-implemented / complete) and prescribes the prompt+handoff.
+- [x] Implement update mode (Section 6 of SUITE-DESIGN.md): on stale
+  detection, present the three options and route accordingly.
+- [x] Stub-friendly: phases without skills surface as `not-implemented`
+  so the agent tells the user honestly rather than routing into a stub.
 
 **Exit criterion:** Running the orchestrator in a bootstrapped-but-otherwise-
 empty domain repo correctly prompts to begin Phase 1.
+**Status:** ✅ verified by `tests/test_orchestrator.py` (fresh repo →
+bootstrap; post-bootstrap → discovery; modified PRD → update-mode;
+force-advance → accept-force-advances; un-implemented phase → not-
+implemented; full Items fixture → complete).
 
-### 4.2 Build the discovery skill — [ ]
+### 4.2 Build the discovery skill — [x]
 
 This is the most design-heavy skill because the question bank drives PRD
 elicitation quality.
 
-- [ ] Create `skills/domain-discovery/SKILL.md`. Include a `## Rubric
-  checks` section with prose for the two Phase 1 rubric rules (problem
-  statement describes user pain rather than solution; success metrics are
-  measurable rather than aspirational). See SUITE-DESIGN §5.5 for how
-  the agent emits `rubric_findings:` from this prose.
-- [ ] Create `skills/domain-discovery/gate.yaml` referencing the
-  structural check ids listed in SUITE-DESIGN §8 Phase 1
-  (`PRD-PROBLEM-USER-PAIN`, `PRD-PERSONA-EXISTS`, `PRD-PERSONA-GOAL`,
-  `PRD-PERSONA-FRUSTRATION`, `PRD-NON-GOAL`, `PRD-STORY-ACCEPTANCE`,
-  `PRD-STORY-PERSONA-LINK`, `PRD-METRICS-MEASURABLE`). Author the
-  corresponding modules under `skills/domain-discovery/checks/` (these
-  are phase-local — they only run in Discovery; the audit re-runs them
-  via the shared signoff/cross-ref modules).
-- [ ] Create `skills/domain-discovery/questions.md` per the rich schema in
-  SUITE-DESIGN §7.5 — one entry per gate-check id. The
-  `PRD-PERSONA-FRUSTRATION` example in §7.5 is the template. Coverage is
-  enforced by a build-time check that fails if any check id is missing
-  a question. ~10 questions total for Phase 1.
-- [ ] Implement the loop per SUITE-DESIGN §5:
-  - Load `prd.md` if exists, else copy from template
-  - Run checks, collect failures
-  - Evaluate the rubric checks from SKILL.md prose, emit findings
-  - For each failure/finding, look up the question by `binds_to_check`
-  - Ask `lead_in`; on vague answers, walk the `probes` in order; if still
-    vague after two probes, route to defer/n-a
-  - Reflect-before-writing using `reflect_template`, apply edit, re-run
-    checks
-  - When all checks pass and every warning/finding has a response,
-    invoke `shared/sign_off.py` (which writes the sidecar)
-- [ ] Implement reflect-before-writing for structural changes
-  (adding/removing personas, stories, metrics). Trivial edits (typo fixes)
-  can be quiet writes.
+- [x] Create `skills/domain-discovery/SKILL.md` with a `## Rubric checks`
+  section carrying the two Phase 1 rubric rules
+  (`RUBRIC-PROBLEM-USER-PAIN`, `RUBRIC-METRICS-MEASURABLE`). Prose
+  describes the pass/warn conditions; SUITE-DESIGN §5.5 governs how
+  the agent emits findings into `_phase-1-passed.yaml`.
+- [x] `skills/domain-discovery/gate.yaml` references the 8 structural
+  check ids from SUITE-DESIGN §8 Phase 1. Six modules live under
+  `skills/domain-discovery/checks/` (phase-local); `PRD-STORY-PERSONA-LINK`
+  is the shared cross-reference module (also re-run by audit).
+- [x] `skills/domain-discovery/questions.md` carries one rich-schema
+  entry per gate-check id. Coverage is enforced by
+  `scripts/check_questions_coverage.py`, wired into `task lint`.
+- [x] Loop spec lives in SKILL.md (load PRD → init from template if
+  absent → run gate → for each failure look up question by
+  `binds_to_check` → ask `lead_in` → probes if vague → reflect →
+  re-run → sign off when clean). The interactive loop is the agent's
+  responsibility at runtime; the mechanical pieces (gate, sign-off,
+  template copy) are all Python.
+- [x] Reflect-before-writing is documented as the §7 Hard Rule 3
+  contract; SKILL.md instructs the agent never to silently write
+  after a free-text answer.
 
 **Exit criterion:** Starting from an empty bootstrapped repo, the
 orchestrator + discovery skill can drive a user through producing a valid
 `prd.md` that passes Phase 1's hard gate. Test on a new domain (not Items —
 choose something different to avoid overfitting). Confirm `rubric_findings:`
 appear in the resulting `_phase-1-passed.yaml` with the user's responses.
+**Status:** ✅ machine-verified by `tests/test_discovery.py` (gate passes
+against Items, every BUILD-PLAN id appears in gate + questions, 8
+deliberate breaks each fail their expected check). End-to-end on a
+non-Items domain is the M4.3 / 🛑 review demo.
 
 ### 4.3 Test resumption — [ ]
 

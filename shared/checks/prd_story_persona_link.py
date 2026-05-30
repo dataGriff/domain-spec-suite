@@ -20,7 +20,7 @@ from shared.spec_parsers import (
 )
 
 metadata = {
-    "id": "STORY-PERSONA-EXISTS",
+    "id": "PRD-STORY-PERSONA-LINK",
     "category": "cross-reference",
     "phases": ["discovery", "audit"],
     "severity_by_phase": {"discovery": "error", "audit": "error"},

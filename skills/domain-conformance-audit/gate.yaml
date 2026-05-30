@@ -29,7 +29,7 @@ checks:
   - id: ERROR-CODE-IN-CATALOGUE
 
   # PRD <-> downstream alignment
-  - id: STORY-PERSONA-EXISTS
+  - id: PRD-STORY-PERSONA-LINK
   - id: LIFECYCLE-IN-FLOWS
 
   # Generator output (runs last — it's the heaviest)
