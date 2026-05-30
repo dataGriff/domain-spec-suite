@@ -72,6 +72,63 @@ def test_discovery_gate_passes_against_items_fixture() -> None:
     assert failures == []
 
 
+# ── per-repo persona allow-list extension ────────────────────────
+
+
+def test_persona_allow_list_extension_passes_otherwise_unknown_actor(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Adding an actor to docs/specifications/_persona_allow_list.yaml
+    lets PRD-STORY-PERSONA-LINK accept stories that name it."""
+    target = tmp_path / "items"
+    shutil.copytree(ITEMS_FIXTURE, target)
+    prd = target / "docs/specifications/prd.md"
+    text = prd.read_text()
+
+    # Inject a story whose actor is a domain-specific pre-onboarding
+    # role the baseline doesn't know about.
+    insertion = (
+        "\n#### US-999: A wandering bard requests a song\n\n"
+        "**As a** wandering bard,\n"
+        "**I want to** request a song,\n"
+        "**So that** I can practice my craft.\n\n"
+        "**Acceptance Criteria:**\n"
+        "- Bard receives a song\n"
+    )
+    new_text = text.replace(
+        "## Constraints",
+        insertion + "\n## Constraints",
+        1,
+    )
+    prd.write_text(new_text)
+
+    # Without the allow-list, the check should fail on the bard.
+    exit_code, outcomes = run_phase.run_phase("discovery", target)
+    assert exit_code != 0
+    failures = [o for o in outcomes if not o.passed and not o.skipped]
+    assert any(o.id == "PRD-STORY-PERSONA-LINK" for o in failures)
+
+    # Add the allow-list and re-run; check passes.
+    allow_list = target / "docs/specifications/_persona_allow_list.yaml"
+    allow_list.write_text("pre_onboarding_actors:\n  - wandering bard\n")
+    exit_code, outcomes = run_phase.run_phase("discovery", target)
+    failures = [o for o in outcomes if not o.passed and not o.skipped]
+    assert exit_code == 0, "with allow-list, discovery gate should pass; failures: " + ", ".join(
+        f.id for f in failures
+    )
+
+
+def test_persona_allow_list_missing_file_is_fine(tmp_path: pathlib.Path) -> None:
+    """No _persona_allow_list.yaml → baseline GENERIC_ACTORS apply →
+    fixture still passes (it does already, but assert it explicitly)."""
+    target = tmp_path / "items"
+    shutil.copytree(ITEMS_FIXTURE, target)
+    allow = target / "docs/specifications/_persona_allow_list.yaml"
+    assert not allow.exists(), "fixture should not carry an allow-list"
+    exit_code, _ = run_phase.run_phase("discovery", target)
+    assert exit_code == 0
+
+
 # ── deliberate breaks ─────────────────────────────────────────────
 
 

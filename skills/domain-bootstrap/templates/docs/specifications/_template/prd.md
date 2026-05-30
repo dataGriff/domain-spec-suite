@@ -1,7 +1,8 @@
 # Product Requirements Document
 
-> **Template placeholder.** Replace this file with your domain's PRD.  
-> Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/`.
+> **Template placeholder.** Do not edit in place. The suite's discovery
+> skill copies this into `docs/specifications/prd.md` when Phase 1
+> starts (or run `task domain:init` to copy every template at once).
 
 ---
 

@@ -1,7 +1,9 @@
 # Domain Model
 
-> **Template placeholder.** Replace this file with your domain's model.  
-> Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/`.
+> **Template placeholder.** Do not edit in place. The suite's modeling
+> skill copies this into `docs/specifications/domain-model.md` when
+> Phase 2 starts (or run `task domain:init` to copy every template at
+> once).
 
 ---
 

@@ -3,8 +3,10 @@ info:
   title: "[Domain Name] Events"
   version: 1.0.0
   description: |
-    > **Template placeholder.** Replace this file with your domain's AsyncAPI contract.
-    > Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/contracts/`.
+    > **Template placeholder.** Do not edit in place. The suite's
+    > contracts skill copies this into
+    > `docs/specifications/contracts/asyncapi.yaml` when Phase 6 starts
+    > (or run `task domain:init` to copy every template at once).
 
     Domain event contract for the **[Domain Name]** domain.
 

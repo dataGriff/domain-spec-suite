@@ -1,7 +1,9 @@
 # Auth Matrix
 
-> **Template placeholder.** Replace this file with your domain's auth matrix.  
-> Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/`.
+> **Template placeholder.** Do not edit in place. The suite's
+> access-control skill copies this into
+> `docs/specifications/auth-matrix.md` when Phase 3 starts (or run
+> `task domain:init` to copy every template at once).
 
 ---
 

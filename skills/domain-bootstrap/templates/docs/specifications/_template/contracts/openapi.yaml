@@ -2,8 +2,10 @@ openapi: 3.0.3
 info:
   title: "[Domain Name] API"
   description: |
-    > **Template placeholder.** Replace this file with your domain's OpenAPI contract.
-    > Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/contracts/`.
+    > **Template placeholder.** Do not edit in place. The suite's
+    > contracts skill copies this into
+    > `docs/specifications/contracts/openapi.yaml` when Phase 6 starts
+    > (or run `task domain:init` to copy every template at once).
 
     REST API for the **[Domain Name]** domain.
 

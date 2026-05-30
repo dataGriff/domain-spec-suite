@@ -139,6 +139,96 @@ def test_sign_off_force_advance_writes_sidecar_and_records_bypass(tmp_path: path
     assert entry["accepted"] is False
 
 
+# ── sign_off findings interface ──────────────────────────────────
+
+
+def test_sign_off_accepts_rubric_findings_and_warnings(tmp_path: pathlib.Path) -> None:
+    """sign_off(rubric_findings=..., warnings_responded=...) writes
+    them verbatim into the sidecar, stamping `ts` for any entry that
+    doesn't carry one."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    rc = sign_off.sign_off(
+        "contracts",
+        target,
+        rubric_findings=[
+            {
+                "id": "RUBRIC-DEMO",
+                "verdict": "warn",
+                "detail": "demo finding",
+                "response": "resolved",
+                "reason": "agent fixed it",
+                # no ts — sign_off should stamp it
+            }
+        ],
+        warnings_responded=[
+            {
+                "id": "DEMO-WARN",
+                "response": "deferred",
+                "reason": "follow-up ticketed",
+                "required_by": "audit",
+                "ts": "2026-01-01T00:00:00Z",  # explicit ts preserved
+            }
+        ],
+    )
+    assert rc == 0
+
+    doc = yaml.safe_load(sidecar.read_text())
+    assert len(doc["rubric_findings"]) == 1
+    assert doc["rubric_findings"][0]["id"] == "RUBRIC-DEMO"
+    assert doc["rubric_findings"][0]["response"] == "resolved"
+    assert doc["rubric_findings"][0]["ts"], "sign_off must stamp ts when absent"
+
+    assert len(doc["warnings_responded"]) == 1
+    assert doc["warnings_responded"][0]["id"] == "DEMO-WARN"
+    assert doc["warnings_responded"][0]["ts"] == "2026-01-01T00:00:00Z", (
+        "sign_off must preserve an explicit ts"
+    )
+
+
+def test_sign_off_findings_yaml_round_trip(tmp_path: pathlib.Path) -> None:
+    """The --findings CLI loader produces the same shape as the Python
+    API. Covers the YAML round-trip the agent uses when running the
+    skill end-to-end."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    findings_path = tmp_path / "findings.yaml"
+    findings_path.write_text(
+        yaml.safe_dump(
+            {
+                "rubric_findings": [
+                    {
+                        "id": "RUBRIC-CLI",
+                        "verdict": "pass",
+                        "detail": "via CLI",
+                        "response": "resolved",
+                        "reason": "ok",
+                    }
+                ],
+                "warnings_responded": [],
+            }
+        )
+    )
+
+    rc = sign_off.main(["contracts", "--repo", str(target), "--findings", str(findings_path)])
+    assert rc == 0
+    doc = yaml.safe_load(sidecar.read_text())
+    assert doc["rubric_findings"][0]["id"] == "RUBRIC-CLI"
+    assert doc["warnings_responded"] == []
+
+
+def test_sign_off_rejects_malformed_findings_file(tmp_path: pathlib.Path) -> None:
+    target = _copy_fixture(tmp_path)
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("- just\n- a\n- list\n")  # top-level list, not mapping
+    rc = sign_off.main(["contracts", "--repo", str(target), "--findings", str(bad)])
+    assert rc == 2
+
+
 # ── force-advance / accept-force scripts ─────────────────────────
 
 

@@ -80,8 +80,39 @@ def _files_signed(repo: pathlib.Path, gate: dict) -> list[dict]:
     return entries
 
 
-def _record_phase_passed(repo: pathlib.Path, phase: str, gate: dict) -> pathlib.Path:
-    """Write the sidecar. Returns the path written."""
+def _stamp_ts(entries: list[dict]) -> list[dict]:
+    """Fill in `ts` for any entry that doesn't carry one. The agent
+    supplies the verdict and rationale; sign_off owns the timestamp so
+    every entry is anchored to the sign-off moment."""
+    stamped: list[dict] = []
+    now = _now()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError(f"sign_off: findings entry must be a mapping, got {entry!r}")
+        out = dict(entry)
+        out.setdefault("ts", now)
+        stamped.append(out)
+    return stamped
+
+
+def _record_phase_passed(
+    repo: pathlib.Path,
+    phase: str,
+    gate: dict,
+    *,
+    rubric_findings: list[dict] | None = None,
+    warnings_responded: list[dict] | None = None,
+) -> pathlib.Path:
+    """Write the sidecar. Returns the path written.
+
+    `rubric_findings` and `warnings_responded` are the agent's record of
+    the rubric pass and the soft-gate engagement loop, respectively.
+    Both default to an empty list — that's correct for hard-gate phases
+    with no rubric (bootstrap, audit) and acceptable for hard-gate
+    phases whose rubric findings are all `pass` and not surfaced to the
+    user, but the agent SHOULD pass them through any time it evaluated
+    a rubric (per SUITE-DESIGN §5.5).
+    """
     sidecar = _sidecar_path(repo, phase)
     sidecar.parent.mkdir(parents=True, exist_ok=True)
     sidecar_doc = {
@@ -89,8 +120,8 @@ def _record_phase_passed(repo: pathlib.Path, phase: str, gate: dict) -> pathlib.
         "signed_off_at": _now(),
         "gate_version": GATE_VERSION,
         "checks_passed": [entry["id"] for entry in gate.get("checks", [])],
-        "warnings_responded": [],
-        "rubric_findings": [],
+        "warnings_responded": _stamp_ts(warnings_responded or []),
+        "rubric_findings": _stamp_ts(rubric_findings or []),
         "files_signed": _files_signed(repo, gate),
     }
     sidecar.write_text(yaml.safe_dump(sidecar_doc, sort_keys=False), encoding="utf-8")
@@ -137,7 +168,14 @@ def _append_force_advance(repo: pathlib.Path, phase: str, reason: str) -> None:
 # ── main orchestration ──────────────────────────────────────────
 
 
-def sign_off(phase: str, repo: pathlib.Path, *, force_advance: str | None = None) -> int:
+def sign_off(
+    phase: str,
+    repo: pathlib.Path,
+    *,
+    force_advance: str | None = None,
+    rubric_findings: list[dict] | None = None,
+    warnings_responded: list[dict] | None = None,
+) -> int:
     gate = run_phase.load_gate(phase)
 
     if force_advance is None:
@@ -165,10 +203,42 @@ def sign_off(phase: str, repo: pathlib.Path, *, force_advance: str | None = None
             file=sys.stderr,
         )
 
-    sidecar = _record_phase_passed(repo, phase, gate)
+    sidecar = _record_phase_passed(
+        repo,
+        phase,
+        gate,
+        rubric_findings=rubric_findings,
+        warnings_responded=warnings_responded,
+    )
     _bump_progress(repo, phase)
     print(f"sign-off written: {sidecar.relative_to(repo)}")
     return 0
+
+
+def _load_findings_file(path: pathlib.Path) -> tuple[list[dict], list[dict]]:
+    """Load rubric_findings + warnings_responded from a YAML file the
+    agent writes before invoking sign_off. Returns ([], []) on missing
+    file. Validates shape: top-level must be a mapping with at most
+    those two keys."""
+    if not path.is_file():
+        raise FileNotFoundError(f"sign_off: --findings file does not exist: {path}")
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"sign_off: --findings file must contain a YAML mapping, got {type(data).__name__}"
+        )
+    allowed = {"rubric_findings", "warnings_responded"}
+    extra = set(data.keys()) - allowed
+    if extra:
+        raise ValueError(
+            f"sign_off: --findings file has unknown keys {sorted(extra)}; "
+            f"only {sorted(allowed)} are accepted"
+        )
+    rf = data.get("rubric_findings") or []
+    wr = data.get("warnings_responded") or []
+    if not isinstance(rf, list) or not isinstance(wr, list):
+        raise ValueError("sign_off: rubric_findings and warnings_responded must be YAML lists")
+    return rf, wr
 
 
 # ── CLI ──────────────────────────────────────────────────────────
@@ -189,6 +259,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--reason",
         help="Required when --force-advance is set; recorded on the entry.",
     )
+    parser.add_argument(
+        "--findings",
+        help=(
+            "Path to a YAML file with `rubric_findings:` and/or "
+            "`warnings_responded:` keys. Written into the sidecar verbatim "
+            "(sign_off only stamps `ts` if absent). Use this to record "
+            "the agent's rubric verdicts and soft-gate engagement responses."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -206,7 +285,24 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         force_advance_reason = args.reason
 
-    return sign_off(args.phase, repo, force_advance=force_advance_reason)
+    rubric_findings: list[dict] | None = None
+    warnings_responded: list[dict] | None = None
+    if args.findings:
+        try:
+            rubric_findings, warnings_responded = _load_findings_file(
+                pathlib.Path(args.findings).resolve()
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+    return sign_off(
+        args.phase,
+        repo,
+        force_advance=force_advance_reason,
+        rubric_findings=rubric_findings,
+        warnings_responded=warnings_responded,
+    )
 
 
 if __name__ == "__main__":

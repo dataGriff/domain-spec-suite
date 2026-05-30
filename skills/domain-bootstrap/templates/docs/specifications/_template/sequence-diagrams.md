@@ -1,7 +1,9 @@
 # Sequence Diagrams
 
-> **Template placeholder.** Replace this file with your domain's sequence diagrams.  
-> Run `task domain:init` to copy this template, then edit the copy in `docs/specifications/`.
+> **Template placeholder.** Do not edit in place. The suite's flows
+> skill copies this into `docs/specifications/sequence-diagrams.md`
+> when Phase 4 starts (or run `task domain:init` to copy every template
+> at once).
 
 ---
 

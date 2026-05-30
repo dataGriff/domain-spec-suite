@@ -3,15 +3,28 @@ persona, a known role, or a recognised pre-onboarding actor.
 
 Personas are taken from the PRD itself (`### Heading` lines under
 `## Target Users / Personas`). Roles are extracted from the role enum
-in `domain-model.md`. A small allow-list of pre-onboarding actors
-("new team member", "registered user", etc.) is also permitted —
-these cover authentication stories where the user has no role yet.
+in `domain-model.md`. A small baseline allow-list of pre-onboarding
+actors ("new team member", "registered user", etc.) covers
+authentication stories where the user has no role yet.
+
+Domain-specific actors that the suite can't anticipate (e.g. "new
+patient" in a healthcare domain) can be added per-repo via
+`docs/specifications/_persona_allow_list.yaml`:
+
+    pre_onboarding_actors:
+      - new patient
+      - referring physician
+
+The list there is merged with the baseline. Missing or empty file is
+fine — only the baseline applies.
 """
 
 from __future__ import annotations
 
 import pathlib
 import re
+
+import yaml
 
 from shared.check_result import CheckResult
 from shared.spec_parsers import (
@@ -53,6 +66,20 @@ GENERIC_ACTORS = {
 }
 
 
+def _local_allow_list(repo_root: pathlib.Path) -> set[str]:
+    """Load the per-repo allow-list of pre-onboarding actors. Missing
+    file or missing key both return an empty set — the baseline
+    GENERIC_ACTORS still applies."""
+    path = repo_root / "docs" / "specifications" / "_persona_allow_list.yaml"
+    if not path.is_file():
+        return set()
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    extras = data.get("pre_onboarding_actors") or []
+    if not isinstance(extras, list):
+        return set()
+    return {str(entry).strip().lower() for entry in extras if str(entry).strip()}
+
+
 def _roles_from_domain_model(domain_model: pathlib.Path) -> set[str]:
     """Best-effort extraction of role enum values from domain-model.md.
     Looks for `role` rows in attribute tables whose Description column
@@ -86,7 +113,8 @@ def run(repo_root: pathlib.Path) -> CheckResult:
 
     personas = {p.lower() for p in prd_persona_names(prd)}
     roles = {r.lower() for r in _roles_from_domain_model(domain_model)}
-    accepted = personas | roles | GENERIC_ACTORS
+    local_extras = _local_allow_list(repo_root)
+    accepted = personas | roles | GENERIC_ACTORS | local_extras
 
     problems: list[str] = []
     for block in prd_user_story_blocks(prd):
@@ -111,6 +139,10 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         "User stories name actors that aren't defined as personas in "
         "prd.md, roles in domain-model.md, or recognised pre-onboarding "
         "actors. For each story below, what persona is performing the "
-        "action — and is it one that's already declared in the PRD?",
+        "action — and is it one that's already declared in the PRD? "
+        "If the actor is genuinely a domain-specific pre-onboarding "
+        "role (e.g. 'new patient'), add it to "
+        "`docs/specifications/_persona_allow_list.yaml` under "
+        "`pre_onboarding_actors:`.",
         details=problems,
     )
