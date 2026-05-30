@@ -27,10 +27,10 @@ task docs:serve    # browse the docs site locally
 |------|----------|
 | Product + domain requirements | `docs/specifications/*.md` |
 | API / event / data contracts | `docs/specifications/contracts/*.yaml` |
-| Implementation conformance guidance | `.github/instructions/api-implementation.instructions.md` |
 | Blank spec templates | `docs/specifications/_template/` |
 | Contract linting + docs tasks | `Taskfile.yml` |
-| Published docs config | `mkdocs.yml`, `docs/`, `.github/workflows/audit.yml` |
+| Published docs config | `mkdocs.yml`, `docs/`, `.github/workflows/docs.yml` |
+| PR-time conformance audit | `.github/workflows/audit.yml` |
 
 ---
 

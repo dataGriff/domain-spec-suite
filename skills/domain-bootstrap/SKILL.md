@@ -36,14 +36,19 @@ A populated repository shell containing:
   `.mise.toml`, `.gitignore`
 - `README.md`, `mkdocs.yml`, `docs/index.md` (interpolated for the
   target domain)
-- `docs/CLAUDE.md`, root `CLAUDE.md`, `AGENTS.md`,
-  `.github/instructions/*.md`, `.github/CODEOWNERS`
+- `.github/CODEOWNERS`
 - `.githooks/pre-commit`, `.githooks/pre-push` (executable)
 - `.github/workflows/audit.yml` (Tier 3 conformance check on PRs)
 - `.github/workflows/docs.yml` (deploys the MkDocs site + generated
   domain overview to GitHub Pages on every push to main, so the
   spec set is shareable as soon as it has merged)
 - `scripts/generate_domain_overview.py`
+
+**The bootstrap deliberately ships no agent guidance files** (no
+`CLAUDE.md`, no `AGENTS.md`, no `.github/instructions/*.md`). All
+spec-set changes go through the suite's orchestrator and phase
+skills — those are the only sanctioned interface. A bootstrapped
+domain repo is intentionally a slate that the skills drive.
 - `docs/specifications/_template/*` (blank skeletons for every spec the
   later phases will populate)
 - `docs/specifications/_progress.yaml` (Phase 0 marked passed,

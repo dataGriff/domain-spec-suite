@@ -158,15 +158,22 @@ Bootstrap produces:
 - Generator script (`scripts/generate_domain_overview.py`)
 - `.gitignore`
 - `.githooks/pre-commit` and `.githooks/pre-push` (Section 9)
-- `.github/workflows/audit.yml` (Section 9)
-- `AGENTS.md` and `.github/instructions/*.md` (instruction files for
-  agents working on the domain repo after the suite has produced it)
+- `.github/workflows/audit.yml` (Section 9, PR-time conformance audit)
+- `.github/workflows/docs.yml` (Section 9, GitHub Pages deploy on push to main)
+- `.github/CODEOWNERS`
 - Empty `_progress.yaml` with Phase 0 marked complete and Phase 1 ready
 - `_bootstrap.yaml` recording the suite and gate versions that produced
   the shell
 - `_template_manifest.yaml` listing every file bootstrap owns (used by
   `--force` re-bootstrap and `task suite:upgrade-shell` to know what may
   be overwritten)
+
+Bootstrap **deliberately ships no agent guidance files** — no
+`CLAUDE.md`, no `AGENTS.md`, no `.github/instructions/*.md`. The
+suite's orchestrator and phase skills are the only sanctioned interface
+for spec-set changes. A bootstrapped domain repo is intentionally a
+slate that the skills drive; agent guidance lives in the suite's
+`skills/*/SKILL.md` files, not in the target repo.
 
 After Bootstrap, the orchestrator immediately prompts to start Phase 1.
 

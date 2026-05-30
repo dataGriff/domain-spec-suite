@@ -32,10 +32,9 @@ nav:
     - Non-Functional Requirements: specifications/nfr.md
     - Acceptance Scenarios: specifications/acceptance-scenarios.md
 
-# Files under docs/ that exist for agent or suite-internal purposes
-# and should not appear in the rendered site.
+# Suite-internal state files under docs/ that should not appear in the
+# rendered site.
 exclude_docs: |
-  CLAUDE.md
   specifications/_ambiguities.md
   specifications/_bootstrap.yaml
   specifications/_progress.yaml

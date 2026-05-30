@@ -229,18 +229,20 @@ Sub-tasks:
   - `README.md.template` (with `{{domain_name}}` placeholder)
   - `mkdocs.yml.template`
   - `docs/index.md.template`
-  - `docs/specifications/_template/*` (the blank spec templates)
+  - `docs/specifications/_template/*` (the blank spec templates,
+    including glossary/error-catalogue/nfr/acceptance-scenarios
+    skeletons added in M2.0)
   - `scripts/generate_domain_overview.py`
   - `.githooks/pre-commit`
   - `.githooks/pre-push` (authored in 2.0)
   - `.github/workflows/audit.yml` (authored in 2.0)
+  - `.github/workflows/docs.yml` (GitHub Pages deploy)
   - `.github/CODEOWNERS`
-  - `AGENTS.md`
-  - Instruction files — mirror whatever survives the 2.0 reconciliation
-    of `domain-api-template/.github/instructions/`. By default this is
-    `specs.instructions.md`, `api-implementation.instructions.md`,
-    `taskfile.instructions.md`, and optionally
-    `domain-template.instructions.md` if 2.0 kept it.
+- **Deliberate omissions: no agent guidance files.** The bootstrap does
+  *not* install `CLAUDE.md`, `AGENTS.md`, or `.github/instructions/*.md`.
+  This is the "strict skill-only" stance — the orchestrator and phase
+  skills are the only sanctioned interface for spec-set changes. See
+  SUITE-DESIGN §2 "Phase 0: Bootstrap specifics" for the rationale.
 - [ ] Author `skills/domain-bootstrap/template_manifest.yaml` listing
   every file the bootstrap owns (path + expected sha256). The bootstrap's
   `--force` re-run consults this manifest to decide what may be
