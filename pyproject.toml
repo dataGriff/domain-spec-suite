@@ -1,0 +1,58 @@
+[project]
+name = "domain-spec-suite"
+version = "1.0.0a0"
+description = "A suite of Claude skills that drives a user from idea to a complete, implementation-agnostic domain spec set."
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+
+dependencies = [
+  "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[build-system]
+# No build backend — the suite is consumed via Claude Skills + Taskfile,
+# not as a published pip package. Listed here so pip recognises the
+# project metadata for editable installs of dev dependencies.
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# We don't ship Python packages from this repo — only scripts and
+# skill manifests. Suppress auto-discovery so pip install -e . doesn't
+# complain about "multiple top-level packages found".
+py-modules = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+  "SIM", # flake8-simplify
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+  "bootstrap: tests for the domain-bootstrap skill (M2.2)",
+  "audit: tests for the domain-conformance-audit skill (M2.3)",
+  "contracts: tests for the domain-contracts skill (M3.1, M3.2)",
+  "discovery: tests for the domain-discovery skill (M4.2)",
+]

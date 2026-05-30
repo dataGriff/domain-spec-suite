@@ -1,0 +1,6 @@
+# Gate version. Bumped when check semantics change (new check, removed
+# check, changed pass/fail criteria). Affects whether existing spec
+# sets are considered "current". Every bump requires a matching entry
+# in gate-changelog.md per SUITE-DESIGN §10.
+# Format: major.minor.
+gate_version: "1.0"

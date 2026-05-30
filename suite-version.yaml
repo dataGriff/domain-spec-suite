@@ -1,0 +1,4 @@
+# Suite version. Bumped for bug fixes, prompting improvements, template
+# tweaks. Does not affect existing spec sets (gate-version does).
+# Format: SemVer (with pre-release suffixes allowed).
+suite_version: "1.0.0-alpha"

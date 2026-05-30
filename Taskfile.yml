@@ -1,0 +1,88 @@
+version: '3'
+
+# Suite-internal Taskfile. These tasks run inside the domain-spec-suite
+# repo itself (the build). They are distinct from the Taskfile the
+# suite *installs* into a bootstrapped domain repo (which carries
+# `task gate:<phase>`, `task audit`, etc.).
+
+vars:
+  PYTHON: '{{.PYTHON | default "python"}}'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  # ── Environment ──────────────────────────────────────────────────
+
+  setup:
+    desc: Install mise tooling and Python dev dependencies (run once after cloning)
+    cmds:
+      - mise install
+      - "{{.PYTHON}} -m pip install -e .[dev]"
+
+  # ── Quality ──────────────────────────────────────────────────────
+
+  lint:
+    desc: Ruff lint + format check across the suite's own Python
+    cmds:
+      - ruff check .
+      - ruff format --check .
+
+  format:
+    desc: Apply ruff formatting
+    cmds:
+      - ruff format .
+
+  test:
+    desc: Run the full pytest suite
+    cmds:
+      - pytest
+
+  test:bootstrap:
+    desc: Tests for the bootstrap skill (stub — implemented in BUILD-PLAN Task 2.2)
+    cmds:
+      - pytest -m bootstrap
+
+  test:audit:
+    desc: Tests for the audit skill (stub — implemented in BUILD-PLAN Task 2.3)
+    cmds:
+      - pytest -m audit
+
+  # ── Fixtures ─────────────────────────────────────────────────────
+
+  fixtures:reset:
+    desc: Reset test fixtures to their canonical state (stub — populated in BUILD-PLAN Task 2.3)
+    cmds:
+      - echo "stub — fixtures will be wired up when tests/fixtures/items/ exists (BUILD-PLAN Task 2.3)"
+
+  fixtures:seed-signoffs:
+    desc: Regenerate sha256s in every tests/fixtures/*/docs/specifications/_phase-*-passed.yaml against current file contents
+    cmds:
+      - "{{.PYTHON}} scripts/seed_signoffs.py"
+
+  # ── Suite operator commands (wrappers around scripts/) ──────────
+  # These act on a target domain repo (current working directory by
+  # default, or --repo <path>). Most are stubs until the relevant
+  # implementation milestone.
+
+  suite:force-advance:
+    desc: Force-advance a phase, recording reason in _progress.yaml force_advances (stub — Task 3.2)
+    cmds:
+      - echo "stub — see BUILD-PLAN Task 3.2; will call scripts/force_advance.py"
+
+  suite:accept-force:
+    desc: Mark a force_advances entry as accepted so the audit can clear it (stub — Task 3.2)
+    cmds:
+      - echo "stub — see BUILD-PLAN Task 3.2; will call scripts/accept_force.py"
+
+  suite:upgrade-shell:
+    desc: Manifest-aware re-bootstrap that preserves spec content (stub — Task 2.2)
+    cmds:
+      - echo "stub — see BUILD-PLAN Task 2.2; will call scripts/upgrade_shell.py"
+
+  suite:reset-phase:
+    desc: Delete a phase's sign-off file and outputs so the phase can be re-run from scratch (stub)
+    cmds:
+      - echo "stub — see SUITE-DESIGN §11; will call scripts/reset_phase.py"
