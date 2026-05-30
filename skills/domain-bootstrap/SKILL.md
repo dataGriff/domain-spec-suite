@@ -39,7 +39,10 @@ A populated repository shell containing:
 - `docs/CLAUDE.md`, root `CLAUDE.md`, `AGENTS.md`,
   `.github/instructions/*.md`, `.github/CODEOWNERS`
 - `.githooks/pre-commit`, `.githooks/pre-push` (executable)
-- `.github/workflows/audit.yml`
+- `.github/workflows/audit.yml` (Tier 3 conformance check on PRs)
+- `.github/workflows/docs.yml` (deploys the MkDocs site + generated
+  domain overview to GitHub Pages on every push to main, so the
+  spec set is shareable as soon as it has merged)
 - `scripts/generate_domain_overview.py`
 - `docs/specifications/_template/*` (blank skeletons for every spec the
   later phases will populate)
