@@ -142,10 +142,11 @@ def test_sign_off_force_advance_writes_sidecar_and_records_bypass(tmp_path: path
 # ── sign_off findings interface ──────────────────────────────────
 
 
-def test_sign_off_accepts_rubric_findings_and_warnings(tmp_path: pathlib.Path) -> None:
-    """sign_off(rubric_findings=..., warnings_responded=...) writes
-    them verbatim into the sidecar, stamping `ts` for any entry that
-    doesn't carry one."""
+def test_sign_off_accepts_rubric_findings(tmp_path: pathlib.Path) -> None:
+    """sign_off(rubric_findings=...) writes them verbatim into the
+    sidecar, stamping `ts` for any entry that doesn't carry one.
+    Warning-engagement is covered by tests/test_soft_gate.py — contracts
+    is a hard-gate phase with no warnings to address."""
     target = _copy_fixture(tmp_path)
     sidecar = _sidecar_path(target)
     sidecar.unlink()
@@ -155,37 +156,31 @@ def test_sign_off_accepts_rubric_findings_and_warnings(tmp_path: pathlib.Path) -
         target,
         rubric_findings=[
             {
-                "id": "RUBRIC-DEMO",
+                "id": "RUBRIC-DEMO-NO-TS",
                 "verdict": "warn",
-                "detail": "demo finding",
+                "detail": "demo finding without ts",
                 "response": "resolved",
                 "reason": "agent fixed it",
                 # no ts — sign_off should stamp it
-            }
-        ],
-        warnings_responded=[
+            },
             {
-                "id": "DEMO-WARN",
-                "response": "deferred",
-                "reason": "follow-up ticketed",
-                "required_by": "audit",
-                "ts": "2026-01-01T00:00:00Z",  # explicit ts preserved
-            }
+                "id": "RUBRIC-DEMO-EXPLICIT-TS",
+                "verdict": "pass",
+                "detail": "demo finding with explicit ts",
+                "response": "resolved",
+                "reason": "agent verdict accepted",
+                "ts": "2026-01-01T00:00:00Z",
+            },
         ],
     )
     assert rc == 0
 
     doc = yaml.safe_load(sidecar.read_text())
-    assert len(doc["rubric_findings"]) == 1
-    assert doc["rubric_findings"][0]["id"] == "RUBRIC-DEMO"
-    assert doc["rubric_findings"][0]["response"] == "resolved"
-    assert doc["rubric_findings"][0]["ts"], "sign_off must stamp ts when absent"
-
-    assert len(doc["warnings_responded"]) == 1
-    assert doc["warnings_responded"][0]["id"] == "DEMO-WARN"
-    assert doc["warnings_responded"][0]["ts"] == "2026-01-01T00:00:00Z", (
-        "sign_off must preserve an explicit ts"
-    )
+    assert len(doc["rubric_findings"]) == 2
+    no_ts = next(r for r in doc["rubric_findings"] if r["id"] == "RUBRIC-DEMO-NO-TS")
+    explicit_ts = next(r for r in doc["rubric_findings"] if r["id"] == "RUBRIC-DEMO-EXPLICIT-TS")
+    assert no_ts["ts"], "sign_off must stamp ts when absent"
+    assert explicit_ts["ts"] == "2026-01-01T00:00:00Z", "sign_off must preserve an explicit ts"
 
 
 def test_sign_off_findings_yaml_round_trip(tmp_path: pathlib.Path) -> None:

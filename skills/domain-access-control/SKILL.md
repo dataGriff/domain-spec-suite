@@ -1,0 +1,123 @@
+---
+name: domain-access-control
+description: |
+  Phase 3. Drives `auth-matrix.md` and `error-catalogue.md` authoring.
+  Soft + engagement gate. Hard errors (role with no description,
+  empty matrix cell, incomplete error entry) refuse sign-off; warnings
+  (role doesn't trace to a PRD persona) must each have an explicit
+  response.
+prerequisites:
+  - Phase 1 (discovery) signed off — for persona traceability.
+  - Phase 2 (modeling) signed off — for entity field references in
+    ownership rules.
+trigger_phrases:
+  - "phase 3"
+  - "start access control"
+  - "draft the auth matrix"
+  - "sign off access control"
+---
+
+# Phase 3 — Access Control
+
+Produces two files: `auth-matrix.md` (roles, the operation×role
+permission matrix, ownership rules) and `error-catalogue.md` (the
+canonical error codes for the domain, with HTTP statuses and trigger
+conditions).
+
+## What this skill does
+
+1. Verifies discovery + modeling have signed off.
+2. **Author half.** If either output file is missing, runs
+   `task init:access-control -- --repo <target>`. Then walks the user
+   through:
+   - Roles section: name, description, traces-to-persona (from PRD)
+   - Auth Matrix table: every operation × role gets a permission
+     marker (Public / Allowed / Allowed-if-owner / Forbidden)
+   - Ownership Rule prose: how 'Allowed-if-owner' is checked
+     (typically resource.field == caller.id)
+   - Error catalogue: every error code with HTTP status, meaning,
+     triggered-by
+3. **Validate half.** Hard errors block sign-off; warnings need
+   responses per the soft-gate engagement loop.
+4. **Sign off.** Same shape as modeling — write a findings YAML with
+   `warnings_responded:` and pass it via `--findings`.
+
+## Authoring
+
+The starting point is the PRD's personas + the modeling phase's
+entities:
+
+- Each PRD persona maps to one role in the auth matrix (sometimes a
+  persona splits into multiple roles, sometimes two personas share
+  a role).
+- Each entity from the model becomes a noun in the operation column
+  ("List items", "Edit walk", "Add invoice").
+- Each operation × role cell needs an explicit permission decision.
+  The Items convention uses emoji (🌐 Public, ✅ Allowed, 🔒 Owner,
+  ❌ Forbidden) but the legend is the source of truth.
+
+Error catalogue entries are pulled from the user stories' acceptance
+criteria — every story that mentions a 4xx/5xx code by name needs a
+matching catalogue entry.
+
+## Soft-gate engagement loop
+
+Same shape as Modeling (see that skill's SKILL.md). The one warning
+in this phase's gate is `AUTH-ROLE-TRACES-TO-PERSONA` — when a role's
+'Traces to persona' column is empty or doesn't match a PRD persona,
+the user must either (a) fix the trace (resolved), (b) mark it as a
+system role with `system` in the column (resolved), or (c) defer with
+`required_by: <phase>`.
+
+## How to run
+
+```bash
+mise exec -- task init:access-control -- --repo <target-dir>
+mise exec -- task gate:access-control -- --repo <target-dir>
+mise exec -- task sign-off:access-control -- --repo <target-dir> --findings <yaml>
+```
+
+Findings YAML shape:
+
+```yaml
+warnings_responded:
+  - id: AUTH-ROLE-TRACES-TO-PERSONA
+    response: resolved
+    reason: "added 'system (scheduler)' to the Traces column for the cron-runner role"
+rubric_findings: []
+```
+
+## Checks in this gate
+
+### Hard errors (must pass)
+
+- `AUTH-ROLE-HAS-DESCRIPTION` — every role has non-empty description
+- `AUTH-MATRIX-COMPLETE` — no empty cells in the operation×role grid
+- `ERROR-CATALOGUE-COMPLETE` — every error has HTTP status, meaning,
+  triggered-by
+- `ERROR-CODE-IN-CATALOGUE` — every error code referenced in the
+  auth-matrix or downstream files appears in the catalogue
+
+### Warnings (must each have a response)
+
+- `AUTH-ROLE-TRACES-TO-PERSONA` — every role traces to a declared
+  PRD persona or is marked `system`
+
+### Skipped here, promoted at later phases
+
+- `AUTH-MATRIX-OPENAPI-MATCH` — skipped when contracts/openapi.yaml
+  doesn't exist yet. Promoted to error at Phase 6 (contracts) and
+  Phase 7 (audit).
+
+## What this skill never does
+
+- Never writes a permission cell without explicit user confirmation.
+  Access control is the highest-stakes spec — a wrong "Allowed" cell
+  ships as a real security regression.
+- Never relaxes the soft-gate engagement check. Every warning needs
+  a response.
+
+## Files this phase signs
+
+- `docs/specifications/auth-matrix.md`
+- `docs/specifications/error-catalogue.md`

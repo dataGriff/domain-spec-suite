@@ -17,6 +17,7 @@ checks:
 
   # Entity / glossary / contract alignment
   - id: ENTITY-IN-GLOSSARY
+  - id: GLOSSARY-COVERS-ATTRIBUTES
   - id: ENTITY-IN-OPENAPI-SCHEMA
   - id: FIELD-MATCH-DOMAIN-OPENAPI
 
@@ -26,10 +27,12 @@ checks:
 
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
+  - id: AUTH-ROLE-TRACES-TO-PERSONA
   - id: ERROR-CODE-IN-CATALOGUE
 
   # PRD <-> downstream alignment
   - id: PRD-STORY-PERSONA-LINK
+  - id: STORY-HAS-FLOW
   - id: LIFECYCLE-IN-FLOWS
 
   # Generator output (runs last — it's the heaviest)

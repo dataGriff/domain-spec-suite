@@ -57,7 +57,7 @@ files_signed:
     sha256: "337622c974c8e18df4e528a10f1d6f8f7621ecdee4f23c001790b79e68bff3c1"
     mtime: "2026-05-25T15:39:30Z"
   - path: docs/specifications/sequence-diagrams.md
-    sha256: "344ec5f731def5435c6f091e1cea2c6faa01dc13046d4a1e20584803fefa97b8"
+    sha256: "b66713d0686b4fadf7c0232b867c539880bb4486e4294ba610f51d8d547f34e2"
     mtime: "2026-05-25T15:59:00Z"
   - path: docs/specifications/nfr.md
     sha256: "0369c920d5887eb5a73ba47f443f9dfbc437e143aa674e21a2586be2ffafce3b"

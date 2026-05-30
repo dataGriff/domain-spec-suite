@@ -1,0 +1,25 @@
+phase: flows
+description: |
+  Phase 4. Soft + engagement gate. Hard error on missing flow titles
+  / participants; warnings on participants that aren't recognised
+  roles / personas / system actors, on story-groups without a
+  matching flow, and on lifecycle transitions not appearing in any
+  flow.
+
+prerequisites:
+  - phase: discovery
+    must_be: passed
+  - phase: modeling
+    must_be: passed
+
+signs_files:
+  - docs/specifications/sequence-diagrams.md
+
+checks:
+  # Hard error
+  - id: FLOW-DIAGRAM-HAS-TITLE-PARTICIPANTS
+
+  # Warnings
+  - id: FLOW-PARTICIPANT-IS-ROLE-OR-SYSTEM
+  - id: STORY-HAS-FLOW
+  - id: LIFECYCLE-IN-FLOWS

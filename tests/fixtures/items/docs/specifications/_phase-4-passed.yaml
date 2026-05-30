@@ -17,5 +17,5 @@ rubric_findings: []
 
 files_signed:
   - path: docs/specifications/sequence-diagrams.md
-    sha256: "344ec5f731def5435c6f091e1cea2c6faa01dc13046d4a1e20584803fefa97b8"
+    sha256: "b66713d0686b4fadf7c0232b867c539880bb4486e4294ba610f51d8d547f34e2"
     mtime: "2026-05-25T15:59:00Z"

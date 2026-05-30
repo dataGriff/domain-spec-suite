@@ -168,6 +168,80 @@ def _append_force_advance(repo: pathlib.Path, phase: str, reason: str) -> None:
 # ── main orchestration ──────────────────────────────────────────
 
 
+_VALID_WARNING_RESPONSES = {"resolved", "deferred", "n-a"}
+
+
+def _validate_warnings_engagement(
+    outcomes: list, warnings_responded: list[dict]
+) -> tuple[bool, str | None]:
+    """Soft-gate engagement check: every check that fired at warning
+    severity must have a corresponding entry in `warnings_responded`,
+    and every responded entry must reference a real warning that fired.
+
+    Returns (True, None) when the engagement is complete; (False, msg)
+    with a multi-line interview-style refusal message otherwise.
+    """
+    fired_warnings = {
+        o.id for o in outcomes if not o.passed and not o.skipped and o.severity == "warning"
+    }
+    responded_ids = {entry.get("id") for entry in warnings_responded if entry.get("id")}
+
+    missing = fired_warnings - responded_ids
+    stale = responded_ids - fired_warnings
+
+    if not missing and not stale:
+        # Check response values are valid.
+        bad_responses = [
+            entry
+            for entry in warnings_responded
+            if entry.get("response") not in _VALID_WARNING_RESPONSES
+        ]
+        if bad_responses:
+            return False, (
+                "warnings_responded entries have invalid `response` values. "
+                f"Each must be one of {sorted(_VALID_WARNING_RESPONSES)}.\n  · "
+                + "\n  · ".join(
+                    f"{e.get('id', '<?>')}: response={e.get('response')!r}" for e in bad_responses
+                )
+            )
+        # Check deferred entries carry required_by.
+        bad_deferred = [
+            entry
+            for entry in warnings_responded
+            if entry.get("response") == "deferred" and not entry.get("required_by")
+        ]
+        if bad_deferred:
+            return False, (
+                "deferred warnings must declare `required_by: <phase>`\n  · "
+                + "\n  · ".join(f"{e.get('id', '<?>')}" for e in bad_deferred)
+            )
+        return True, None
+
+    lines: list[str] = ["soft-gate engagement is incomplete:"]
+    if missing:
+        lines.append(
+            f"  · {len(missing)} warning(s) surfaced by the gate have no "
+            "response in warnings_responded:"
+        )
+        for wid in sorted(missing):
+            lines.append(f"      - {wid}")
+    if stale:
+        lines.append(
+            f"  · {len(stale)} response(s) in warnings_responded reference "
+            "warnings that didn't fire (stale — were they cleared by a recent "
+            "edit?):"
+        )
+        for wid in sorted(stale):
+            lines.append(f"      - {wid}")
+    lines.append("")
+    lines.append(
+        "For each surfaced warning, add an entry to warnings_responded "
+        "via --findings with `response: resolved | deferred | n-a` and a "
+        "`reason`. Deferred warnings additionally need `required_by: <phase>`."
+    )
+    return False, "\n".join(lines)
+
+
 def sign_off(
     phase: str,
     repo: pathlib.Path,
@@ -193,6 +267,14 @@ def sign_off(
                 "task suite:accept-force).",
                 file=sys.stderr,
             )
+            return 1
+
+        # Soft-gate engagement check: even when the runner exits 0,
+        # any warning-severity check that fired must have an explicit
+        # response in warnings_responded.
+        ok, msg = _validate_warnings_engagement(outcomes, warnings_responded or [])
+        if not ok:
+            print(f"sign-off REFUSED: {msg}", file=sys.stderr)
             return 1
     else:
         _append_force_advance(repo, phase, force_advance)

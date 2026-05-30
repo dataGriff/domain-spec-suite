@@ -1,0 +1,17 @@
+phase: nfrs
+description: |
+  Phase 5. Soft + engagement gate. Hard errors on un-measurable NFRs
+  or non-GWT scenarios; one rubric (RUBRIC-NFR-REALISTIC) lives in
+  SKILL.md prose — the agent emits findings via the engagement loop.
+
+prerequisites:
+  - phase: discovery
+    must_be: passed
+
+signs_files:
+  - docs/specifications/nfr.md
+  - docs/specifications/acceptance-scenarios.md
+
+checks:
+  - id: NFR-THRESHOLD-MEASURABLE
+  - id: ACCEPTANCE-SCENARIO-GWT

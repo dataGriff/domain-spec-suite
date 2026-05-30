@@ -93,6 +93,66 @@ tasks:
     cmds:
       - "{{.PYTHON}} shared/sign_off.py discovery {{.CLI_ARGS}}"
 
+  init:modeling:
+    desc: 'Copy domain-model + glossary templates into docs/specifications/. Usage: task init:modeling -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} scripts/init_phase.py modeling {{.CLI_ARGS}}"
+
+  gate:modeling:
+    desc: 'Run the Phase 2 modeling gate. Usage: task gate:modeling -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} shared/run_phase.py modeling {{.CLI_ARGS}}"
+
+  sign-off:modeling:
+    desc: 'Sign off Phase 2 (modeling). Usage: task sign-off:modeling -- --repo /path/to/domain --findings <yaml>'
+    cmds:
+      - "{{.PYTHON}} shared/sign_off.py modeling {{.CLI_ARGS}}"
+
+  init:access-control:
+    desc: 'Copy auth-matrix + error-catalogue templates. Usage: task init:access-control -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} scripts/init_phase.py access-control {{.CLI_ARGS}}"
+
+  gate:access-control:
+    desc: 'Run the Phase 3 access-control gate. Usage: task gate:access-control -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} shared/run_phase.py access-control {{.CLI_ARGS}}"
+
+  sign-off:access-control:
+    desc: 'Sign off Phase 3 (access-control). Usage: task sign-off:access-control -- --repo /path/to/domain --findings <yaml>'
+    cmds:
+      - "{{.PYTHON}} shared/sign_off.py access-control {{.CLI_ARGS}}"
+
+  init:flows:
+    desc: 'Copy sequence-diagrams template. Usage: task init:flows -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} scripts/init_phase.py flows {{.CLI_ARGS}}"
+
+  gate:flows:
+    desc: 'Run the Phase 4 flows gate. Usage: task gate:flows -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} shared/run_phase.py flows {{.CLI_ARGS}}"
+
+  sign-off:flows:
+    desc: 'Sign off Phase 4 (flows). Usage: task sign-off:flows -- --repo /path/to/domain --findings <yaml>'
+    cmds:
+      - "{{.PYTHON}} shared/sign_off.py flows {{.CLI_ARGS}}"
+
+  init:nfrs:
+    desc: 'Copy nfr + acceptance-scenarios templates. Usage: task init:nfrs -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} scripts/init_phase.py nfrs {{.CLI_ARGS}}"
+
+  gate:nfrs:
+    desc: 'Run the Phase 5 nfrs gate. Usage: task gate:nfrs -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} shared/run_phase.py nfrs {{.CLI_ARGS}}"
+
+  sign-off:nfrs:
+    desc: 'Sign off Phase 5 (nfrs). Usage: task sign-off:nfrs -- --repo /path/to/domain --findings <yaml>'
+    cmds:
+      - "{{.PYTHON}} shared/sign_off.py nfrs {{.CLI_ARGS}}"
+
   init:contracts:
     desc: 'Copy blank contract templates into docs/specifications/contracts/ (only if absent — never overwrites). Usage: task init:contracts -- --repo /path/to/domain'
     cmds:

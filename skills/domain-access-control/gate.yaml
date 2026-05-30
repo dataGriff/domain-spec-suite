@@ -1,0 +1,30 @@
+phase: access-control
+description: |
+  Phase 3. Soft + engagement gate. Hard errors stop sign-off; warnings
+  must each have a `warnings_responded` entry (resolved / deferred /
+  n-a). Reuses `AUTH-MATRIX-OPENAPI-MATCH` (skipped here when openapi
+  doesn't yet exist; promoted to error at contracts/audit).
+
+prerequisites:
+  - phase: discovery
+    must_be: passed
+  - phase: modeling
+    must_be: passed
+
+signs_files:
+  - docs/specifications/auth-matrix.md
+  - docs/specifications/error-catalogue.md
+
+checks:
+  # Hard errors
+  - id: AUTH-ROLE-HAS-DESCRIPTION
+  - id: AUTH-MATRIX-COMPLETE
+  - id: ERROR-CATALOGUE-COMPLETE
+  - id: ERROR-CODE-IN-CATALOGUE
+
+  # Warning (cross-ref to PRD personas)
+  - id: AUTH-ROLE-TRACES-TO-PERSONA
+
+  # Skipped here until contracts/openapi.yaml exists — promoted to
+  # error at contracts + audit.
+  - id: AUTH-MATRIX-OPENAPI-MATCH

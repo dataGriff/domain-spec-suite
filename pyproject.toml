@@ -61,4 +61,9 @@ markers = [
   "contracts: tests for the domain-contracts skill (M3.1, M3.2)",
   "discovery: tests for the domain-discovery skill (M4.2)",
   "orchestrator: tests for the domain-orchestrator skill (M4.1)",
+  "modeling: tests for the domain-modeling skill (M5.1)",
+  "access_control: tests for the domain-access-control skill (M5.2)",
+  "flows: tests for the domain-flows skill (M5.3)",
+  "nfrs: tests for the domain-nfrs skill (M5.4)",
+  "soft_gate: tests for soft-gate enforcement in sign_off (M5.0)",
 ]

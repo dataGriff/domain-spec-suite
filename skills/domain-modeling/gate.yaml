@@ -1,0 +1,25 @@
+phase: modeling
+description: |
+  Phase 2. Soft + engagement gate. Hard errors stop sign-off; warnings
+  must each have an explicit `warnings_responded` entry (resolved /
+  deferred / n-a) per SUITE-DESIGN §5 + §5.5.
+
+prerequisites:
+  - phase: discovery
+    must_be: passed
+
+signs_files:
+  - docs/specifications/domain-model.md
+  - docs/specifications/glossary.md
+
+checks:
+  # Hard errors — these must pass for sign-off.
+  - id: MODEL-ENTITY-NAME-UNIQUE
+  - id: ENTITY-IN-GLOSSARY
+  - id: GLOSSARY-COVERS-ATTRIBUTES
+
+  # Soft warnings — each must be addressed in warnings_responded.
+  - id: MODEL-ENTITY-HAS-ID-TIMESTAMPS
+  - id: MODEL-ENTITY-BUSINESS-RULE
+  - id: MODEL-LIFECYCLE-DEFINED
+  - id: MODEL-RELATIONSHIP-BIDIRECTIONAL

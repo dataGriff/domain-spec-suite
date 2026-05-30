@@ -6,7 +6,7 @@ paths from `contracts/openapi.yaml` and event channels from
 
 ---
 
-## Flow 1: Register and Log In
+## Flow 1: Authentication — Register and Log In
 
 ```mermaid
 sequenceDiagram
