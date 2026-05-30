@@ -1,0 +1,36 @@
+phase: audit
+description: |
+  Phase 7. Re-runs every phase 1-6 cross-reference check at error
+  severity, plus audit-only checks (placeholders, sign-off integrity,
+  force-advance acceptance, ambiguity resolution, generator
+  cleanliness). The gate that gives soft middle gates teeth.
+
+# Listed in the order the runner reports them. Audit-only checks
+# first (they're cheap and catch the most common breaks), then
+# cross-phase re-runs grouped by relationship area.
+checks:
+  # Audit-only
+  - id: NO-TEMPLATE-PLACEHOLDERS
+  - id: SIGNOFF-SHA256-MATCHES
+  - id: FORCE-ADVANCES-ALL-ACCEPTED
+  - id: AMBIGUITIES-NO-AUDIT-REQUIRED
+
+  # Entity / glossary / contract alignment
+  - id: ENTITY-IN-GLOSSARY
+  - id: ENTITY-IN-OPENAPI-SCHEMA
+  - id: FIELD-MATCH-DOMAIN-OPENAPI
+
+  # Event / data contract alignment
+  - id: WRITE-OP-HAS-ASYNCAPI-CHANNEL
+  - id: EVENT-IN-DATACONTRACT
+
+  # Access control / errors
+  - id: AUTH-MATRIX-OPENAPI-MATCH
+  - id: ERROR-CODE-IN-CATALOGUE
+
+  # PRD <-> downstream alignment
+  - id: STORY-PERSONA-EXISTS
+  - id: LIFECYCLE-IN-FLOWS
+
+  # Generator output (runs last — it's the heaviest)
+  - id: GENERATOR-CLEAN-OUTPUT

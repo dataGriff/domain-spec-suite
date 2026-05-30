@@ -1,0 +1,39 @@
+# Phase 1 Discovery sign-off. Hard gate — every structural check passed
+# and every rubric finding resolved. Schema per SUITE-DESIGN.md §4.
+
+phase: discovery
+signed_off_at: "2026-05-25T14:45:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - PRD-PROBLEM-STATEMENT
+  - PRD-PERSONA-EXISTS
+  - PRD-NON-GOAL
+  - PRD-STORY-EXISTS
+  - PRD-METRIC-EXISTS
+  - PRD-PERSONA-GOAL
+  - PRD-PERSONA-FRUSTRATION
+  - PRD-STORY-ACCEPTANCE
+  - PRD-STORY-PERSONA-LINK
+  - PRD-METRICS-MEASURABLE
+
+warnings_responded: []
+
+rubric_findings:
+  - id: RUBRIC-PROBLEM-USER-PAIN
+    verdict: pass
+    detail: "problem statement leads with the developer pain (consistent spec-driven starting point) before naming the solution shape"
+    response: resolved
+    reason: "agent verdict accepted"
+    ts: "2026-05-25T14:44:00Z"
+  - id: RUBRIC-METRICS-MEASURABLE
+    verdict: pass
+    detail: "all three success metrics are checkable: contract linting integrity, cross-spec name/event consistency, and a 5-minute time-to-comprehension bound on a new reader"
+    response: resolved
+    reason: "agent verdict accepted"
+    ts: "2026-05-25T14:44:30Z"
+
+files_signed:
+  - path: docs/specifications/prd.md
+    sha256: "989a0870016ba59a577e8dcb9aa2e4875a07a0acb23e63f920ff6fcdbfc505ed"
+    mtime: "2026-05-25T14:44:30Z"

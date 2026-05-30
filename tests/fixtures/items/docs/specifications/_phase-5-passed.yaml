@@ -1,0 +1,29 @@
+# Phase 5 NFRs sign-off. Soft+engagement gate — every NFR carries a
+# measurable threshold (regex check passes); every acceptance scenario
+# follows Given/When/Then. Rubric (NFR realism) judged pass.
+
+phase: nfrs
+signed_off_at: "2026-05-25T16:15:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - NFR-THRESHOLD-MEASURABLE
+  - ACCEPTANCE-GWT-STRUCTURE
+
+warnings_responded: []
+
+rubric_findings:
+  - id: RUBRIC-NFR-REALISTIC
+    verdict: pass
+    detail: "thresholds are concrete (numbers, percentages, time units) and bounded to a stated load profile, not aspirational"
+    response: resolved
+    reason: "agent verdict accepted"
+    ts: "2026-05-25T16:14:30Z"
+
+files_signed:
+  - path: docs/specifications/nfr.md
+    sha256: "0369c920d5887eb5a73ba47f443f9dfbc437e143aa674e21a2586be2ffafce3b"
+    mtime: "2026-05-25T16:14:00Z"
+  - path: docs/specifications/acceptance-scenarios.md
+    sha256: "32b87cc0e5a2a0cc7e3873f515be787a803931e73746e9058e8a7eb32fc5358d"
+    mtime: "2026-05-25T16:14:30Z"

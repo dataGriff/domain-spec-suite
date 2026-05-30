@@ -1,0 +1,27 @@
+# Phase 3 Access Control sign-off. AUTH-OPENAPI-MATCH is a cross-phase
+# check — at this phase its prerequisite (openapi.yaml present) was met
+# because the Items reference already had contracts at audit time;
+# severity_by_phase pins it to `warning` here. The check passed.
+
+phase: access-control
+signed_off_at: "2026-05-25T15:40:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - ACL-ROLE-DESCRIPTION
+  - ACL-OPERATION-COMPLETE
+  - ERROR-CODE-COMPLETE
+  - ACL-ROLE-PERSONA-TRACE
+  - ACL-OWNERSHIP-FIELD-REAL
+  - AUTH-MATRIX-OPENAPI-MATCH
+
+warnings_responded: []
+rubric_findings: []
+
+files_signed:
+  - path: docs/specifications/auth-matrix.md
+    sha256: "f8ea71584825b34d0592944db0052148a510edf307ee609d7d1890801c504433"
+    mtime: "2026-05-25T15:39:00Z"
+  - path: docs/specifications/error-catalogue.md
+    sha256: "337622c974c8e18df4e528a10f1d6f8f7621ecdee4f23c001790b79e68bff3c1"
+    mtime: "2026-05-25T15:39:30Z"

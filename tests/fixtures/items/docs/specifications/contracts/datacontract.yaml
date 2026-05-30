@@ -1,0 +1,117 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: urn:datacontract:items:items-domain-events:1.0.0
+name: Items Domain Data Contract
+version: 1.0.0
+status: active
+domain: items
+
+description:
+  purpose: >
+    Defines the structure and quality expectations for item data published by
+    the Items domain via domain events. This contract is the authoritative
+    historical integration point for downstream consumers.
+  usage: >
+    Consume this contract to understand the schema of item data emitted on the
+    items.item.added, items.item.edited, and items.item.removed event channels.
+    Use it as the basis for building pipelines, analytics, and reporting on item
+    lifecycle data.
+  limitations: >
+    This contract covers only the event payload (data envelope). CloudEvents
+    metadata fields (specversion, type, source, id, time, datacontenttype) are
+    not included in the schema below. Item removal events carry a reduced
+    payload (id, contributorId, removedAt only).
+
+team:
+  name: Items Domain Spec Set
+  members:
+    - username: items-domain
+      name: Items Domain Spec Set
+      role: owner
+
+servers:
+  - server: development
+    type: custom
+    description: Local AMQP broker (development binding) publishing item domain events.
+    environment: dev
+    customProperties:
+      - property: protocol
+        value: amqp
+      - property: url
+        value: amqp://localhost:5672
+
+schema:
+  - name: items
+    description: >
+      Item records published via the items.item.added and items.item.edited
+      event channels. Each record represents the current state of an item at
+      the time the event was emitted.
+    physicalType: topic
+    properties:
+      - name: id
+        description: Unique identifier for the item.
+        logicalType: string
+        physicalType: uuid
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: name
+        description: Display name of the item.
+        logicalType: string
+        required: true
+      - name: description
+        description: Optional longer description of the item.
+        logicalType: string
+        required: false
+      - name: status
+        description: Lifecycle status of the item — either active or archived.
+        logicalType: string
+        required: true
+      - name: contributorId
+        description: Identifier of the contributor who added the item.
+        logicalType: string
+        physicalType: uuid
+        required: true
+      - name: createdAt
+        description: Timestamp when the item was added to the catalogue.
+        logicalType: timestamp
+        required: true
+      - name: updatedAt
+        description: Timestamp of the most recent edit to the item.
+        logicalType: timestamp
+        required: true
+
+  - name: items_removed
+    description: >
+      Reduced payload published via the items.item.removed event channel.
+      Records the removal of an item and retains only the identifiers and
+      removal timestamp for audit purposes.
+    physicalType: topic
+    properties:
+      - name: id
+        description: Unique identifier of the removed item.
+        logicalType: string
+        physicalType: uuid
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: contributorId
+        description: Identifier of the contributor who removed the item.
+        logicalType: string
+        physicalType: uuid
+        required: true
+      - name: removedAt
+        description: Timestamp when the item was removed from the catalogue.
+        logicalType: timestamp
+        required: true
+
+slaProperties:
+  - property: availability
+    value: "99.9"
+    unit: "%"
+    description: Events are delivered at least 99.9% of the time.
+  - property: retention
+    value: 30
+    unit: d
+    description: Events are retained for 30 days for replay and historical access.

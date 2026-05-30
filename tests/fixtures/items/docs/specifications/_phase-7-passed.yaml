@@ -1,0 +1,79 @@
+# Phase 7 Audit sign-off. Hard gate — every phase 1-6 cross-reference
+# check re-run successfully, every audit-only check passed. Spec set is
+# declared complete. Schema per SUITE-DESIGN.md §4 + §8.
+
+phase: audit
+signed_off_at: "2026-05-25T16:30:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  # Audit-only checks
+  - NO-TEMPLATE-PLACEHOLDERS
+  - AMBIGUITIES-NO-AUDIT-REQUIRED
+  - SIGNOFF-SHA256-MATCHES
+  - FORCE-ADVANCES-ALL-ACCEPTED
+  - GENERATOR-CLEAN-OUTPUT
+  - DOMAIN-CHECK-PASSES
+  # Re-run of every phase 1-6 cross-reference check
+  - MOD-PRD-STORY-ENTITIES
+  - GLOSSARY-COVERS-ENTITIES
+  - GLOSSARY-COVERS-ATTRIBUTES
+  - ACL-ROLE-PERSONA-TRACE
+  - ACL-OWNERSHIP-FIELD-REAL
+  - AUTH-MATRIX-OPENAPI-MATCH
+  - FLOW-STORY-COVERAGE
+  - FLOW-LIFECYCLE-COVERAGE
+  - ENTITY-IN-OPENAPI-SCHEMA
+  - FIELD-MATCH-DOMAIN-OPENAPI
+  - WRITE-OP-HAS-ASYNCAPI-CHANNEL
+  - EVENT-IN-DATACONTRACT
+  - EVENT-FIELD-MATCH-DATACONTRACT
+  - ERROR-CODE-IN-CATALOGUE
+
+warnings_responded: []
+rubric_findings: []
+
+# Audit re-verifies sign-off integrity for every signed file across
+# phases 0-6. The full sha256 list lives in each phase's own sidecar;
+# this section repeats the set so a single audit-passed file is enough
+# to verify the whole spec set.
+files_signed:
+  - path: docs/specifications/_bootstrap.yaml
+    sha256: "62e5797c16cd987f1c56b0866f05bf0b992092a41a705ae0ea37c91ebba92faa"
+    mtime: "2026-05-25T14:05:00Z"
+  - path: docs/specifications/prd.md
+    sha256: "989a0870016ba59a577e8dcb9aa2e4875a07a0acb23e63f920ff6fcdbfc505ed"
+    mtime: "2026-05-25T14:44:30Z"
+  - path: docs/specifications/domain-model.md
+    sha256: "82e94d71b9cdba00a9563440b0269f4e26fabd44fb78df99aaa48c8821fd46eb"
+    mtime: "2026-05-25T15:19:00Z"
+  - path: docs/specifications/glossary.md
+    sha256: "967969172615b9bb99df5b9da61a89e7afbe06257787804627335c3eabe8ec2a"
+    mtime: "2026-05-25T15:19:30Z"
+  - path: docs/specifications/auth-matrix.md
+    sha256: "f8ea71584825b34d0592944db0052148a510edf307ee609d7d1890801c504433"
+    mtime: "2026-05-25T15:39:00Z"
+  - path: docs/specifications/error-catalogue.md
+    sha256: "337622c974c8e18df4e528a10f1d6f8f7621ecdee4f23c001790b79e68bff3c1"
+    mtime: "2026-05-25T15:39:30Z"
+  - path: docs/specifications/sequence-diagrams.md
+    sha256: "344ec5f731def5435c6f091e1cea2c6faa01dc13046d4a1e20584803fefa97b8"
+    mtime: "2026-05-25T15:59:00Z"
+  - path: docs/specifications/nfr.md
+    sha256: "0369c920d5887eb5a73ba47f443f9dfbc437e143aa674e21a2586be2ffafce3b"
+    mtime: "2026-05-25T16:14:00Z"
+  - path: docs/specifications/acceptance-scenarios.md
+    sha256: "32b87cc0e5a2a0cc7e3873f515be787a803931e73746e9058e8a7eb32fc5358d"
+    mtime: "2026-05-25T16:14:30Z"
+  - path: docs/specifications/contracts/openapi.yaml
+    sha256: "dbf5378b8dc9f57c7a0f915012b69b611d58b3bb1f99fce42634e71f24d0ad37"
+    mtime: "2026-05-25T16:24:00Z"
+  - path: docs/specifications/contracts/asyncapi.yaml
+    sha256: "1c174ab84ecf6cc23528c0cd8a1ec01e08241924a15188a903e961309da79b9e"
+    mtime: "2026-05-25T16:24:30Z"
+  - path: docs/specifications/contracts/datacontract.yaml
+    sha256: "608a78af7456ebaf242f1db4efb8cd22bbf0635326964079d24b7c9ce9908b26"
+    mtime: "2026-05-25T16:24:45Z"
+  - path: docs/specifications/_ambiguities.md
+    sha256: "b2e714f3716767297fc136ff3daba701934e75ea2d4bdb9aa16a130089f815a3"
+    mtime: "2026-05-25T15:15:00Z"

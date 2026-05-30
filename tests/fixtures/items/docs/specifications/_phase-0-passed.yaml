@@ -1,0 +1,21 @@
+# Phase 0 Bootstrap sign-off. Written by `domain-bootstrap` after the
+# shell was successfully copied and the bootstrap gate passed. Schema
+# per SUITE-DESIGN.md §4. Do not edit by hand.
+
+phase: bootstrap
+signed_off_at: "2026-05-25T14:05:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - BOOTSTRAP-FILES-EXIST
+  - BOOTSTRAP-FILES-PARSE
+  - BOOTSTRAP-PROGRESS-INITIALIZED
+  - BOOTSTRAP-MANIFEST-PRESENT
+
+warnings_responded: []
+rubric_findings: []
+
+files_signed:
+  - path: docs/specifications/_bootstrap.yaml
+    sha256: "62e5797c16cd987f1c56b0866f05bf0b992092a41a705ae0ea37c91ebba92faa"
+    mtime: "2026-05-25T14:05:00Z"

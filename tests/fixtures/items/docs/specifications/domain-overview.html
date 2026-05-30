@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Items API — Domain Overview</title>
+  <style>
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --text:     #c9d1d9;
+      --muted:    #8b949e;
+      --accent:   #58a6ff;
+      --heading:  #e6edf3;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding-bottom: 3rem;
+    }
+
+    /* ── Top navigation bar ── */
+    #docs-nav {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+    #docs-nav a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    #docs-nav a:hover { text-decoration: underline; }
+    #docs-nav .sep { color: var(--border); }
+
+    /* ── Page header ── */
+    #page-header {
+      background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    #page-header h1 {
+      font-size: 2rem;
+      color: var(--heading);
+      margin-bottom: 0.4rem;
+    }
+    #page-header .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* ── TOC / Jump nav ── */
+    #toc {
+      max-width: 960px;
+      margin: 1.5rem auto 0;
+      padding: 0 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    #toc a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+    #toc a:hover { border-color: var(--accent); }
+
+    /* ── Content layout ── */
+    #content {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--heading);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card h3 {
+      font-size: 0.95rem;
+      color: var(--heading);
+      margin: 1rem 0 0.5rem;
+    }
+    .card p, .card li {
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .card ul { padding-left: 1.25rem; }
+    .description p { margin-bottom: 0.5rem; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 0.5rem 0 1rem;
+    }
+    th {
+      background: #1c2128;
+      color: var(--heading);
+      text-align: left;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    td {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #1a1f2a; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .method-badge { min-width: 52px; text-align: center; }
+    .auth-required { background: #1f3a24; color: #56d364; border: 1px solid #238636; }
+    .auth-public   { background: #1c2c42; color: #58a6ff; border: 1px solid #388bfd; }
+    .tag-badge     { background: #21262d; color: var(--muted); border: 1px solid var(--border); }
+    .domain-version { background: #21262d; color: var(--muted); border: 1px solid var(--border); font-size: 12px; }
+
+    /* ── Summary header ── */
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.75rem;
+    }
+    .domain-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .contact { color: var(--muted); font-size: 12px; margin-top: 0.5rem; }
+
+    /* ── Code ── */
+    code {
+      background: #1c2128;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      color: #e6edf3;
+    }
+
+    /* ── Notes ── */
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 0.5rem;
+    }
+    .note a { color: var(--accent); }
+
+    /* ── Mermaid ── */
+    .mermaid { text-align: center; padding: 1rem 0; }
+
+    /* ── Footer ── */
+    #footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav id="docs-nav">
+  <a href="./index.html">&larr; Back to Docs</a>
+  <span class="sep">|</span>
+  <a href="./api-reference.html">API Reference</a>
+  <span class="sep">|</span>
+  <a href="./asyncapi-reference.html">AsyncAPI Events</a>
+  <span class="sep">|</span>
+  <a href="./contracts/openapi.yaml">openapi.yaml</a>
+  <span class="sep">|</span>
+  <a href="./contracts/asyncapi.yaml">asyncapi.yaml</a>
+  <span class="sep">|</span>
+  <a href="./contracts/datacontract.yaml">datacontract.yaml</a>
+</nav>
+
+<header id="page-header">
+  <h1>Items API — Domain Overview</h1>
+  <p class="subtitle">Deterministically generated from OpenAPI, AsyncAPI &amp; Data Contract · 2026-05-30 13:05 UTC</p>
+</header>
+
+<nav id="toc">
+  <a href="#summary">📋 Summary</a>
+  <a href="#roles">👤 Roles</a>
+  <a href="#operations">🔌 Operations</a>
+  <a href="#events">📡 Events</a>
+  <a href="#event-correlation">🔗 Correlation</a>
+  <a href="#entities">🗂️ Entities</a>
+  <a href="#erd">🏗️ ERD</a>
+  <a href="#data-contract">📄 Data Contract</a>
+</nav>
+
+<main id="content">
+  
+<section id="summary" class="card">
+  <h2>📋 Domain Summary</h2>
+  <div class="summary-header">
+    <span class="domain-title">Items API</span>
+    <span class="domain-version badge">v1.0.0</span>
+  </div>
+  <div class="description"><p>REST contract for the **Items** domain — a small shared catalogue of</p><p>named entries owned by the team members who add them. See</p><p>`prd.md` for the domain narrative and `domain-model.md` for the</p><p>entity definitions.</p><p>The contract demonstrates:</p><li>JWT-based authentication with two roles (`contributor`, `viewer`)</li><li>Role-based access control</li><li>Ownership-scoped write operations</li><li>Pagination on list endpoints</li><li>Standard error response shapes</li></div>
+  <p class="contact">Contact: <strong>Items Domain Spec Set</strong></p>
+  <h3>Servers</h3><table><thead><tr><th>URL</th><th>Description</th></tr></thead><tbody><tr><td>http://localhost:3000</td><td>Local development server</td></tr></tbody></table>
+</section>
+
+  
+<section id="roles" class="card">
+  <h2>👤 Roles</h2>
+  <table>
+    <thead><tr><th>Role</th><th>Description</th></tr></thead>
+    <tbody><tr><td><code>contributor</code></td><td>Can add items and edit/remove their own items.</td></tr><tr><td><code>viewer</code></td><td>Read-only access to items.</td></tr></tbody>
+  </table>
+  <p class="note">All protected routes require a <code>Bearer</code> JWT in the
+  <code>Authorization</code> header. Unauthenticated requests return
+  <code>401 Unauthorized</code>.</p>
+</section>
+
+  
+<section id="operations" class="card">
+  <h2>🔌 API Operations</h2>
+  
+<h3>Auth</h3>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Summary</th><th>Auth</th></tr></thead>
+  <tbody><tr><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span></td><td><code>/v1/auth/register</code></td><td>Register a new user</td><td><span class="badge auth-badge auth-public">🌐 Public</span></td></tr><tr><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span></td><td><code>/v1/auth/login</code></td><td>Log in</td><td><span class="badge auth-badge auth-public">🌐 Public</span></td></tr><tr><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span></td><td><code>/v1/auth/refresh</code></td><td>Refresh access token</td><td><span class="badge auth-badge auth-public">🌐 Public</span></td></tr><tr><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span></td><td><code>/v1/auth/logout</code></td><td>Log out</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr></tbody>
+</table>
+
+<h3>Items</h3>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Summary</th><th>Auth</th></tr></thead>
+  <tbody><tr><td><span class="badge method-badge" style="background:#61affe;color:#fff">GET</span></td><td><code>/v1/items</code></td><td>List items</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr><tr><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span></td><td><code>/v1/items</code></td><td>Add an item</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr><tr><td><span class="badge method-badge" style="background:#61affe;color:#fff">GET</span></td><td><code>/v1/items/{itemId}</code></td><td>Get an item</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr><tr><td><span class="badge method-badge" style="background:#fca130;color:#fff">PATCH</span></td><td><code>/v1/items/{itemId}</code></td><td>Edit an item</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr><tr><td><span class="badge method-badge" style="background:#f93e3e;color:#fff">DELETE</span></td><td><code>/v1/items/{itemId}</code></td><td>Remove an item</td><td><span class="badge auth-badge auth-required">🔒 Auth</span></td></tr></tbody>
+</table>
+
+</section>
+
+  
+<section id="events" class="card">
+  <h2>📡 Domain Events</h2>
+  <p>Domain event contract for the **Items** domain — a small shared</p>
+  <table>
+    <thead><tr><th>Channel</th><th>Event</th><th>Description</th></tr></thead>
+    <tbody><tr><td><code>items.item.added</code></td><td><strong>Item Added</strong></td><td>A new item has been added to the catalogue.</td></tr><tr><td><code>items.item.edited</code></td><td><strong>Item Edited</strong></td><td>An existing item has been edited.</td></tr><tr><td><code>items.item.removed</code></td><td><strong>Item Removed</strong></td><td>An item has been removed from the catalogue.</td></tr></tbody>
+  </table>
+  <p class="note">All events follow the
+  <a href="https://cloudevents.io/" target="_blank" rel="noopener">CloudEvents 1.0</a>
+  specification.</p>
+</section>
+
+  
+<section id="event-correlation" class="card">
+  <h2>🔗 Operation → Event Correlation</h2>
+  <p>Each write operation publishes a corresponding domain event.</p>
+  <table>
+    <thead><tr><th>Event</th><th>Channel</th><th>Triggered By</th></tr></thead>
+    <tbody><tr><td><strong>Item Added</strong></td><td><code>items.item.added</code></td><td><span class="badge method-badge" style="background:#49cc90;color:#fff">POST</span> <code>/v1/items</code> — Add an item</td></tr><tr><td><strong>Item Edited</strong></td><td><code>items.item.edited</code></td><td><span class="badge method-badge" style="background:#fca130;color:#fff">PATCH</span> <code>/v1/items/{itemId}</code> — Edit an item</td></tr><tr><td><strong>Item Removed</strong></td><td><code>items.item.removed</code></td><td><span class="badge method-badge" style="background:#f93e3e;color:#fff">DELETE</span> <code>/v1/items/{itemId}</code> — Remove an item</td></tr></tbody>
+  </table>
+</section>
+
+  
+<section id="entities" class="card">
+  <h2>🗂️ Entity Schemas</h2>
+  
+<h3><code>UserSummary</code></h3>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody><tr><td><code>id</code></td><td>string(uuid)</td><td>✓</td><td></td></tr><tr><td><code>email</code></td><td>string(email)</td><td>✓</td><td></td></tr><tr><td><code>firstName</code></td><td>string</td><td>✓</td><td></td></tr><tr><td><code>lastName</code></td><td>string</td><td>✓</td><td></td></tr><tr><td><code>role</code></td><td>enum(contributor, viewer)</td><td>✓</td><td></td></tr></tbody>
+</table>
+
+<h3><code>Item</code></h3>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody><tr><td><code>id</code></td><td>string(uuid)</td><td>✓</td><td></td></tr><tr><td><code>name</code></td><td>string</td><td>✓</td><td></td></tr><tr><td><code>description</code></td><td>string | null</td><td>✓</td><td></td></tr><tr><td><code>status</code></td><td>enum(active, archived)</td><td>✓</td><td></td></tr><tr><td><code>contributorId</code></td><td>string(uuid)</td><td>✓</td><td>ID of the contributor who added this item</td></tr><tr><td><code>createdAt</code></td><td>string(date-time)</td><td>✓</td><td></td></tr><tr><td><code>updatedAt</code></td><td>string(date-time)</td><td>✓</td><td></td></tr></tbody>
+</table>
+
+</section>
+
+  
+<section id="erd" class="card">
+  <h2>🏗️ Entity Relationship Diagram</h2>
+  <div class="mermaid">
+erDiagram
+    Item {
+        uuid id
+        string name
+        string description
+        string status
+        uuid contributorId
+        date_time createdAt
+        date_time updatedAt
+    }
+    UserSummary {
+        uuid id
+        email email
+        string firstName
+        string lastName
+        string role
+    }
+  </div>
+</section>
+
+  
+<section id="data-contract" class="card">
+  <h2>📄 Data Contract</h2>
+  <div class="summary-header">
+    <span class="domain-title">Items Domain Data Contract</span>
+    <span class="domain-version badge">v1.0.0</span>
+  </div>
+  <p>Defines the structure and quality expectations for item data published by the Items domain via domain events. This contract is the authoritative historical integration point for downstream consumers.</p>
+  
+<h3><code>items</code></h3>
+<p>Item records published via the items.item.added and items.item.edited event channels. Each record represents the current state of an item at the time the event was emitted.</p>
+<table>
+  <thead><tr><th>Field</th><th>Logical Type</th><th>Physical Type</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody><tr><td><code>id</code> 🔑</td><td>string</td><td>uuid</td><td>✓</td><td>Unique identifier for the item.</td></tr><tr><td><code>name</code></td><td>string</td><td></td><td>✓</td><td>Display name of the item.</td></tr><tr><td><code>description</code></td><td>string</td><td></td><td></td><td>Optional longer description of the item.</td></tr><tr><td><code>status</code></td><td>string</td><td></td><td>✓</td><td>Lifecycle status of the item — either active or archived.</td></tr><tr><td><code>contributorId</code></td><td>string</td><td>uuid</td><td>✓</td><td>Identifier of the contributor who added the item.</td></tr><tr><td><code>createdAt</code></td><td>timestamp</td><td></td><td>✓</td><td>Timestamp when the item was added to the catalogue.</td></tr><tr><td><code>updatedAt</code></td><td>timestamp</td><td></td><td>✓</td><td>Timestamp of the most recent edit to the item.</td></tr></tbody>
+</table>
+
+<h3><code>items_removed</code></h3>
+<p>Reduced payload published via the items.item.removed event channel. Records the removal of an item and retains only the identifiers and removal timestamp for audit purposes.</p>
+<table>
+  <thead><tr><th>Field</th><th>Logical Type</th><th>Physical Type</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody><tr><td><code>id</code> 🔑</td><td>string</td><td>uuid</td><td>✓</td><td>Unique identifier of the removed item.</td></tr><tr><td><code>contributorId</code></td><td>string</td><td>uuid</td><td>✓</td><td>Identifier of the contributor who removed the item.</td></tr><tr><td><code>removedAt</code></td><td>timestamp</td><td></td><td>✓</td><td>Timestamp when the item was removed from the catalogue.</td></tr></tbody>
+</table>
+
+</section>
+
+</main>
+
+<footer id="footer">
+  <p>Generated by <code>scripts/generate_domain_overview.py</code> · 2026-05-30 13:05 UTC</p>
+</footer>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark" });
+</script>
+
+</body>
+</html>

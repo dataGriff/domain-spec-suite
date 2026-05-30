@@ -1,0 +1,83 @@
+# Suite-managed progress state. The orchestrator reads this on every
+# invocation; phase skills update it as they sign off. Do not edit by
+# hand — use `task suite:reset-phase <phase>` if you genuinely need to
+# rewind.
+
+suite_version: "1.0.0"
+gate_version: "1.0.0"
+domain_name: "items"
+started_at: "2026-05-25T14:00:00Z"
+last_updated: "2026-05-25T16:30:00Z"
+
+phases:
+  bootstrap:
+    status: passed
+    signed_off_at: "2026-05-25T14:05:00Z"
+    gate_version: "1.0.0"
+  discovery:
+    status: passed
+    signed_off_at: "2026-05-25T14:45:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  modeling:
+    status: passed
+    signed_off_at: "2026-05-25T15:20:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  access-control:
+    status: passed
+    signed_off_at: "2026-05-25T15:40:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  flows:
+    status: passed
+    signed_off_at: "2026-05-25T16:00:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  nfrs:
+    status: passed
+    signed_off_at: "2026-05-25T16:15:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  contracts:
+    status: passed
+    signed_off_at: "2026-05-25T16:25:00Z"
+    gate_version: "1.0.0"
+    deferred_items: 0
+  audit:
+    status: passed
+    signed_off_at: "2026-05-25T16:30:00Z"
+    gate_version: "1.0.0"
+
+# Force-advance entries — written by `task suite:force-advance`. Audit
+# fails on any entry with `accepted: false`. Clear with
+# `task suite:accept-force`.
+force_advances: []
+
+session_log:
+  - timestamp: "2026-05-25T14:00:00Z"
+    event: suite-initialized
+  - timestamp: "2026-05-25T14:05:00Z"
+    event: phase-passed
+    phase: bootstrap
+  - timestamp: "2026-05-25T14:45:00Z"
+    event: phase-passed
+    phase: discovery
+  - timestamp: "2026-05-25T15:20:00Z"
+    event: phase-passed
+    phase: modeling
+  - timestamp: "2026-05-25T15:40:00Z"
+    event: phase-passed
+    phase: access-control
+  - timestamp: "2026-05-25T16:00:00Z"
+    event: phase-passed
+    phase: flows
+  - timestamp: "2026-05-25T16:15:00Z"
+    event: phase-passed
+    phase: nfrs
+  - timestamp: "2026-05-25T16:25:00Z"
+    event: phase-passed
+    phase: contracts
+  - timestamp: "2026-05-25T16:30:00Z"
+    event: phase-passed
+    phase: audit

@@ -1,0 +1,5 @@
+#!/bin/sh
+if git diff --cached --name-only | grep -q 'docs/specifications/contracts/'; then
+  echo "Spec contracts staged — running task lint..."
+  task lint
+fi

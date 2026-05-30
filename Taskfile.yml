@@ -46,9 +46,14 @@ tasks:
       - pytest -m bootstrap
 
   test:audit:
-    desc: Tests for the audit skill (stub — implemented in BUILD-PLAN Task 2.3)
+    desc: Tests for the audit skill (pytest -m audit)
     cmds:
       - pytest -m audit
+
+  audit:
+    desc: 'Run the Phase 7 conformance audit against a target domain repo. Usage: task audit -- --repo /path/to/domain'
+    cmds:
+      - "{{.PYTHON}} shared/run_phase.py audit {{.CLI_ARGS}}"
 
   # ── Fixtures ─────────────────────────────────────────────────────
 

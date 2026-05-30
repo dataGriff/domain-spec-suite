@@ -1,0 +1,28 @@
+# Phase 2 Modeling sign-off. Soft+engagement gate — every warning had an
+# explicit response, every cross-reference check passed. Schema per
+# SUITE-DESIGN.md §4.
+
+phase: modeling
+signed_off_at: "2026-05-25T15:20:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - MOD-ENTITY-ID-TIMESTAMPS
+  - MOD-ENTITY-BUSINESS-RULE
+  - MOD-ENTITY-LIFECYCLE
+  - MOD-RELATIONSHIP-BIDIR
+  - MOD-ENTITY-UNIQUE
+  - GLOSSARY-COVERS-ENTITIES
+  - MOD-PRD-STORY-ENTITIES
+  - GLOSSARY-COVERS-ATTRIBUTES
+
+warnings_responded: []
+rubric_findings: []
+
+files_signed:
+  - path: docs/specifications/domain-model.md
+    sha256: "82e94d71b9cdba00a9563440b0269f4e26fabd44fb78df99aaa48c8821fd46eb"
+    mtime: "2026-05-25T15:19:00Z"
+  - path: docs/specifications/glossary.md
+    sha256: "967969172615b9bb99df5b9da61a89e7afbe06257787804627335c3eabe8ec2a"
+    mtime: "2026-05-25T15:19:30Z"

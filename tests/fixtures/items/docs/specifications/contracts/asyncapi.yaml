@@ -1,0 +1,224 @@
+asyncapi: 2.6.0
+info:
+  title: Items Domain Events
+  version: 1.0.0
+  description: |
+    Domain event contract for the **Items** domain — a small shared
+    catalogue of named entries. Events are emitted on every change to
+    the catalogue (add, edit, remove). See `prd.md` for the domain
+    narrative and `domain-model.md` for the entity definitions.
+
+    All events conform to the [CloudEvents 1.0](https://cloudevents.io/)
+    specification. The transport binding for development is declared in
+    the `servers` section below; productionised deployments may choose
+    any binding compatible with the channel definitions in this file.
+  contact:
+    name: Items Domain Spec Set
+    url: https://example.com/items
+    email: items@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  development:
+    url: amqp://localhost:5672
+    protocol: amqp
+    description: Local AMQP broker (development binding)
+
+defaultContentType: application/json
+
+tags:
+  - name: Items
+    description: Events related to the item lifecycle
+
+channels:
+  items.item.added:
+    description: Published whenever a new item is added to the catalogue by a contributor.
+    publish:
+      operationId: onItemAdded
+      description: Consume item added events to react to new items being added to the catalogue.
+      tags:
+        - name: Items
+      message:
+        $ref: '#/components/messages/ItemAdded'
+
+  items.item.edited:
+    description: Published whenever an item's name, description, or status is changed.
+    publish:
+      operationId: onItemEdited
+      description: Consume item edited events to keep downstream systems in sync with item changes.
+      tags:
+        - name: Items
+      message:
+        $ref: '#/components/messages/ItemEdited'
+
+  items.item.removed:
+    description: Published whenever an item is removed from the catalogue by its contributor.
+    publish:
+      operationId: onItemRemoved
+      description: Consume item removed events to remove references to items in downstream systems.
+      tags:
+        - name: Items
+      message:
+        $ref: '#/components/messages/ItemRemoved'
+
+components:
+  messages:
+    ItemAdded:
+      name: ItemAdded
+      title: Item Added
+      summary: A new item has been added to the catalogue.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ItemAddedEvent'
+      examples:
+        - name: item-added-example
+          payload:
+            specversion: "1.0"
+            type: items.item.added
+            source: /items
+            id: a1b2c3d4-0000-0000-0000-000000000001
+            time: "2026-06-01T09:00:00Z"
+            datacontenttype: application/json
+            data:
+              id: a1b2c3d4-0000-0000-0000-000000000002
+              name: My First Item
+              description: A great item
+              status: active
+              contributorId: a1b2c3d4-0000-0000-0000-000000000003
+              createdAt: "2026-06-01T09:00:00Z"
+              updatedAt: "2026-06-01T09:00:00Z"
+
+    ItemEdited:
+      name: ItemEdited
+      title: Item Edited
+      summary: An existing item has been edited.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ItemEditedEvent'
+      examples:
+        - name: item-edited-example
+          payload:
+            specversion: "1.0"
+            type: items.item.edited
+            source: /items
+            id: a1b2c3d4-0000-0000-0000-000000000004
+            time: "2026-06-02T10:00:00Z"
+            datacontenttype: application/json
+            data:
+              id: a1b2c3d4-0000-0000-0000-000000000002
+              name: My Edited Item
+              description: An updated description
+              status: archived
+              contributorId: a1b2c3d4-0000-0000-0000-000000000003
+              createdAt: "2026-06-01T09:00:00Z"
+              updatedAt: "2026-06-02T10:00:00Z"
+
+    ItemRemoved:
+      name: ItemRemoved
+      title: Item Removed
+      summary: An item has been removed from the catalogue.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ItemRemovedEvent'
+      examples:
+        - name: item-removed-example
+          payload:
+            specversion: "1.0"
+            type: items.item.removed
+            source: /items
+            id: a1b2c3d4-0000-0000-0000-000000000005
+            time: "2026-06-03T11:00:00Z"
+            datacontenttype: application/json
+            data:
+              id: a1b2c3d4-0000-0000-0000-000000000002
+              contributorId: a1b2c3d4-0000-0000-0000-000000000003
+              removedAt: "2026-06-03T11:00:00Z"
+
+  schemas:
+    CloudEventBase:
+      type: object
+      required: [specversion, type, source, id, time, datacontenttype]
+      properties:
+        specversion:
+          type: string
+          const: "1.0"
+        type:
+          type: string
+          description: Event type in reverse-DNS dot notation
+        source:
+          type: string
+          description: URI reference for the event source
+        id:
+          type: string
+          format: uuid
+        time:
+          type: string
+          format: date-time
+        datacontenttype:
+          type: string
+          const: application/json
+
+    ItemData:
+      type: object
+      required: [id, name, description, status, contributorId, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, archived]
+        contributorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ItemAddedEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/ItemData'
+
+    ItemEditedEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/ItemData'
+
+    ItemRemovedEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: object
+              required: [id, contributorId, removedAt]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                contributorId:
+                  type: string
+                  format: uuid
+                removedAt:
+                  type: string
+                  format: date-time

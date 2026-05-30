@@ -1,0 +1,11 @@
+# Bootstrap record — written once by the `domain-bootstrap` skill when
+# this repo's shell was first laid down. Records the suite version and the
+# gate version that produced the canonical shell so subsequent
+# `task suite:upgrade-shell` runs can compute their diff. Do not edit
+# by hand.
+
+suite_version: "1.0.0"
+gate_version: "1.0.0"
+domain_name: "items"
+bootstrapped_at: "2026-05-25T14:00:00Z"
+bootstrapped_by: "domain-bootstrap (skills/domain-bootstrap)"

@@ -1,0 +1,21 @@
+# Phase 4 Flows sign-off. Soft+engagement gate — every PRD user story has
+# at least one sequence diagram, every domain-model lifecycle transition
+# appears in a flow.
+
+phase: flows
+signed_off_at: "2026-05-25T16:00:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - FLOW-TITLE-PARTICIPANTS
+  - FLOW-PARTICIPANT-DEFINED
+  - FLOW-STORY-COVERAGE
+  - FLOW-LIFECYCLE-COVERAGE
+
+warnings_responded: []
+rubric_findings: []
+
+files_signed:
+  - path: docs/specifications/sequence-diagrams.md
+    sha256: "344ec5f731def5435c6f091e1cea2c6faa01dc13046d4a1e20584803fefa97b8"
+    mtime: "2026-05-25T15:59:00Z"

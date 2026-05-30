@@ -1,0 +1,32 @@
+# Phase 6 Contracts sign-off. Hard gate — all tool checks and all
+# cross-reference checks passed. Schema per SUITE-DESIGN.md §4.
+
+phase: contracts
+signed_off_at: "2026-05-25T16:25:00Z"
+gate_version: "1.0.0"
+
+checks_passed:
+  - SPECTRAL-OPENAPI
+  - SPECTRAL-ASYNCAPI
+  - DATACONTRACT-LINT
+  - ENTITY-IN-OPENAPI-SCHEMA
+  - FIELD-MATCH-DOMAIN-OPENAPI
+  - WRITE-OP-HAS-ASYNCAPI-CHANNEL
+  - EVENT-IN-DATACONTRACT
+  - EVENT-FIELD-MATCH-DATACONTRACT
+  - AUTH-MATRIX-OPENAPI-MATCH
+  - ERROR-CODE-IN-CATALOGUE
+
+warnings_responded: []
+rubric_findings: []
+
+files_signed:
+  - path: docs/specifications/contracts/openapi.yaml
+    sha256: "dbf5378b8dc9f57c7a0f915012b69b611d58b3bb1f99fce42634e71f24d0ad37"
+    mtime: "2026-05-25T16:24:00Z"
+  - path: docs/specifications/contracts/asyncapi.yaml
+    sha256: "1c174ab84ecf6cc23528c0cd8a1ec01e08241924a15188a903e961309da79b9e"
+    mtime: "2026-05-25T16:24:30Z"
+  - path: docs/specifications/contracts/datacontract.yaml
+    sha256: "608a78af7456ebaf242f1db4efb8cd22bbf0635326964079d24b7c9ce9908b26"
+    mtime: "2026-05-25T16:24:45Z"
