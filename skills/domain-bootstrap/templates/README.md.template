@@ -13,10 +13,13 @@ consume these specs from their own repositories.
 ## Quick Start
 
 ```bash
-task setup          # install tooling via mise + Python dev deps
-task               # list every available task
-task domain:check  # lint contracts + regenerate the domain overview
-task docs:serve    # browse the docs site locally
+mise trust          # one-time per clone — trusts this repo's .mise.toml
+mise install        # installs Python 3.11, Node 20, Spectral,
+                    # datacontract-cli, mkdocs-material via pipx
+task setup          # installs pyyaml and wires git hooks
+task                # list every available task
+task domain:check   # lint contracts + regenerate the domain overview
+task docs:serve     # browse the docs site locally
 ```
 
 ---

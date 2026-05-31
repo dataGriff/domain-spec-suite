@@ -336,7 +336,10 @@ def _schema_type(prop):
     if ref:
         return f"→ {ref.split('/')[-1]}"
     if enum:
-        return f"enum({', '.join(enum)})"
+        # OpenAPI may include literal null in an enum (alongside nullable: true);
+        # PyYAML parses that to None. Render as "null" rather than crashing on str.join.
+        values = ["null" if v is None else str(v) for v in enum]
+        return f"enum({', '.join(values)})"
     if fmt:
         display = f"{t}({fmt})"
     else:

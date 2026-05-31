@@ -61,7 +61,12 @@ walk each through:
 
 Glossary entries are mechanical: every entity gets a `### <Entity>`
 heading under `## Entities`, every attribute gets a `### <attribute>`
-heading under `## <Entity> attributes`.
+heading under `## <Entity> attributes`. Don't type them by hand —
+run `task glossary:skeleton` (bootstrap-installed) to generate the
+skeleton from `domain-model.md` with TODO placeholders, then walk
+the entries and fill in real prose. On a domain with 10+ entities
+this saves a meaningful amount of typing tedium and avoids missed
+attributes.
 
 After every entity, run `task gate:modeling -- --repo <target>` to
 surface failures and warnings early. Iterate until the gate is clean

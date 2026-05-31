@@ -28,6 +28,16 @@ tasks:
       - task: lint:asyncapi
       - task: lint:datacontract
 
+  lint:fix-descriptions:
+    desc: Auto-insert `description:` lines on every operationId in openapi.yaml + asyncapi.yaml that lacks one (idempotent). Use to clear Spectral's operation-description / asyncapi-operation-description / asyncapi-tag-description failures in one pass.
+    cmds:
+      - python3 scripts/lint_fix_descriptions.py
+
+  glossary:skeleton:
+    desc: 'Generate glossary.md skeleton from domain-model.md entities + attributes (placeholders for the agent to fill). Idempotent on template glossary; --force to overwrite a real one. Saves ~90 entries of typing on a non-trivial domain.'
+    cmds:
+      - python3 scripts/glossary_skeleton.py
+
   docs:generate:
     desc: Generate the domain overview HTML page from OpenAPI, AsyncAPI, and Data Contract specs
     cmds:

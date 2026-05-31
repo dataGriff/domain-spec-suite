@@ -283,6 +283,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"run_phase: target repo does not exist: {repo}", file=sys.stderr)
         return 2
     exit_code, outcomes = run_phase(args.phase, repo)
+
+    # Audit-phase post-processing: respect prior-phase engagement.
+    # Mirrors sign_off.py so `task audit` and `task sign-off:audit` show
+    # the same downgraded view.
+    if args.phase == "audit":
+        from shared import prior_engagement
+
+        engagement = prior_engagement.read_prior_engagement(repo)
+        outcomes, _ = prior_engagement.apply_prior_engagement(outcomes, engagement)
+        exit_code = prior_engagement.downgraded_exit_code(outcomes)
+
     print(render(args.phase, repo, outcomes))
     return exit_code
 

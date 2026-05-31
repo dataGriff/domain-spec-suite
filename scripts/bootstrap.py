@@ -336,6 +336,15 @@ def bootstrap(args: argparse.Namespace) -> int:
     print(f"  suite version:            {SUITE_VERSION}")
     print(f"  gate version:             {GATE_VERSION}")
     print(f"  Phase 0 checks passed:    {len(PHASE_0_CHECKS)} ({', '.join(PHASE_0_CHECKS)})")
+    print()
+    print("Next steps:")
+    print(f"  cd {target}")
+    print("  mise trust && mise install     # installs Python, Node, Spectral,")
+    print("                                  # datacontract-cli, mkdocs-material")
+    print("  task setup                      # installs pyyaml and wires git hooks")
+    print()
+    print("Then continue with Phase 1 via the domain-discovery skill or")
+    print("`task gate:discovery` directly.")
     return 0
 
 

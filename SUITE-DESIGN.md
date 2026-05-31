@@ -682,6 +682,30 @@ cross-file inconsistencies but won't walk the user through fixing them.
 Useful as an escape hatch when the user knows exactly what they're doing.
 Always offered last in the option list.
 
+### Audit respects prior-phase engagement
+
+The audit re-runs cross-reference checks at error severity. When a check
+was legitimately n-a'd or deferred at its owning phase (recorded in that
+phase's `warnings_responded`), re-firing it at audit-error would lose
+the engagement.
+
+`shared/prior_engagement.py` reads every prior phase's
+`_phase-N-passed.yaml`, builds a map of `check_id →
+{response, reason, phase}` for any entry whose response is `n-a` or
+`deferred`, and downgrades matching audit error outcomes to warning.
+The downgrade attaches a carry-forward note in the audit output
+("n-a/deferred at phase 'flows' — reason: …") and synthesises a
+`warnings_responded` entry so the audit's sign-off doesn't refuse on
+un-engaged warnings.
+
+`resolved` responses do NOT carry forward — if the fix decayed and the
+check fires again, that's a new finding worth surfacing at audit error.
+
+The mechanism preserves audit's discoverability (the carry-forward is
+visible) without blocking sign-off on a decision the user already made.
+Staleness (sha256 drift) still fails the audit normally; only the
+specific check-id-matched downgrades apply.
+
 ---
 
 ## 7. The Prompting Style

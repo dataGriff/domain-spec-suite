@@ -292,6 +292,21 @@ def sign_off(
 
     if force_advance is None:
         exit_code, outcomes = run_phase.run_phase(phase, repo)
+
+        # Audit-phase post-processing: respect prior-phase engagement.
+        # Cross-ref checks n-a'd / deferred at their owning phase get
+        # downgraded from error → warning at audit, with a carry-forward
+        # response auto-synthesised so the engagement check passes.
+        synthetic_responses: list[dict] = []
+        if phase == "audit":
+            from shared import prior_engagement
+
+            engagement = prior_engagement.read_prior_engagement(repo)
+            outcomes, synthetic_responses = prior_engagement.apply_prior_engagement(
+                outcomes, engagement
+            )
+            exit_code = prior_engagement.downgraded_exit_code(outcomes)
+
         if exit_code != 0:
             print(
                 f"sign-off REFUSED: {phase} gate did not pass.\n"
@@ -309,11 +324,24 @@ def sign_off(
 
         # Soft-gate engagement check: even when the runner exits 0,
         # any warning-severity check that fired must have an explicit
-        # response in warnings_responded.
-        ok, msg = _validate_warnings_engagement(outcomes, warnings_responded or [])
+        # response in warnings_responded. Synthetic responses
+        # (carry-forwards from prior phases) merge with user-supplied ones.
+        combined_responses = list(warnings_responded or []) + synthetic_responses
+        ok, msg = _validate_warnings_engagement(outcomes, combined_responses)
         if not ok:
             print(f"sign-off REFUSED: {msg}", file=sys.stderr)
             return 1
+
+        # If audit synthesised carry-forwards and the user didn't override
+        # them, fold them into warnings_responded so the sidecar records
+        # the engagement explicitly.
+        if synthetic_responses and not warnings_responded:
+            warnings_responded = synthetic_responses
+        elif synthetic_responses:
+            user_ids = {entry.get("id") for entry in warnings_responded or []}
+            warnings_responded = list(warnings_responded or []) + [
+                entry for entry in synthetic_responses if entry.get("id") not in user_ids
+            ]
     else:
         _append_force_advance(repo, phase, force_advance)
         print(

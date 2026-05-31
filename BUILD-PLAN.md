@@ -624,33 +624,29 @@ SUITE-DESIGN §4 and §5.5 updated.
 **Status:** ✅ Mechanism shipped; dog-walking sidecars retrofitted
 with full decisions blocks as a populated reference.
 
-### 6.5 Document any bugs/improvements found — [ ]
+### 6.5 v1.0.1 backlog — [x]
 
-From M6.2 / M6.3 / M6.4 surfaced:
+All 6 items surfaced during M6.2 / M6.3 / M6.4 now addressed:
 
-- **Audit re-fires warnings that were n-a'd at prior phases.** Audit
-  re-runs cross-references at error severity and doesn't read
-  warnings_responded from prior sidecars. Workaround: add the missing
-  artifact (e.g. token-lifecycle flows). Real fix: audit should read
-  per-phase n-a/deferred annotations.
-- **OpenAPI enum can't include literal `null`.** YAML parses to
-  None and breaks the generator. Either generator handles None
-  gracefully or Spectral catches it.
-- **Generator script doesn't ship pyyaml.** `pip install pyyaml` is
-  implicit. Worth adding to bootstrap setup.
-- **Spectral operation-description is strict on every op.** Bulk-
-  fixing this manually is error-prone (lookahead matches response
-  descriptions). A bootstrap script `scripts/lint_fix_descriptions.py`
-  could automate.
-- **Bootstrap's `docs:generate` references mkdocs that isn't
-  installed by default** — needs explicit `mise install` step to be
-  documented in the bootstrap output README.
-- **GLOSSARY-COVERS-ATTRIBUTES is exhausting** for any real domain
-  (13 entities × 7 attributes = ~90 entries). A modeling-skill
-  helper that generates the glossary skeleton from domain-model
-  attribute tables would save tedium.
-
-Capture these in a `v1.0.1-backlog.md` once we're past v1.0 sign-off.
+- ✅ **#1 Audit-respects-prior-engagement.** `shared/prior_engagement.py`
+  reads each prior phase's `warnings_responded`, downgrades matching
+  audit-error outcomes to warning, synthesises carry-forward responses.
+  Documented in SUITE-DESIGN §6 ("Audit respects prior-phase engagement").
+- ✅ **#2 Null in OpenAPI enum.** Generator handles `None` from PyYAML's
+  literal-null parsing instead of crashing on `str.join`.
+- ✅ **#3 pyyaml install path.** Bootstrap now prints explicit
+  next-steps (`mise install` → `task setup`) so users hit the right
+  install sequence.
+- ✅ **#4 Spectral description auto-fix.** New
+  `scripts/lint_fix_descriptions.py` (bootstrap-installed) +
+  `task lint:fix-descriptions`. Idempotent.
+- ✅ **#5 mkdocs install discoverability.** README quick-start now
+  shows the full `mise trust → mise install → task setup` sequence.
+- ✅ **#6 Glossary skeleton generator.** New
+  `scripts/glossary_skeleton.py` (bootstrap-installed) +
+  `task glossary:skeleton`. Reads domain-model attribute tables and
+  emits ~90 glossary stubs in one shot. Modeling SKILL.md points
+  the agent at it.
 
 🛑 **Final review.** Declare suite v1.0.0 complete if user agrees.
 
