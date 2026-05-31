@@ -145,6 +145,73 @@ def test_runner_render_includes_summary_counts() -> None:
     assert "passed" in output
 
 
+def test_signoff_sha256_matches_handles_bare_and_quoted(tmp_path: pathlib.Path) -> None:
+    """Regression: SIGNOFF-SHA256-MATCHES must parse sha256 values
+    written either bare (yaml.safe_dump shorthand) OR double-quoted
+    (hand-authored fixtures). An earlier regex-only implementation
+    matched only quoted format and silently passed everything in bare
+    format, hiding real staleness drift on every audit.
+
+    Test stages both formats in a synthetic spec dir and asserts each
+    drift is caught."""
+    import shutil
+
+    from shared.checks import signoff_sha256_matches
+
+    target = tmp_path / "spec-sample"
+    specs = target / "docs" / "specifications"
+    specs.mkdir(parents=True)
+
+    # Two files, two sidecar shapes (bare + quoted).
+    bare_file = specs / "bare.md"
+    bare_file.write_text("bare content\n")
+    quoted_file = specs / "quoted.md"
+    quoted_file.write_text("quoted content\n")
+
+    import hashlib
+
+    bare_sha = hashlib.sha256(bare_file.read_bytes()).hexdigest()
+    quoted_sha = hashlib.sha256(quoted_file.read_bytes()).hexdigest()
+
+    # Sidecar 1: bare sha256
+    (specs / "_phase-1-passed.yaml").write_text(
+        f"""phase: bare-format-test
+files_signed:
+- path: docs/specifications/bare.md
+  sha256: {bare_sha}
+"""
+    )
+    # Sidecar 2: quoted sha256
+    (specs / "_phase-2-passed.yaml").write_text(
+        f"""phase: quoted-format-test
+files_signed:
+  - path: docs/specifications/quoted.md
+    sha256: "{quoted_sha}"
+"""
+    )
+
+    # Both files at recorded sha → check passes.
+    assert signoff_sha256_matches.run(target).passed
+
+    # Mutate the bare-format-tracked file → check must fail.
+    bare_file.write_text("bare content mutated\n")
+    result = signoff_sha256_matches.run(target)
+    assert not result.passed, "bare-format sha256 drift not detected"
+    assert "bare.md" in str(result.details), (
+        f"drift detected but wrong file flagged. details: {result.details}"
+    )
+
+    # Restore bare, mutate quoted → check must fail.
+    bare_file.write_text("bare content\n")
+    quoted_file.write_text("quoted content mutated\n")
+    result = signoff_sha256_matches.run(target)
+    assert not result.passed, "quoted-format sha256 drift not detected"
+    assert "quoted.md" in str(result.details)
+
+    # Cleanup
+    shutil.rmtree(target)
+
+
 def test_exclude_flag_skips_named_checks() -> None:
     """run_phase(..., exclude={ids}) omits those checks from outcomes
     entirely. Used by the spec-repo `task audit:cross-file` to skip

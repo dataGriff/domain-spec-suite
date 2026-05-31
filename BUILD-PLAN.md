@@ -624,6 +624,36 @@ SUITE-DESIGN §4 and §5.5 updated.
 **Status:** ✅ Mechanism shipped; dog-walking sidecars retrofitted
 with full decisions blocks as a populated reference.
 
+### 6.6 v1.0.2 — domain-review skill + audit-bug fix — [x]
+
+Independent review of the dog-walking spec set surfaced 4 categories
+of issue the mechanical suite couldn't catch (cross-doc type drift,
+orphan operations, semantic contradictions in attribute prose,
+missing decision-log notes for design intent). Codified the
+review methodology as a new suite skill.
+
+- ✅ `skills/domain-review/SKILL.md`: walks 5 review categories;
+  produces structured markdown report; read-only.
+- ✅ `scripts/domain_review.py`: pre-flight (audit green), context
+  bundle, `--write-report` mode for persisting agent output.
+- ✅ Suite Taskfile: `task review` invokes the runner.
+- ✅ Bootstrap Taskfile: `task review` shells to the suite via the
+  same `DOMAIN_SPEC_SUITE_ROOT` / sibling-fallback pattern as audit.
+- ✅ SUITE-DESIGN §6 "Qualitative review layer" documents the
+  mechanism.
+- ✅ Real bug fix: `SIGNOFF-SHA256-MATCHES` regex required quoted
+  sha256 values but `sign_off.py` emits bare via `yaml.safe_dump`,
+  so the check was silently passing on every audit since M3. Fixed
+  by switching to YAML-parser approach; regression test in
+  `tests/test_audit.py` covers both bare + quoted formats.
+- ✅ Dog-walking spec set fixed for the 4 review-surfaced findings:
+  InvoiceLineItem.priceCents minimum tightened, snapshot-timing
+  prose disambiguated, US-020 view-dog story added, Walker no-API
+  note explicit, 3 minor prose fixes. Re-signed affected phases
+  with Decision Log entries.
+
+135/135 tests green (was 134, +1 sha256 regression).
+
 ### 6.5 v1.0.1 backlog — [x]
 
 All 6 items surfaced during M6.2 / M6.3 / M6.4 now addressed:

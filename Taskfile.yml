@@ -173,6 +173,11 @@ tasks:
     cmds:
       - "{{.PYTHON}} scripts/orchestrator_status.py {{.CLI_ARGS}}"
 
+  review:
+    desc: 'Run the qualitative domain-review against a target spec repo. Verifies audit is green, prints the file list + category checklist for the agent. Usage: task review -- --repo /path/to/spec'
+    cmds:
+      - "{{.PYTHON}} scripts/domain_review.py {{.CLI_ARGS}}"
+
   # ── Fixtures ─────────────────────────────────────────────────────
 
   fixtures:reset:

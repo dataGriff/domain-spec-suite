@@ -688,6 +688,43 @@ cross-file inconsistencies but won't walk the user through fixing them.
 Useful as an escape hatch when the user knows exactly what they're doing.
 Always offered last in the option list.
 
+### Qualitative review layer (`domain-review` skill)
+
+Mechanical checks catch shape, structure, and sha256 drift. They
+**don't** catch semantic inconsistencies: two docs saying contradictory
+things about the same concept, an OpenAPI operation with no user
+story behind it, an NFR threshold that contradicts another NFR's
+budget, a Decision Log entry whose intent isn't reflected in the
+actual spec.
+
+The `domain-review` skill (`skills/domain-review/SKILL.md`) is the
+qualitative pass. It runs after audit is green and walks five
+review categories:
+
+1. Cross-document type / shape inconsistencies
+2. Coverage gaps between docs
+3. Logical / semantic contradictions
+4. Missing-case gaps
+5. Decision Log drift
+
+Output is a structured markdown report at
+`docs/specifications/_review-<ISO-timestamp>.md`. The report is
+read-only: the user reads findings and decides what to action via
+the normal update-mode flow (no automatic fixes).
+
+The skill is **not** part of the phase progression and **not** a
+gate. It's a human-prompted action: invoke before a major release,
+after a large update-mode change, or periodically as hygiene. Each
+run produces a new timestamped report; older reports stay for
+historical reference.
+
+The runner (`scripts/domain_review.py`) verifies audit is green,
+enumerates the files the agent will read, prints the category
+checklist, and provides a `--write-report` mode for persisting the
+agent's report body. The qualitative work — actually reading the
+files and producing findings — is the agent's job, codified in
+`SKILL.md`.
+
 ### Audit respects prior-phase engagement
 
 The audit re-runs cross-reference checks at error severity. When a check

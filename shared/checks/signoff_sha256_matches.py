@@ -5,13 +5,19 @@ If a sidecar's recorded hash differs from the current file content, the
 file has been edited since sign-off — the phase is stale and the
 re-sign workflow (via the orchestrator's update mode) must run before
 audit can pass.
+
+The sidecar is parsed as YAML (not regex-matched) because YAML's
+quote-stripping for plain strings means sha256 values can be either
+quoted ("abc...") or bare (abc...) depending on the writer — the
+regex approach silently misses bare values.
 """
 
 from __future__ import annotations
 
 import hashlib
 import pathlib
-import re
+
+import yaml
 
 from shared.check_result import CheckResult
 
@@ -22,14 +28,6 @@ metadata = {
     "severity_by_phase": {"audit": "error"},
     "prerequisites": [],
 }
-
-# Matches the shape produced by sign-off:
-#   - path: docs/specifications/prd.md
-#     sha256: "abc..."
-ENTRY = re.compile(
-    r"-\s*path:\s*(?P<path>\S+)\s*\n\s*sha256:\s*\"(?P<sha>[0-9a-f]+)\"",
-    re.MULTILINE,
-)
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
@@ -49,13 +47,15 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         )
 
     mismatches: list[str] = []
-    checked = 0
     for sidecar in sidecars:
-        text = sidecar.read_text(encoding="utf-8")
-        for match in ENTRY.finditer(text):
-            checked += 1
-            path = match.group("path")
-            recorded = match.group("sha")
+        doc = yaml.safe_load(sidecar.read_text(encoding="utf-8")) or {}
+        for entry in doc.get("files_signed") or []:
+            if not isinstance(entry, dict):
+                continue
+            path = entry.get("path")
+            recorded = entry.get("sha256")
+            if not path or not recorded:
+                continue
             target = repo_root / path
             if not target.is_file():
                 mismatches.append(f"{sidecar.name}: '{path}' referenced but file does not exist")
