@@ -18,12 +18,15 @@ Layout:
             phase-0-passed.yaml   # ... through phase-7-passed.yaml
         reviews/
             <ISO-timestamp>.md    # qualitative review reports
-        templates/                # blank spec skeletons
 
 The `.spec-suite/` directory is intentionally hidden (dot-prefixed)
 so it sits alongside `.git/`, `.github/`, `.claude/` etc. and
 doesn't clutter `docs/specifications/`, which is reserved for the
 publishable spec content.
+
+Blank spec templates do NOT live here; they're suite-versioned and
+sit in `<suite>/templates/`. `task init:<phase>` resolves them from
+the suite at authoring time.
 """
 
 from __future__ import annotations
@@ -60,10 +63,6 @@ def phases_dir(repo: pathlib.Path) -> pathlib.Path:
 
 def reviews_dir(repo: pathlib.Path) -> pathlib.Path:
     return state_dir(repo) / "reviews"
-
-
-def templates_dir(repo: pathlib.Path) -> pathlib.Path:
-    return state_dir(repo) / "templates"
 
 
 # ── file helpers ─────────────────────────────────────────────────
@@ -107,11 +106,9 @@ def review_report_path(repo: pathlib.Path, filename: str) -> pathlib.Path:
 
 
 def ensure_state_skeleton(repo: pathlib.Path) -> None:
-    """Create `.spec-suite/`, `.spec-suite/phases/`, `.spec-suite/reviews/`,
-    `.spec-suite/templates/` if absent. Idempotent. Called by
-    bootstrap and by anything that writes a sidecar before
-    `.spec-suite/` is guaranteed to exist."""
+    """Create `.spec-suite/`, `.spec-suite/phases/`, `.spec-suite/reviews/`
+    if absent. Idempotent. Called by bootstrap and by anything that
+    writes a sidecar before `.spec-suite/` is guaranteed to exist."""
     state_dir(repo).mkdir(parents=True, exist_ok=True)
     phases_dir(repo).mkdir(parents=True, exist_ok=True)
     reviews_dir(repo).mkdir(parents=True, exist_ok=True)
-    templates_dir(repo).mkdir(parents=True, exist_ok=True)

@@ -393,7 +393,7 @@ def test_accept_force_errors_when_no_unaccepted_entry(tmp_path: pathlib.Path) ->
 
 def test_init_phase_copies_missing_contracts(tmp_path: pathlib.Path) -> None:
     """When contracts/ is empty, init_phase copies the three blank
-    skeletons from _template/contracts/."""
+    skeletons from the suite's templates/contracts/ directory."""
     target = _copy_fixture(tmp_path)
     contracts_dir = target / "docs/specifications/contracts"
 
@@ -410,7 +410,7 @@ def test_init_phase_copies_missing_contracts(tmp_path: pathlib.Path) -> None:
     for f in ("openapi.yaml", "asyncapi.yaml", "datacontract.yaml"):
         path = contracts_dir / f
         assert path.is_file(), f"init didn't copy {f}"
-        # The copied file should be the _template version (carries
+        # The copied file should be the blank template (carries
         # [Resource1] / [Domain Name] / [resource1] etc. placeholders).
         assert placeholder.search(path.read_text()), (
             f"copied {f} has no placeholders — was the wrong source used?"
@@ -443,17 +443,18 @@ def test_init_phase_is_idempotent(tmp_path: pathlib.Path) -> None:
 
 def test_init_phase_template_path_mapping() -> None:
     """The canonical mapping converts docs/specifications/X to
-    .spec-suite/templates/X."""
+    <suite>/templates/X."""
+    suite_root = pathlib.Path(init_phase.SUITE_ROOT).resolve()
     assert (
-        init_phase.template_path_for("docs/specifications/contracts/openapi.yaml")
-        == ".spec-suite/templates/contracts/openapi.yaml"
+        init_phase.template_source_for("docs/specifications/contracts/openapi.yaml")
+        == suite_root / "templates/contracts/openapi.yaml"
     )
     assert (
-        init_phase.template_path_for("docs/specifications/domain-model.md")
-        == ".spec-suite/templates/domain-model.md"
+        init_phase.template_source_for("docs/specifications/domain-model.md")
+        == suite_root / "templates/domain-model.md"
     )
     # Paths outside docs/specifications/ have no template convention.
-    assert init_phase.template_path_for("README.md") is None
+    assert init_phase.template_source_for("README.md") is None
 
 
 # ── integration: force-advance → audit fails → accept-force → audit passes ──

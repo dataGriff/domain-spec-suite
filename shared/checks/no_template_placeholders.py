@@ -3,8 +3,8 @@
 Scans every markdown and YAML file under `docs/specifications/`.
 Looks for the standard placeholder shapes: `[Resource1]`,
 `[Domain]`, and `{{...}}`. Template skeletons (with placeholders
-intact) live in `.spec-suite/templates/` and are outside this
-directory, so they're not scanned.
+intact) live in the suite at `<suite>/templates/` and are outside
+this directory, so they're not scanned.
 """
 
 from __future__ import annotations

@@ -22,7 +22,7 @@ task domain:check
 | Product + domain requirements | `docs/specifications/*.md` |
 | API/event/data contracts | `docs/specifications/contracts/*.yaml` |
 | Implementation conformance guidance | `.github/instructions/api-implementation.instructions.md` |
-| Blank spec templates | `docs/specifications/_template/` |
+| Suite bookkeeping (progress, sidecars, ambiguities, reviews) | `.spec-suite/` |
 | Contract linting + docs tasks | `Taskfile.yml` |
 | Published docs config | `mkdocs.yml`, `docs/`, `.github/workflows/docs.yml` |
 

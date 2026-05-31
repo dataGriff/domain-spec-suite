@@ -32,11 +32,9 @@ nav:
     - Non-Functional Requirements: specifications/nfr.md
     - Acceptance Scenarios: specifications/acceptance-scenarios.md
 
-# Suite-internal state files under docs/ that should not appear in the
-# rendered site.
+# Suite-internal state lives in .spec-suite/ (outside docs/) so
+# nothing under docs/ needs excluding.
 exclude_docs: |
-  specifications/_ambiguities.md
-  specifications/_template/
 
 markdown_extensions:
   - pymdownx.superfences:

@@ -10,7 +10,12 @@ Moves the following:
     docs/specifications/_template_manifest.yaml → .spec-suite/template-manifest.yaml
     docs/specifications/_phase-N-passed.yaml   → .spec-suite/phases/phase-N-passed.yaml
     docs/specifications/_review-<ts>.md        → .spec-suite/reviews/<ts>.md
-    docs/specifications/_template/             → .spec-suite/templates/
+    docs/specifications/_template/             → (removed; templates now live in the suite)
+
+Also removes `.spec-suite/templates/` from previously-migrated repos
+(suite v1.0.3 → v1.0.4 cleanup): templates now live in the suite
+repo at `<suite>/templates/` and `task init:<phase>` resolves them
+from there.
 
 `docs/specifications/` is left with only spec content
 (prd.md, domain-model.md, ... contracts/, generated HTML).
@@ -130,17 +135,25 @@ def migrate(repo: pathlib.Path, force: bool, dry_run: bool) -> int:
             dst = spec_paths.reviews_dir(repo) / new_name
             moves.append(_move(src, dst, dry_run))
 
-        # Template dir.
+        # Template dir (old layout): drop it entirely — templates now
+        # live in the suite at <suite>/templates/.
         templates_src = specs / "_template"
         if templates_src.is_dir():
-            templates_dst = spec_paths.templates_dir(repo)
             if dry_run:
-                moves.append(f"  WOULD MOVE  {templates_src} → {templates_dst}/  (entire tree)")
+                moves.append(f"  WOULD REMOVE {templates_src} (templates now live in the suite)")
             else:
-                if templates_dst.exists():
-                    shutil.rmtree(templates_dst)
-                shutil.move(str(templates_src), str(templates_dst))
-                moves.append(f"  MOVED       {templates_src} → {templates_dst}/  (entire tree)")
+                shutil.rmtree(templates_src)
+                moves.append(f"  REMOVED     {templates_src} (templates now live in the suite)")
+
+    # Cleanup for already-.spec-suite/-migrated repos that still carry a
+    # bootstrap-installed templates/ copy from v1.0.3.
+    state_templates = spec_paths.state_dir(repo) / "templates"
+    if state_templates.is_dir():
+        if dry_run:
+            moves.append(f"  WOULD REMOVE {state_templates} (templates now live in the suite)")
+        else:
+            shutil.rmtree(state_templates)
+            moves.append(f"  REMOVED     {state_templates} (templates now live in the suite)")
 
     # Sidecar files_signed path translation: any sidecar that still
     # references docs/specifications/_X paths gets rewritten to .spec-suite/X

@@ -5,13 +5,18 @@ empty target directory with:
 
 - The shell files from `skills/domain-bootstrap/templates/` (with
   `.template` placeholders substituted from CLI flags).
-- An initialised `docs/specifications/_progress.yaml`,
-  `_bootstrap.yaml`, `_ambiguities.md`, and `_template_manifest.yaml`
-  copied from the suite.
+- An initialised `.spec-suite/progress.yaml`, `bootstrap.yaml`,
+  `ambiguities.md`, and `template-manifest.yaml` written by this
+  script (not in the manifest — they're per-install state).
+
+Blank spec templates (prd.md, glossary.md, contracts/, etc.) live in
+the suite's own `templates/` directory and are NOT installed into
+the target. `task domain:init` (or `task init:<phase>` direct)
+resolves them from the suite at authoring time.
 
 Refuses on a non-empty directory by default. `--force` re-bootstraps
 in place, overwriting *only* files listed in the manifest — spec
-content and `_*.yaml` state are never touched.
+content and `.spec-suite/` state are never touched.
 
 Usage:
 

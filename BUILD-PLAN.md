@@ -726,6 +726,39 @@ generated HTML).
 
 135/135 tests green throughout.
 
+### 6.8 v1.0.4 — templates live in suite, not spec repos — [x]
+
+Spotted while reviewing a freshly-migrated dog-walking spec set:
+`.spec-suite/templates/` was just dead weight in a completed repo —
+every spec file is authored, the templates never run again, and they
+duplicate content that already lives in the suite. They were
+bootstrap-installed in v1.0.3 only because `task init:<phase>` read
+from the target's own `.spec-suite/templates/`.
+
+Move templates into the suite itself; have `task init:<phase>`
+resolve them from `<suite>/templates/` (same `DOMAIN_SPEC_SUITE_ROOT`
+lookup `task audit` / `task review` already use). Templates become
+single-source-of-truth alongside the gate code that consumes their
+outputs.
+
+- ✅ Moved `skills/domain-bootstrap/templates/.spec-suite/templates/*`
+  → `<suite>/templates/`.
+- ✅ `scripts/init_phase.py` reads from `SUITE_ROOT / "templates"`;
+  adds `all` mode (one shot across every authoring phase).
+- ✅ Bootstrap Taskfile `domain:init` delegates to the suite
+  (same shape as `task audit` / `task review`).
+- ✅ `shared/spec_paths.py` drops `templates_dir()` and stops
+  creating `.spec-suite/templates/` on bootstrap.
+- ✅ `scripts/migrate_to_spec_suite_dir.py` cleans up
+  `.spec-suite/templates/` from v1.0.3-migrated repos.
+- ✅ Regenerated `template_manifest.yaml` — 25 → 16 files.
+- ✅ Fixture (`tests/fixtures/items/`) Taskfile + mkdocs + README
+  refreshed to the new bootstrap-installed shape.
+
+End-to-end verified on `/tmp/spec-test-v104` (fresh bootstrap +
+init_phase all) and on `~/dev/domainapps/spec-dog-walking`
+(post-cleanup audit: 17/17). 135/135 tests green.
+
 ---
 
 ## Post-v1 Backlog
