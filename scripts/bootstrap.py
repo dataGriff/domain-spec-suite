@@ -196,14 +196,27 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
 
     written: list[str] = []
 
-    def write(rel: str, content: str) -> None:
+    def write(rel: str, content: str, preserve_existing: bool = False) -> None:
         path = specs_dir / rel
+        if preserve_existing and path.is_file():
+            # State files (post-bootstrap user content) are preserved on
+            # subsequent --force runs so spec authoring state survives a
+            # shell refresh. First-time bootstrap (file absent) still
+            # creates them.
+            return
         path.write_text(content, encoding="utf-8")
         written.append(str(path.relative_to(target)))
 
-    write("_progress.yaml", yaml.safe_dump(progress, sort_keys=False))
-    write("_bootstrap.yaml", yaml.safe_dump(bootstrap_record, sort_keys=False))
-    write("_ambiguities.md", ambiguities)
+    # State files are preserved on subsequent runs (preserve_existing=True)
+    # so --force can refresh manifest files without wiping accumulated
+    # phase progress, ambiguities, or the bootstrap record.
+    write("_progress.yaml", yaml.safe_dump(progress, sort_keys=False), preserve_existing=True)
+    write(
+        "_bootstrap.yaml",
+        yaml.safe_dump(bootstrap_record, sort_keys=False),
+        preserve_existing=True,
+    )
+    write("_ambiguities.md", ambiguities, preserve_existing=True)
 
     # Phase 0 sign-off sidecar. Bootstrap is its own sign-off — there's
     # no upstream sign_off.py path because bootstrap creates the file
@@ -228,7 +241,11 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
             }
         ],
     }
-    write("_phase-0-passed.yaml", yaml.safe_dump(sidecar, sort_keys=False))
+    write(
+        "_phase-0-passed.yaml",
+        yaml.safe_dump(sidecar, sort_keys=False),
+        preserve_existing=True,
+    )
 
     # Carry a copy of the manifest into the target so upgrade-shell knows
     # which files were originally installed and what their hashes were.

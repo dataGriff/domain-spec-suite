@@ -220,16 +220,10 @@ def test_bootstrap_force_refreshes_manifest_files(tmp_path: pathlib.Path) -> Non
     assert taskfile.read_text() == original_taskfile
     # User spec untouched.
     assert user_spec.read_text() == "# my domain PRD\n"
-    # State file was rewritten by write_state_files; that's OK because
-    # state isn't in the manifest, but content should still match a
-    # freshly-bootstrapped shape (not the pre-bootstrap content).
-    # We just verify it still has the expected structure:
-    new_progress = yaml.safe_load(progress.read_text())
-    assert new_progress["phases"]["bootstrap"]["status"] == "passed"
-    # And confirm we didn't accidentally overwrite the entire progress file
-    # contents with the original (would mean force noop'd everything).
-    assert isinstance(new_progress, dict)
-    del original_progress  # not used beyond establishing we'd captured it
+    # State file preserved as-is (not rewritten on --force).
+    assert progress.read_text() == original_progress, (
+        "state files must survive --force without being clobbered"
+    )
 
 
 # ── error handling ────────────────────────────────────────────────
@@ -286,3 +280,40 @@ def test_bootstrap_allow_non_prefix_bypass(tmp_path: pathlib.Path) -> None:
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
     assert (target / "README.md").is_file()
+
+
+def test_bootstrap_force_preserves_progress_yaml(tmp_path: pathlib.Path) -> None:
+    """--force must NOT clobber _progress.yaml, _bootstrap.yaml,
+    _ambiguities.md, or _phase-0-passed.yaml. These accumulate user
+    state (phase progress, force-advance entries, ambiguity log,
+    decisions) and a shell refresh shouldn't wipe them."""
+    target = spec_target(tmp_path)
+    first = run_bootstrap("--target", str(target), "--domain-name", "Sample")
+    assert first.returncode == 0
+
+    # Simulate state accumulation: mark discovery as passed in progress
+    # and add an ambiguity.
+    progress_path = target / "docs" / "specifications" / "_progress.yaml"
+    progress = yaml.safe_load(progress_path.read_text())
+    progress["phases"]["discovery"] = {
+        "status": "passed",
+        "signed_off_at": "2026-01-01T00:00:00Z",
+        "gate_version": "1.0",
+    }
+    progress_path.write_text(yaml.safe_dump(progress))
+
+    ambig_path = target / "docs" / "specifications" / "_ambiguities.md"
+    ambig_path.write_text(
+        "# Open Ambiguities\n\n## Deferred to: audit\n\n"
+        "### ITEM-001: tax handling\n- Recorded in phase: nfrs\n"
+    )
+
+    # Re-bootstrap --force; state should survive.
+    result = run_bootstrap("--target", str(target), "--domain-name", "Sample", "--force")
+    assert result.returncode == 0, result.stderr
+
+    progress_after = yaml.safe_load(progress_path.read_text())
+    assert progress_after["phases"]["discovery"]["status"] == "passed", (
+        "--force clobbered discovery phase status — state files must be preserved"
+    )
+    assert "ITEM-001" in ambig_path.read_text(), "--force clobbered _ambiguities.md"
