@@ -149,6 +149,36 @@ rubric_findings:
 
 - `RUBRIC-NFR-REALISTIC` — numbers are realistic, not aspirational
 
+## Decision Log
+
+Per SUITE-DESIGN §5.5 Decision Log. NFRs concentrate semantic
+choices that no check can validate (every number is a judgement
+call). Emit `decisions:` for the load-bearing ones:
+
+```yaml
+decisions:
+  - id: AVAIL-TARGET-99.5
+    summary: "Set NFR-AVAIL-001 API uptime to 99.5% (not 99.9%)."
+    rationale: "Realistic single-walker SaaS target — 99.9% costs
+      meaningfully more without proportional value at this scale."
+    affects: [docs/specifications/nfr.md]
+```
+
+### Decision-prone areas in this phase
+
+- **Load profile assumptions** baked into latency / throughput
+  numbers. What workload shape were the thresholds set against?
+- **Retention windows** for events, photos, invoices, logs. What
+  regulatory or operational basis drove the choice?
+- **Availability targets.** 99.5% vs 99.9% vs 99.99% are all
+  defensible; the choice trades cost for resilience.
+- **Rate-limit policy.** Where, how strict, what window?
+- **Token lifetimes** (access vs refresh). Trade-off between
+  security and re-login friction.
+- **Behavioural NFRs marked n-a** on `NFR-THRESHOLD-MEASURABLE`.
+  Each n-a is a judgement that this NFR is qualitative; record
+  why.
+
 ## What this skill never does
 
 - Never accepts vague qualitative language ("fast", "scalable",

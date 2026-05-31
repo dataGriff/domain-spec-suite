@@ -584,50 +584,73 @@ work correctly.
 **Goal:** The full suite, used as designed, produces a usable spec set for
 a non-Items domain.
 
-### 6.1 Choose a non-Items test domain — [ ]
+### 6.1 Choose a non-Items test domain — [x]
 
-User picks. Suggested characteristics:
-- Materially different from Items (more entities, more roles, real state
-  transitions)
-- Not so complex it takes weeks
-- Realistic enough that the audit output looks like something a real team
-  would use
+**Chosen:** Dog Walking (single-walker, multi-client). Materially
+different from Items: 13 entities (vs 2), 2 roles with cross-client
+ownership semantics, 4 lifecycles (vs 1), photo uploads, invoicing.
 
-**Exit:** A short brief written for the chosen domain that the user is
-comfortable being walked through.
+**Status:** ✅ Demoed end-to-end in M6.2 at `/tmp/dogwalk-demo`.
 
-### 6.2 Run the full suite — [ ]
+### 6.2 Run the full suite — [x]
 
-Start with an empty directory. Run the orchestrator. Walk through:
-- Phase 0: Bootstrap
-- Phase 1: Discovery
-- Phase 2: Modeling
-- Phase 3: Access Control
-- Phase 4: Flows
-- Phase 5: NFRs
-- Phase 6: Contracts
-- Phase 7: Audit
+Start with an empty directory. Run the orchestrator. Walked all 8
+phases: Bootstrap → Discovery → Modeling → Access Control → Flows →
+NFRs → Contracts → Audit. 17/17 audit checks green.
 
-Note any friction, confusion, or skill bugs during the run. After the run,
-log issues for v1.0.1.
+**Status:** ✅ Complete. Findings in M6.3 commit notes.
 
-**Exit:** Audit passes. Spec set looks like something the user would hand
-to an implementation team with confidence.
+### 6.3 Test update mode — [x]
 
-### 6.3 Test update mode — [ ]
+Amended `/tmp/dogwalk-demo/docs/specifications/prd.md` with US-019
+(optional tip on mark-paid). Orchestrator detected PRD staleness;
+walked 5 affected phases (discovery → modeling → nfrs → contracts →
+flows) in dependency order; final audit 17/17 green again. Each
+re-sign emitted Decision Log entries via the new findings interface.
 
-After audit passes:
-- Amend the PRD (add a new user story that introduces a new entity or role)
-- Re-invoke orchestrator
-- Confirm update mode walks through affected phases
-- Final audit passes again
+**Status:** ✅ Update mode works end-to-end with real downstream
+effects.
 
-**Exit:** Update mode works end-to-end with real downstream effects.
+### 6.4 Decision Log mechanism — [x]
 
-### 6.4 Document any bugs/improvements found — [ ]
+Surfaced during M6.2 review: spec authors need to **discover what was
+decided** silently to revise after sign-off. Added a `decisions:`
+block to the sidecar shape with id/summary/rationale/affects/ts.
+sign_off.py accepts decisions via the `--findings` YAML interface
+(extended) or the Python API. Each soft-middle and contracts SKILL.md
+carries a `## Decision Log` section listing decision-prone areas.
+SUITE-DESIGN §4 and §5.5 updated.
 
-Whatever was noted during 6.2 and 6.3, capture in a `v1.0.1-backlog.md`
-file. These don't block v1.0.0 unless they're genuinely broken.
+**Status:** ✅ Mechanism shipped; dog-walking sidecars retrofitted
+with full decisions blocks as a populated reference.
+
+### 6.5 Document any bugs/improvements found — [ ]
+
+From M6.2 / M6.3 / M6.4 surfaced:
+
+- **Audit re-fires warnings that were n-a'd at prior phases.** Audit
+  re-runs cross-references at error severity and doesn't read
+  warnings_responded from prior sidecars. Workaround: add the missing
+  artifact (e.g. token-lifecycle flows). Real fix: audit should read
+  per-phase n-a/deferred annotations.
+- **OpenAPI enum can't include literal `null`.** YAML parses to
+  None and breaks the generator. Either generator handles None
+  gracefully or Spectral catches it.
+- **Generator script doesn't ship pyyaml.** `pip install pyyaml` is
+  implicit. Worth adding to bootstrap setup.
+- **Spectral operation-description is strict on every op.** Bulk-
+  fixing this manually is error-prone (lookahead matches response
+  descriptions). A bootstrap script `scripts/lint_fix_descriptions.py`
+  could automate.
+- **Bootstrap's `docs:generate` references mkdocs that isn't
+  installed by default** — needs explicit `mise install` step to be
+  documented in the bootstrap output README.
+- **GLOSSARY-COVERS-ATTRIBUTES is exhausting** for any real domain
+  (13 entities × 7 attributes = ~90 entries). A modeling-skill
+  helper that generates the glossary skeleton from domain-model
+  attribute tables would save tedium.
+
+Capture these in a `v1.0.1-backlog.md` once we're past v1.0 sign-off.
 
 🛑 **Final review.** Declare suite v1.0.0 complete if user agrees.
 

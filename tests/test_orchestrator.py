@@ -131,13 +131,16 @@ def test_unaccepted_force_advance_blocks_complete(tmp_path: pathlib.Path) -> Non
 # ── not-yet-implemented phases ───────────────────────────────────
 
 
-def test_status_reports_unimplemented_phases_honestly(tmp_path: pathlib.Path) -> None:
-    """Strip everything from bootstrap onward; orchestrator should
-    surface that modeling/access-control/etc. have no skill yet
-    rather than routing into a stub."""
+def test_status_reports_unimplemented_phases_honestly(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When the next phase has no skill implementation, orchestrator
+    surfaces 'not-implemented' rather than routing into a stub. All
+    seven phase skills currently ship, so this test fakes-out
+    IMPLEMENTED_PHASES via monkeypatch to keep the no-stub-routing
+    contract guarded as future phases are added."""
     target = _copy_fixture(tmp_path)
     specs = target / "docs/specifications"
-    # Keep bootstrap + discovery; remove the rest.
     for phase_num in range(2, 8):
         sidecar = specs / f"_phase-{phase_num}-passed.yaml"
         if sidecar.is_file():
@@ -150,6 +153,13 @@ def test_status_reports_unimplemented_phases_honestly(tmp_path: pathlib.Path) ->
     }
     progress["force_advances"] = []
     progress_path.write_text(yaml.safe_dump(progress, sort_keys=False))
+
+    # Pretend modeling+later are not-yet-implemented for this test.
+    monkeypatch.setattr(
+        orchestrator_status,
+        "IMPLEMENTED_PHASES",
+        {"bootstrap", "discovery"},
+    )
 
     report = orchestrator_status.build_report(target)
     modeling_phase = next(p for p in report.phases if p.phase == "modeling")

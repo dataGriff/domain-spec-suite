@@ -95,6 +95,27 @@ def _stamp_ts(entries: list[dict]) -> list[dict]:
     return stamped
 
 
+_REQUIRED_DECISION_FIELDS = ("id", "summary", "rationale")
+
+
+def _validate_decisions(decisions: list[dict]) -> tuple[bool, str | None]:
+    """Each decision must have id, summary, rationale. Returns
+    (True, None) on pass, (False, msg) on failure."""
+    problems: list[str] = []
+    for entry in decisions:
+        if not isinstance(entry, dict):
+            return False, f"decisions entry must be a mapping, got {entry!r}"
+        missing = [f for f in _REQUIRED_DECISION_FIELDS if not entry.get(f)]
+        if missing:
+            problems.append(
+                f"  · decision {entry.get('id', '<no id>')!r} missing "
+                f"required field(s): {', '.join(missing)}"
+            )
+    if problems:
+        return False, "decisions entries are malformed:\n" + "\n".join(problems)
+    return True, None
+
+
 def _record_phase_passed(
     repo: pathlib.Path,
     phase: str,
@@ -102,6 +123,7 @@ def _record_phase_passed(
     *,
     rubric_findings: list[dict] | None = None,
     warnings_responded: list[dict] | None = None,
+    decisions: list[dict] | None = None,
 ) -> pathlib.Path:
     """Write the sidecar. Returns the path written.
 
@@ -112,6 +134,14 @@ def _record_phase_passed(
     phases whose rubric findings are all `pass` and not surfaced to the
     user, but the agent SHOULD pass them through any time it evaluated
     a rubric (per SUITE-DESIGN §5.5).
+
+    `decisions` is the agent-emitted Decision Log — semantic choices the
+    agent made that aren't surfaced by any check or rubric (entity
+    split-vs-collapse, FK-vs-copy denormalization, snapshot timing,
+    etc.). Empty list for hard-gate phases is fine; soft-middle and
+    contracts phases SHOULD carry decisions any time the agent chose
+    between defensible alternatives. See per-skill SKILL.md §Decision
+    Log for the decision-prone areas per phase.
     """
     sidecar = _sidecar_path(repo, phase)
     sidecar.parent.mkdir(parents=True, exist_ok=True)
@@ -122,6 +152,7 @@ def _record_phase_passed(
         "checks_passed": [entry["id"] for entry in gate.get("checks", [])],
         "warnings_responded": _stamp_ts(warnings_responded or []),
         "rubric_findings": _stamp_ts(rubric_findings or []),
+        "decisions": _stamp_ts(decisions or []),
         "files_signed": _files_signed(repo, gate),
     }
     sidecar.write_text(yaml.safe_dump(sidecar_doc, sort_keys=False), encoding="utf-8")
@@ -249,8 +280,15 @@ def sign_off(
     force_advance: str | None = None,
     rubric_findings: list[dict] | None = None,
     warnings_responded: list[dict] | None = None,
+    decisions: list[dict] | None = None,
 ) -> int:
     gate = run_phase.load_gate(phase)
+
+    if decisions:
+        ok, msg = _validate_decisions(decisions)
+        if not ok:
+            print(f"sign-off REFUSED: {msg}", file=sys.stderr)
+            return 1
 
     if force_advance is None:
         exit_code, outcomes = run_phase.run_phase(phase, repo)
@@ -291,17 +329,18 @@ def sign_off(
         gate,
         rubric_findings=rubric_findings,
         warnings_responded=warnings_responded,
+        decisions=decisions,
     )
     _bump_progress(repo, phase)
     print(f"sign-off written: {sidecar.relative_to(repo)}")
     return 0
 
 
-def _load_findings_file(path: pathlib.Path) -> tuple[list[dict], list[dict]]:
-    """Load rubric_findings + warnings_responded from a YAML file the
-    agent writes before invoking sign_off. Returns ([], []) on missing
-    file. Validates shape: top-level must be a mapping with at most
-    those two keys."""
+def _load_findings_file(path: pathlib.Path) -> tuple[list[dict], list[dict], list[dict]]:
+    """Load rubric_findings + warnings_responded + decisions from a YAML
+    file the agent writes before invoking sign_off. Returns
+    ([], [], []) on missing keys. Validates shape: top-level must be a
+    mapping with at most those three keys."""
     if not path.is_file():
         raise FileNotFoundError(f"sign_off: --findings file does not exist: {path}")
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -309,7 +348,7 @@ def _load_findings_file(path: pathlib.Path) -> tuple[list[dict], list[dict]]:
         raise ValueError(
             f"sign_off: --findings file must contain a YAML mapping, got {type(data).__name__}"
         )
-    allowed = {"rubric_findings", "warnings_responded"}
+    allowed = {"rubric_findings", "warnings_responded", "decisions"}
     extra = set(data.keys()) - allowed
     if extra:
         raise ValueError(
@@ -318,9 +357,12 @@ def _load_findings_file(path: pathlib.Path) -> tuple[list[dict], list[dict]]:
         )
     rf = data.get("rubric_findings") or []
     wr = data.get("warnings_responded") or []
-    if not isinstance(rf, list) or not isinstance(wr, list):
-        raise ValueError("sign_off: rubric_findings and warnings_responded must be YAML lists")
-    return rf, wr
+    dc = data.get("decisions") or []
+    if not all(isinstance(x, list) for x in (rf, wr, dc)):
+        raise ValueError(
+            "sign_off: rubric_findings, warnings_responded, and decisions must be YAML lists"
+        )
+    return rf, wr, dc
 
 
 # ── CLI ──────────────────────────────────────────────────────────
@@ -344,10 +386,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--findings",
         help=(
-            "Path to a YAML file with `rubric_findings:` and/or "
-            "`warnings_responded:` keys. Written into the sidecar verbatim "
-            "(sign_off only stamps `ts` if absent). Use this to record "
-            "the agent's rubric verdicts and soft-gate engagement responses."
+            "Path to a YAML file with `rubric_findings:`, "
+            "`warnings_responded:`, and/or `decisions:` keys. Written into "
+            "the sidecar verbatim (sign_off only stamps `ts` if absent). "
+            "Use this to record the agent's rubric verdicts, soft-gate "
+            "engagement responses, and the Decision Log of semantic choices."
         ),
     )
     return parser.parse_args(argv)
@@ -369,9 +412,10 @@ def main(argv: list[str] | None = None) -> int:
 
     rubric_findings: list[dict] | None = None
     warnings_responded: list[dict] | None = None
+    decisions: list[dict] | None = None
     if args.findings:
         try:
-            rubric_findings, warnings_responded = _load_findings_file(
+            rubric_findings, warnings_responded, decisions = _load_findings_file(
                 pathlib.Path(args.findings).resolve()
             )
         except (FileNotFoundError, ValueError) as exc:
@@ -384,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
         force_advance=force_advance_reason,
         rubric_findings=rubric_findings,
         warnings_responded=warnings_responded,
+        decisions=decisions,
     )
 
 

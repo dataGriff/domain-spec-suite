@@ -328,6 +328,24 @@ rubric_findings:
     reason: "rewrote to lead with user pain (see commit abc)"
     ts: "2026-05-25T14:42:00Z"
 
+# Decision Log: agent-emitted record of semantic choices the agent
+# made that AREN'T surfaced by any check or rubric. These are the
+# choices between defensible alternatives (entity split-vs-collapse,
+# FK-vs-copy denormalization, snapshot timing, retention windows,
+# ownership-rule semantics, etc.). Sign_off requires id + summary +
+# rationale on every entry. The Decision Log gives the user something
+# to revise against post-sign-off: read it, disagree, edit the file,
+# re-sign. See §6 (update mode) for the revision flow.
+decisions:
+  - id: PRD-PERSONA-COUNT-TWO
+    summary: "Captured two personas (Stockroom Lead, Operations Analyst)
+      rather than collapsing into one."
+    rationale: "The read/write split is the core of the problem statement;
+      collapsing personas would hide the access-control motivation."
+    affects:
+      - docs/specifications/prd.md
+    ts: "2026-05-25T14:43:00Z"
+
 files_signed:
   - path: docs/specifications/prd.md
     sha256: "abc123..."
@@ -514,6 +532,34 @@ finding) while not pretending the agent's verdict is mechanically
 reproducible. Mechanical checks remain the load-bearing ones; rubric checks
 are a quality nudge with a paper trail.
 
+### Decision Log
+
+Mechanical checks catch consistency violations. Rubric checks nudge on
+quality. Neither surfaces the **semantic choices the agent makes between
+defensible alternatives** — choices like "snapshot the price at the
+walk's `scheduled` transition rather than `completed`", or "split
+`User` from `Walker`/`Client` profiles rather than collapse", or "the
+ownership rule traverses `Client.invitedByWalkerId` rather than
+embedding `walkerId` on every owned resource". These ship as part of
+the spec — they shape the contract — but checks pass either way.
+
+Each phase sidecar therefore carries a `decisions:` block (schema in
+§4). Each entry is `{ id, summary, rationale, affects, ts }`. The
+agent emits one whenever it picks between defensible alternatives and
+nothing else (no check, no rubric) records the choice. Each soft-
+middle and contracts SKILL.md carries a `## Decision Log` section
+listing the decision-prone areas for that phase, so the agent has a
+prompt for what to surface.
+
+The Decision Log is **for the human reader**. Sign-off doesn't gate on
+it — empty `decisions:` is valid YAML. But the user reading the spec
+set later (or revisiting it months on) uses the Log to discover what
+the agent decided silently. If they disagree, they edit the relevant
+file and re-sign the phase (§6 update mode).
+
+This is the discoverability mechanism for "the spec was generated;
+what did the agent decide for me?".
+
 ### The runner
 
 `shared/run_phase.py` is the single check runner:
@@ -534,9 +580,11 @@ It does this:
 
 1. Runs `task gate:<phase>`.
 2. If exit code is non-zero: refuse, print failing check ids, exit non-zero.
-3. If exit code is zero: prompt the agent to attach `warnings_responded:`
-   and `rubric_findings:` blocks. Refuse to proceed until every surfaced
-   warning and `warn` finding has a response.
+3. If exit code is zero: prompt the agent to attach `warnings_responded:`,
+   `rubric_findings:`, and `decisions:` blocks. Refuse to proceed until
+   every surfaced warning and `warn` finding has a response. The
+   `decisions:` block is optional but expected on soft-middle and
+   contracts phases — see Decision Log above.
 4. Compute sha256 for every file the phase signed.
 5. Write `_phase-N-passed.yaml`, update `_progress.yaml`.
 

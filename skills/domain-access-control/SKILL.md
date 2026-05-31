@@ -109,6 +109,42 @@ rubric_findings: []
   doesn't exist yet. Promoted to error at Phase 6 (contracts) and
   Phase 7 (audit).
 
+## Decision Log
+
+Per SUITE-DESIGN §5.5 Decision Log. Access control is the highest-
+stakes spec — silent decisions here ship as security regressions.
+Emit `decisions:` entries for any non-mechanical choice:
+
+```yaml
+decisions:
+  - id: OWNERSHIP-VIA-FK-TRAVERSAL
+    summary: "Ownership rule traverses Client.invitedByWalkerId rather
+      than embedding walkerId on every owned resource."
+    rationale: "Single source of truth — changing a client's walker
+      (if ever supported) updates one row, not many."
+    affects: [docs/specifications/auth-matrix.md]
+```
+
+### Decision-prone areas in this phase
+
+- **Ownership rule semantics.** FK traversal vs embedded ownership
+  field on every resource. Which traversal path resolves "is this
+  caller the owner of this resource?".
+- **FORBIDDEN vs NOT_FOUND policy.** Whether 403 and 404 are
+  distinguished (leaks resource existence) or both return
+  FORBIDDEN (defence in depth).
+- **System roles.** Whether a non-user actor (scheduler, webhook
+  receiver, background worker) gets a row in the matrix as a
+  `system (...)` role or is left out of access control entirely.
+- **Rate-limit scope.** Per-IP vs per-email vs per-user. Each is
+  defensible for different threat models.
+- **Cross-role permission decisions** the user gave a fast answer
+  on. e.g. "Can owners mark their own invoices paid? No." — that's
+  a real policy decision worth recording.
+- **Authentication scope for token-bearing endpoints.** Invite
+  accept and password-reset confirm are public-but-token-gated;
+  record why this is treated differently from `BearerAuth`.
+
 ## What this skill never does
 
 - Never writes a permission cell without explicit user confirmation.

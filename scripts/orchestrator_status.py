@@ -50,7 +50,16 @@ PHASE_NUMBER = {name: i for i, name in enumerate(PHASE_ORDER)}
 # Phases whose skills are implemented in the suite today. Phases not
 # in this set are reported as `not_implemented` so the orchestrator
 # can tell the user honestly rather than silently routing into a stub.
-IMPLEMENTED_PHASES: set[str] = {"bootstrap", "discovery", "contracts", "audit"}
+IMPLEMENTED_PHASES: set[str] = {
+    "bootstrap",
+    "discovery",
+    "modeling",
+    "access-control",
+    "flows",
+    "nfrs",
+    "contracts",
+    "audit",
+}
 
 
 @dataclass

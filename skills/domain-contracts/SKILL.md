@@ -144,6 +144,45 @@ Listed in `gate.yaml`. Two categories:
   - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔ openapi
   - `ERROR-CODE-IN-CATALOGUE` — error codes traced back to catalogue
 
+## Decision Log
+
+Per SUITE-DESIGN §5.5 Decision Log. Contract drafting is mostly
+mechanical synthesis from upstream specs, but several semantic
+choices have no check that catches them. Emit `decisions:` for any
+non-trivial choice:
+
+```yaml
+decisions:
+  - id: OPENAPI-PAGINATION-CAP-50
+    summary: "List endpoints cap pageSize at 50 (enforced via
+      PageSize.maximum)."
+    rationale: "Single-walker workload doesn't justify larger
+      pages; lower cap protects mobile bandwidth for owners."
+    affects: [docs/specifications/contracts/openapi.yaml,
+      docs/specifications/nfr.md]
+```
+
+### Decision-prone areas in this phase
+
+- **Pagination defaults and caps.** Where pageSize maxima sit and
+  why.
+- **Snapshot / denormalisation on line items.** When line items
+  copy fields from their source (e.g. `InvoiceLineItem.walkType`
+  copied from Walk) and why.
+- **Enum extension policy.** Closed enums vs open (or "MUST be one
+  of X, MAY add Y in minor versions"). Often pinned by NFR-COMPAT
+  but the decision is recorded here too.
+- **Photo / file upload model.** Direct upload (multipart) vs URL
+  vs signed-URL flow. Each has implications for the contract.
+- **Currency / units.** `priceCents` (integer minor units) vs
+  decimal vs string. The choice locks every downstream impl.
+- **Token / session lifetime in OpenAPI responses.** Whether tokens
+  are exposed as opaque strings or with explicit expiry claims in
+  the response shape.
+- **Idempotency keys** on POST endpoints — supported or not.
+- **CloudEvents envelope choices** in AsyncAPI — what goes in
+  `type`, `source` URI scheme, where the domain id lives.
+
 ## What this skill never does
 
 - Never edits a contract file. Contracts are user-authored.

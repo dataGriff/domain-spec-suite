@@ -107,6 +107,36 @@ rubric_findings: []
 - `LIFECYCLE-IN-FLOWS` — every domain-model lifecycle transition is
   represented in some flow
 
+## Decision Log
+
+Per SUITE-DESIGN §5.5 Decision Log. Emit `decisions:` entries
+whenever choosing between defensible alternatives:
+
+```yaml
+decisions:
+  - id: ONE-FLOW-PER-STORY-GROUP
+    summary: "Drew one flow per user-story group (Authentication,
+      Dogs, Bookings, Walks, Invoicing, Pricing) rather than one per
+      story."
+    rationale: "Stories in the same group share participants and a
+      sequence shape; one diagram per group is more readable than 18
+      tiny diagrams."
+    affects: [docs/specifications/sequence-diagrams.md]
+```
+
+### Decision-prone areas in this phase
+
+- **Granularity** — one flow per user-story group vs one per story
+  vs one per failure mode. Pick a convention; state it.
+- **Lifecycle transitions left out of flows** (marked n-a). Which
+  transitions are system-internal (e.g. token expiry) and don't
+  warrant a sequence?
+- **Participant naming.** Whether external systems use generic
+  labels (`API`, `EventBus`) or domain-specific names
+  (`StripeWebhook`). Recordable so contracts use consistent names.
+- **Note vs separate flow.** Should a state transition appear as a
+  `Note over X` in an existing flow, or get its own flow?
+
 ## What this skill never does
 
 - Never edits `sequence-diagrams.md` without confirmation.

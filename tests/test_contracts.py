@@ -224,6 +224,129 @@ def test_sign_off_rejects_malformed_findings_file(tmp_path: pathlib.Path) -> Non
     assert rc == 2
 
 
+# ── Decision Log (sign_off `decisions` interface) ────────────────
+
+
+def test_sign_off_accepts_decisions(tmp_path: pathlib.Path) -> None:
+    """sign_off(decisions=...) writes them verbatim into the sidecar,
+    stamping `ts` for any entry that doesn't carry one."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    rc = sign_off.sign_off(
+        "contracts",
+        target,
+        decisions=[
+            {
+                "id": "RATECARD-SNAPSHOT-AT-SCHEDULED",
+                "summary": "Snapshot price at scheduled, not completed.",
+                "rationale": "Locks the price at the moment of agreement.",
+                "affects": [
+                    "docs/specifications/domain-model.md",
+                    "docs/specifications/contracts/openapi.yaml",
+                ],
+                # no ts — sign_off stamps it
+            }
+        ],
+    )
+    assert rc == 0
+
+    doc = yaml.safe_load(sidecar.read_text())
+    assert "decisions" in doc
+    assert len(doc["decisions"]) == 1
+    entry = doc["decisions"][0]
+    assert entry["id"] == "RATECARD-SNAPSHOT-AT-SCHEDULED"
+    assert entry["ts"], "sign_off must stamp ts when absent"
+    assert "domain-model.md" in entry["affects"][0]
+
+
+def test_sign_off_decisions_yaml_round_trip(tmp_path: pathlib.Path) -> None:
+    """`--findings <yaml>` accepts a `decisions:` key alongside
+    `rubric_findings:` and `warnings_responded:`."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    findings_path = tmp_path / "findings.yaml"
+    findings_path.write_text(
+        yaml.safe_dump(
+            {
+                "rubric_findings": [],
+                "warnings_responded": [],
+                "decisions": [
+                    {
+                        "id": "OPENAPI-PAGINATION-CAP-50",
+                        "summary": "List endpoints cap pageSize at 50.",
+                        "rationale": (
+                            "Single-walker workload doesn't justify "
+                            "larger pages; lower cap protects mobile bandwidth."
+                        ),
+                        "affects": ["docs/specifications/contracts/openapi.yaml"],
+                    }
+                ],
+            }
+        )
+    )
+
+    rc = sign_off.main(["contracts", "--repo", str(target), "--findings", str(findings_path)])
+    assert rc == 0
+    doc = yaml.safe_load(sidecar.read_text())
+    assert doc["decisions"][0]["id"] == "OPENAPI-PAGINATION-CAP-50"
+
+
+def test_sign_off_rejects_decision_missing_required_field(tmp_path: pathlib.Path) -> None:
+    """Each decision must have id, summary, rationale. Missing any of
+    those is rejected before sign-off proceeds."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    rc = sign_off.sign_off(
+        "contracts",
+        target,
+        decisions=[
+            {
+                "id": "INCOMPLETE-DECISION",
+                "summary": "What was decided",
+                # no rationale
+            }
+        ],
+    )
+    assert rc == 1, "sign_off must reject decisions missing required fields"
+    assert not sidecar.exists()
+
+
+def test_sign_off_findings_yaml_decisions_alone(tmp_path: pathlib.Path) -> None:
+    """A findings file with only a `decisions:` key (no rubric or
+    warnings) loads cleanly."""
+    target = _copy_fixture(tmp_path)
+    sidecar = _sidecar_path(target)
+    sidecar.unlink()
+
+    findings_path = tmp_path / "findings-only-decisions.yaml"
+    findings_path.write_text(
+        yaml.safe_dump(
+            {
+                "decisions": [
+                    {
+                        "id": "DEC-ALONE",
+                        "summary": "Decisions can live alone.",
+                        "rationale": "The other two keys default to empty lists.",
+                    }
+                ]
+            }
+        )
+    )
+
+    rc = sign_off.main(["contracts", "--repo", str(target), "--findings", str(findings_path)])
+    assert rc == 0
+    doc = yaml.safe_load(sidecar.read_text())
+    assert doc["decisions"][0]["id"] == "DEC-ALONE"
+    assert doc["rubric_findings"] == []
+    assert doc["warnings_responded"] == []
+
+
 # ── force-advance / accept-force scripts ─────────────────────────
 
 

@@ -136,6 +136,48 @@ Listed in `gate.yaml`.
 - `MODEL-RELATIONSHIP-BIDIRECTIONAL` — relationships should be stated
   in both directions
 
+## Decision Log
+
+Most modeling choices are driven by the gate or by clear upstream
+references. Some aren't — those are the choices the agent should emit
+as `decisions:` entries (per SUITE-DESIGN §5.5 Decision Log). The
+findings YAML for sign-off carries them:
+
+```yaml
+decisions:
+  - id: USER-WALKER-CLIENT-SPLIT
+    summary: "Split authentication User from role profiles Walker / Client (1:1 each)."
+    rationale: "Keeps the auth tables slim and lets each role carry
+      role-specific fields without nullable noise."
+    affects: [docs/specifications/domain-model.md]
+```
+
+### Decision-prone areas in this phase
+
+The agent should emit a decision (or surface a question) whenever
+choosing between defensible alternatives in any of these areas:
+
+- **Entity split vs collapse.** When a role/persona could be modelled
+  as a separate entity OR as a `role` flag on a shared one. Record
+  which and why.
+- **FK + denormalized copy.** When a child entity references a parent
+  by FK AND also copies fields from it for snapshot purposes
+  (e.g. `InvoiceLineItem.walkId` plus copied `walkType` /
+  `durationMinutes`). Record what's snapshotted and why.
+- **Snapshot timing.** When a derived value (price, status,
+  configuration) is captured. Which upstream event triggers the
+  snapshot — `scheduled`, `completed`, `issued`?
+- **Immutability rules** that aren't enforced by a check. Why is
+  `ownerId` immutable? Why isn't `email`?
+- **Cardinality choices** that aren't obvious. Why exactly one of X
+  per Y rather than many?
+- **Status field with no lifecycle** that's marked n-a. Why is it a
+  flag rather than a state machine?
+
+Emit at least one decision when any non-obvious choice is made.
+Empty `decisions:` is valid YAML, but on a phase this size that
+usually signals the agent under-engaged.
+
 ## What this skill never does
 
 - Never edits `domain-model.md` or `glossary.md` without confirmation
