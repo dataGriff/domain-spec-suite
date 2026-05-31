@@ -68,6 +68,49 @@ def test_contracts_gate_passes_against_items_fixture() -> None:
     assert failures == []
 
 
+def test_enum_values_consistent_catches_openapi_drift(tmp_path: pathlib.Path) -> None:
+    """Adding a `## Enumerations` section to the model without a
+    matching OpenAPI schema must fail ENUM-VALUES-CONSISTENT."""
+    from shared.checks import enum_values_consistent
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text() + "\n\n## Enumerations\n\n### Breed\n\n"
+        "| Value | Notes |\n|---|---|\n| `labrador` | |\n| `poodle` | |\n",
+        encoding="utf-8",
+    )
+
+    result = enum_values_consistent.run(target)
+    assert not result.passed
+    assert any("Breed" in d and "missing from OpenAPI" in d for d in result.details)
+
+
+def test_enum_values_consistent_catches_value_mismatch(tmp_path: pathlib.Path) -> None:
+    """When the model and OpenAPI both declare an enum but the values
+    diverge, the check reports the mismatch."""
+    from shared.checks import enum_values_consistent
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text() + "\n\n## Enumerations\n\n### Breed\n\n"
+        "| Value | Notes |\n|---|---|\n| `labrador` | |\n| `poodle` | |\n",
+        encoding="utf-8",
+    )
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi.read_text())
+    doc.setdefault("components", {}).setdefault("schemas", {})["Breed"] = {
+        "type": "string",
+        "enum": ["labrador", "wolfhound"],  # wolfhound diverges
+    }
+    openapi.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = enum_values_consistent.run(target)
+    assert not result.passed
+    assert any("OpenAPI enum" in d and "wolfhound" in d for d in result.details)
+
+
 # ── sign_off mechanical enforcement ──────────────────────────────
 
 

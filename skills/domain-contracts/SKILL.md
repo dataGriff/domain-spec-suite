@@ -72,8 +72,15 @@ to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
   `domain-model.md`, with one property per attribute. Use the type
   hints from the domain-model attribute table (`UUID` → `string` +
   `format: uuid`, `ISO 8601` → `string` + `format: date-time`,
-  enum strings → `enum`). Sensitive attributes (e.g. password hashes)
-  belong in a `<Entity>Summary` projection, not the bare entity.
+  `enum:<Name>` → `$ref: '#/components/schemas/<Name>'`). Sensitive
+  attributes (e.g. password hashes) belong in a `<Entity>Summary`
+  projection, not the bare entity.
+- **Named enums** declared in `domain-model.md`'s `## Enumerations`
+  section MUST also appear under `components.schemas` as
+  `<Name>: {type: string, enum: [...]}` with values matching the
+  model exactly. `ENUM-VALUES-CONSISTENT` enforces this. The same
+  schema name in AsyncAPI + Datacontract must match too (if
+  declared at all).
 - **`components.responses`**: one entry per `4xx`/`5xx` code from
   `error-catalogue.md`, all bound to a generic `Error` shape
   (`{code, message}`) plus `ValidationError` for 400 (which
@@ -139,6 +146,9 @@ Listed in `gate.yaml`. Two categories:
   same modules at error severity):
   - `ENTITY-IN-OPENAPI-SCHEMA` — domain entity ↔ OpenAPI schema
   - `FIELD-MATCH-DOMAIN-OPENAPI` — attribute names align
+  - `ENUM-VALUES-CONSISTENT` — named enums in `## Enumerations`
+    have matching values in openapi.yaml + asyncapi.yaml +
+    datacontract.yaml
   - `WRITE-OP-HAS-ASYNCAPI-CHANNEL` — every write op has an event
   - `EVENT-IN-DATACONTRACT` — every event has a datacontract record
   - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔ openapi

@@ -30,9 +30,9 @@ gate plus the soft-gate engagement loop).
 2. Verifies Phase 1 (discovery) has signed off — refuses if not.
 3. **Author half.** If either output file is missing, runs
    `task init:modeling -- --repo <target>` to copy the blank templates
-   from `.spec-suite/templates/`. Never overwrites existing files. Then walks the
+   from the suite's `templates/`. Never overwrites existing files. Then walks the
    user through populating the entities, relationships, lifecycles,
-   and glossary entries via `questions.md`.
+   enumerations, and glossary entries via `questions.md`.
 4. **Validate half.** Invokes the runner. Hard checks (duplicate
    name, glossary drift) refuse sign-off if they fail. Soft checks
    surface as warnings; each one needs a response.
@@ -58,6 +58,48 @@ walk each through:
 2. Attribute table (Attribute / Type / Required / Description)
 3. Business rules (at least one if applicable)
 4. Lifecycle table (if the entity has a `status` attribute)
+
+### Enumerations
+
+Attributes with a finite, closed set of values (`breed`,
+`currency`, `walkType`, etc.) are *named enums* — declared once in
+`## Enumerations` at the bottom of `domain-model.md` and referenced
+from the entity attribute table via `enum:<Name>` in the Type
+column.
+
+```markdown
+## Enumerations
+
+### Breed
+| Value | Notes |
+|---|---|
+| `labrador` | |
+| `poodle` | |
+| `mixed` | fallback when not in the closed set |
+```
+
+Then in `## Entities > ### Dog`:
+
+```markdown
+| `breed` | enum:Breed | No | Breed (mixed for unknown) |
+```
+
+When to declare a named enum vs leave as `string`:
+- **Named enum** when the value is closed and reused across
+  entities, OR when the value appears in `openapi.yaml` as an enum
+  constraint. The `ENUM-VALUES-CONSISTENT` check requires every
+  named enum to appear with matching values in `components.schemas`
+  of OpenAPI (and, if declared, AsyncAPI + Datacontract).
+- **`string` with no enum constraint** when the value is genuinely
+  free-text (notes, descriptions, free-form display names).
+- **Inline enum in the Description column** is legacy and still
+  works (e.g. `enum | Yes | pending / accepted / expired`) but
+  doesn't get the cross-contract consistency check. Migrate to a
+  named enum when you change the contract for that attribute.
+
+The check is silent when no `## Enumerations` section exists — the
+convention is opt-in. The moment you add the section, every entry
+in it must match every contract that declares it.
 
 Glossary entries are mechanical: every entity gets a `### <Entity>`
 heading under `## Entities`, every attribute gets a `### <attribute>`
@@ -129,6 +171,11 @@ Listed in `gate.yaml`.
 - `MODEL-ENTITY-NAME-UNIQUE` — no duplicate entity names
 - `ENTITY-IN-GLOSSARY` — every entity in the model is in the glossary
 - `GLOSSARY-COVERS-ATTRIBUTES` — every attribute is glossed too
+
+`ENUM-VALUES-CONSISTENT` runs at Phase 6 (contracts) and again at
+Phase 7 (audit), not here at modeling — there's no contract to
+compare against yet. But declaring a named enum here commits you to
+matching schemas at Phase 6.
 
 ### Warnings (must each have a response)
 

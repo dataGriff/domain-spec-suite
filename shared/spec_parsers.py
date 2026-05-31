@@ -116,6 +116,32 @@ def domain_model_lifecycle_transitions(domain_model: pathlib.Path) -> list[tuple
     return transitions
 
 
+def domain_model_enums(domain_model: pathlib.Path) -> dict[str, list[str]]:
+    """Parse the `## Enumerations` section. Each `### Name` heading
+    declares one enum; the table beneath it has a `Value` column whose
+    backticked values are the enum members. Returns `{name: [values]}`.
+
+    Empty dict if the section is absent (the convention is opt-in for
+    domains without named enums yet)."""
+    text = domain_model.read_text(encoding="utf-8")
+    section = _section(text, r"^##\s+Enumerations\s*$")
+    if not section:
+        return {}
+    out: dict[str, list[str]] = {}
+    blocks = re.split(r"(?m)(?=^###\s+\S)", section)
+    for block in blocks:
+        heading = re.match(r"###\s+(\S[^\n]*)", block)
+        if heading is None:
+            continue
+        name = heading.group(1).strip()
+        values: list[str] = []
+        for row in re.finditer(r"^\|\s*`([^`]+)`\s*\|", block, re.MULTILINE):
+            values.append(row.group(1))
+        if values:
+            out[name] = values
+    return out
+
+
 # ── glossary ─────────────────────────────────────────────────────
 
 
@@ -267,3 +293,41 @@ def asyncapi_channels(asyncapi: dict) -> list[str]:
 def datacontract_schema_names(datacontract: dict) -> set[str]:
     """Set of schema record names in the data contract."""
     return {entry.get("name") for entry in datacontract.get("schema", []) if entry.get("name")}
+
+
+def contract_named_enums(doc: dict) -> dict[str, list[str]]:
+    """Extract `{name: enum_values}` from a contract document's
+    `components.schemas`. Returns only schemas that declare a top-level
+    `enum:` list with `type: string`. OpenAPI and AsyncAPI both use this
+    shape under `components.schemas.<Name>`."""
+    schemas = (doc.get("components") or {}).get("schemas") or {}
+    out: dict[str, list[str]] = {}
+    for name, defn in schemas.items():
+        if not isinstance(defn, dict):
+            continue
+        values = defn.get("enum")
+        if isinstance(values, list) and values:
+            out[name] = [str(v) for v in values]
+    return out
+
+
+def datacontract_named_enums(datacontract: dict) -> dict[str, list[str]]:
+    """Datacontract field-level enums keyed by enum schema name. Walks
+    every record's fields; a field with an `enum:` list contributes
+    `{<record-or-schema-name>: [values]}` keyed by the field's `$ref`
+    target if one is declared, else by the field name. Returns empty
+    dict if no enum-typed fields exist."""
+    out: dict[str, list[str]] = {}
+    for record in datacontract.get("schema") or []:
+        if not isinstance(record, dict):
+            continue
+        for field_name, field in (record.get("fields") or {}).items():
+            if not isinstance(field, dict):
+                continue
+            values = field.get("enum")
+            if isinstance(values, list) and values:
+                # Prefer the `$ref` target name; fall back to the field name.
+                ref = field.get("$ref") or field.get("ref")
+                key = ref.rsplit("/", 1)[-1] if isinstance(ref, str) else field_name
+                out[key] = [str(v) for v in values]
+    return out

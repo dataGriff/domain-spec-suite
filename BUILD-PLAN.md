@@ -759,6 +759,54 @@ End-to-end verified on `/tmp/spec-test-v104` (fresh bootstrap +
 init_phase all) and on `~/dev/domainapps/spec-dog-walking`
 (post-cleanup audit: 17/17). 135/135 tests green.
 
+### 6.9 v1.0.5 — enum consistency check + Enumerations convention — [x]
+
+User spotted that `Dog.breed` was declared `string` in the
+dog-walking domain model even though it's a closed set — and that
+nothing in the suite would catch openapi/asyncapi/datacontract
+divergence on an enum's values. Common drift pattern: someone adds
+a value in OpenAPI, forgets the other two.
+
+- ✅ New `## Enumerations` section convention in
+  `domain-model.md`. Each `### Name` declares one named enum with
+  a `| Value | Notes |` table. Attributes reference it as
+  `enum:Name` in the Type column.
+- ✅ `shared/spec_parsers.py` — `domain_model_enums()`,
+  `contract_named_enums()`, `datacontract_named_enums()`.
+- ✅ `shared/checks/enum_values_consistent.py` — single
+  cross-contract check `ENUM-VALUES-CONSISTENT`. Model is the
+  authority. OpenAPI must declare every named enum with matching
+  values; AsyncAPI + Datacontract must match if they declare it.
+- ✅ Wired into `domain-contracts/gate.yaml` (Phase 6) and
+  `domain-conformance-audit/gate.yaml` (Phase 7) at error
+  severity.
+- ✅ `templates/domain-model.md` carries an `## Enumerations`
+  stub explaining when to use named enums vs strings.
+- ✅ `domain-modeling/SKILL.md` documents the convention
+  (when to declare named enum vs leave as `string` vs inline
+  enum); `domain-contracts/SKILL.md` documents the
+  `$ref: '#/components/schemas/<Name>'` materialization pattern.
+- ✅ Two regression tests in `tests/test_contracts.py` cover the
+  missing-from-openapi failure and the value-mismatch failure.
+
+137/137 tests green (was 135, +2 enum regression tests). Convention
+is opt-in — silent on domains without an `## Enumerations`
+section, so existing fixtures (Items) are unaffected.
+
+### 6.10 v1.0.6 backlog — field shape alignment across all contracts
+
+Spotted while designing the enum check: the existing
+`WRITE-OP-HAS-ASYNCAPI-CHANNEL` and `EVENT-IN-DATACONTRACT` only
+check *presence* (channel exists, record exists), not *shape*.
+Nothing verifies that field names — let alone types or required
+constraints — align across model → openapi → asyncapi →
+datacontract. `FIELD-MATCH-DOMAIN-OPENAPI` covers one edge
+(model ↔ openapi); the other three edges are uncovered.
+
+Proposed: `FIELD-MATCH-DOMAIN-ASYNCAPI` + `FIELD-MATCH-DOMAIN-DATACONTRACT`
+(or one combined `FIELD-SHAPE-CONSISTENT` similar in spirit to
+`ENUM-VALUES-CONSISTENT`). Out of scope for v1.0.5; tracked here.
+
 ---
 
 ## Post-v1 Backlog

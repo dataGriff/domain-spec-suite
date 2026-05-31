@@ -90,3 +90,23 @@ TODO: Replace with your domain's entity relationships.
 | From | To | Trigger |
 |------|----|---------|
 | TODO | TODO | TODO |
+
+## Enumerations
+
+<!--
+Closed-set values used by one or more attributes. Each enum named
+here MUST appear in `contracts/openapi.yaml` as
+`components.schemas.<Name>` with matching values (enforced by
+`ENUM-VALUES-CONSISTENT` at Phase 6 + audit). Reference from
+attribute tables via `enum:<Name>` in the Type column.
+
+Delete this section if your domain has no named enums yet — the
+convention is opt-in.
+-->
+
+### [EnumName]
+
+| Value | Notes |
+|---|---|
+| `value-1` | TODO |
+| `value-2` | TODO |

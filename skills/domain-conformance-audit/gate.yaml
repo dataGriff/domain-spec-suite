@@ -20,6 +20,7 @@ checks:
   - id: GLOSSARY-COVERS-ATTRIBUTES
   - id: ENTITY-IN-OPENAPI-SCHEMA
   - id: FIELD-MATCH-DOMAIN-OPENAPI
+  - id: ENUM-VALUES-CONSISTENT
 
   # Event / data contract alignment
   - id: WRITE-OP-HAS-ASYNCAPI-CHANNEL
