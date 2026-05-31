@@ -663,6 +663,51 @@ Things noted during design but not in scope for v1:
 - Capacity / sizing doc as a separate phase
 - Integrations / external dependencies doc
 
+### Distribution / packaging (v1.1 candidate)
+
+**Intent:** package the suite as a **Claude plugin** (skills + bundled
+Python + bootstrap templates) so users install with one command
+matching the ecosystem they already use, not a separate pipx step.
+
+**Why skill-first, not pipx-first:** users today install Claude skills
+via the plugin / marketplace mechanism. Asking them to also run
+`pipx install domain-spec-suite` is friction. The plugin format can
+bundle the Python helpers the skills call, so one install gives both
+the skills (Claude auto-discovers) and the supporting machinery.
+
+**Recommended shape:**
+
+```
+domain-spec-suite/                       ← published plugin
+├── plugin.json
+├── skills/
+│   ├── domain-orchestrator/SKILL.md
+│   ├── ... 8 skills total ...
+├── scripts/                             ← bundled Python (the current shared/ + scripts/)
+└── templates/                           ← bootstrap-installed spec-repo shell
+```
+
+Plugin install would also drop a thin `dss` shim onto PATH so spec
+repos / CI / Taskfiles can call `dss audit --repo .` without needing
+Claude running.
+
+**Open questions to research before building:**
+
+- Exact Claude plugin format (`plugin.json` schema, marketplace.json,
+  how bundled scripts are referenced from SKILL.md via
+  `${CLAUDE_PLUGIN_ROOT}` or similar).
+- Marketplace publishing path: single-repo marketplace vs contributing
+  to `@anthropics/skills` vs other.
+- Plugin update / pin / uninstall lifecycle.
+- Whether plugins can install PATH shims, or whether `dss` needs a
+  separate `pipx install` step.
+- Test story: how to CI-test a plugin (load skills in a sandboxed
+  Claude env, run the audit, assert green).
+
+**Status:** deferred. Until packaged, distribution is git-clone +
+sibling-checkout convention (see `task audit` resolution order in
+the bootstrap-installed README).
+
 ---
 
 ## Notes for Claude Code
