@@ -35,6 +35,16 @@ def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def spec_target(tmp_path: pathlib.Path, name: str = "spec-sample") -> pathlib.Path:
+    """Create and return a spec-prefixed subdirectory under tmp_path.
+    Bootstrap refuses non-prefixed targets unless --allow-non-prefix
+    is passed, so every test that doesn't specifically test that flag
+    needs a prefixed target."""
+    target = tmp_path / name
+    target.mkdir()
+    return target
+
+
 # ── manifest integrity ────────────────────────────────────────────
 
 
@@ -62,9 +72,10 @@ def test_manifest_matches_templates_dir() -> None:
 
 
 def test_bootstrap_in_empty_dir_succeeds(tmp_path: pathlib.Path) -> None:
+    target = spec_target(tmp_path)
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Sample",
     )
@@ -76,10 +87,10 @@ def test_bootstrap_in_empty_dir_succeeds(tmp_path: pathlib.Path) -> None:
         dst_rel = entry["path"]
         if dst_rel.endswith(".template"):
             dst_rel = dst_rel[: -len(".template")]
-        assert (tmp_path / dst_rel).is_file(), f"missing: {dst_rel}"
+        assert (target / dst_rel).is_file(), f"missing: {dst_rel}"
 
     # State files exist and parse.
-    specs = tmp_path / "docs" / "specifications"
+    specs = target / "docs" / "specifications"
     progress = yaml.safe_load((specs / "_progress.yaml").read_text())
     bootstrap_record = yaml.safe_load((specs / "_bootstrap.yaml").read_text())
     template_manifest = yaml.safe_load((specs / "_template_manifest.yaml").read_text())
@@ -92,46 +103,49 @@ def test_bootstrap_in_empty_dir_succeeds(tmp_path: pathlib.Path) -> None:
 
 
 def test_bootstrap_substitutes_placeholders(tmp_path: pathlib.Path) -> None:
+    target = spec_target(tmp_path)
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Catalogue",
     )
     assert result.returncode == 0, result.stderr
 
-    readme = (tmp_path / "README.md").read_text()
+    readme = (target / "README.md").read_text()
     assert "Catalogue" in readme
     assert "{{domain_name}}" not in readme
 
-    index = (tmp_path / "docs" / "index.md").read_text()
+    index = (target / "docs" / "index.md").read_text()
     assert "Catalogue" in index
     assert "{{" not in index
 
-    mkdocs = (tmp_path / "mkdocs.yml").read_text()
+    mkdocs = (target / "mkdocs.yml").read_text()
     assert "Catalogue" in mkdocs
     assert "{{" not in mkdocs
 
 
 def test_bootstrap_preserves_executable_bit_on_hooks(tmp_path: pathlib.Path) -> None:
+    target = spec_target(tmp_path)
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Sample",
     )
     assert result.returncode == 0, result.stderr
 
     for hook in (".githooks/pre-commit", ".githooks/pre-push"):
-        mode = (tmp_path / hook).stat().st_mode
+        mode = (target / hook).stat().st_mode
         assert mode & stat.S_IXUSR, f"{hook} not executable for user"
 
 
 def test_bootstrap_phase_0_gate_present(tmp_path: pathlib.Path) -> None:
     """Sign-off claims four named checks passed."""
+    target = spec_target(tmp_path)
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Sample",
     )
@@ -149,11 +163,12 @@ def test_bootstrap_phase_0_gate_present(tmp_path: pathlib.Path) -> None:
 
 
 def test_bootstrap_refuses_on_non_empty_without_force(tmp_path: pathlib.Path) -> None:
-    (tmp_path / "user-file.txt").write_text("hand-authored content\n")
+    target = spec_target(tmp_path)
+    (target / "user-file.txt").write_text("hand-authored content\n")
 
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Sample",
     )
@@ -161,16 +176,17 @@ def test_bootstrap_refuses_on_non_empty_without_force(tmp_path: pathlib.Path) ->
     assert "non-empty" in result.stderr
     assert "--force" in result.stderr
     # Should not have written anything else.
-    assert {p.name for p in tmp_path.iterdir()} == {"user-file.txt"}
+    assert {p.name for p in target.iterdir()} == {"user-file.txt"}
 
 
 def test_bootstrap_force_refreshes_manifest_files(tmp_path: pathlib.Path) -> None:
     """First bootstrap; mutate a manifest file and a spec file; --force
     restores the manifest file but leaves the spec file alone."""
+    target = spec_target(tmp_path)
     assert (
         run_bootstrap(
             "--target",
-            str(tmp_path),
+            str(target),
             "--domain-name",
             "Sample",
         ).returncode
@@ -178,22 +194,22 @@ def test_bootstrap_force_refreshes_manifest_files(tmp_path: pathlib.Path) -> Non
     )
 
     # Mutate a manifest-owned file.
-    taskfile = tmp_path / "Taskfile.yml"
+    taskfile = target / "Taskfile.yml"
     original_taskfile = taskfile.read_text()
     taskfile.write_text("# tampered\n")
 
     # Drop a user-authored spec file that isn't in the manifest.
-    user_spec = tmp_path / "docs" / "specifications" / "prd.md"
+    user_spec = target / "docs" / "specifications" / "prd.md"
     user_spec.parent.mkdir(parents=True, exist_ok=True)
     user_spec.write_text("# my domain PRD\n")
 
     # Also mutate a state file — should also survive --force.
-    progress = tmp_path / "docs" / "specifications" / "_progress.yaml"
+    progress = target / "docs" / "specifications" / "_progress.yaml"
     original_progress = progress.read_text()
 
     result = run_bootstrap(
         "--target",
-        str(tmp_path),
+        str(target),
         "--domain-name",
         "Sample",
         "--force",
@@ -220,7 +236,7 @@ def test_bootstrap_force_refreshes_manifest_files(tmp_path: pathlib.Path) -> Non
 
 
 def test_bootstrap_missing_target_directory_errors(tmp_path: pathlib.Path) -> None:
-    nonexistent = tmp_path / "does-not-exist"
+    nonexistent = tmp_path / "spec-does-not-exist"
     result = run_bootstrap(
         "--target",
         str(nonexistent),
@@ -232,6 +248,41 @@ def test_bootstrap_missing_target_directory_errors(tmp_path: pathlib.Path) -> No
 
 
 def test_bootstrap_requires_domain_name(tmp_path: pathlib.Path) -> None:
-    result = run_bootstrap("--target", str(tmp_path))
+    target = spec_target(tmp_path)
+    result = run_bootstrap("--target", str(target))
     assert result.returncode != 0
     assert "--domain-name" in result.stderr
+
+
+# ── spec- prefix enforcement (v1.0.1 backlog) ─────────────────────
+
+
+def test_bootstrap_refuses_non_prefixed_target(tmp_path: pathlib.Path) -> None:
+    """A target dir whose name doesn't start with `spec-` is rejected
+    with a clear message pointing at the convention and the --allow-
+    non-prefix escape."""
+    target = tmp_path / "dog-walking"  # no spec- prefix
+    target.mkdir()
+
+    result = run_bootstrap("--target", str(target), "--domain-name", "DogWalking")
+    assert result.returncode == 1
+    assert "spec-" in result.stderr
+    assert "--allow-non-prefix" in result.stderr
+    # No files written.
+    assert list(target.iterdir()) == []
+
+
+def test_bootstrap_allow_non_prefix_bypass(tmp_path: pathlib.Path) -> None:
+    """`--allow-non-prefix` bypasses the convention for legacy targets."""
+    target = tmp_path / "legacy-domain"
+    target.mkdir()
+
+    result = run_bootstrap(
+        "--target",
+        str(target),
+        "--domain-name",
+        "Legacy",
+        "--allow-non-prefix",
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
+    assert (target / "README.md").is_file()

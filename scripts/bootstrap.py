@@ -281,10 +281,31 @@ def run_phase_0_gate(target: pathlib.Path) -> list[str]:
 # ── orchestration ──────────────────────────────────────────────────
 
 
+SPEC_PREFIX = "spec-"
+
+
+def _check_spec_prefix(target: pathlib.Path, allow_non_prefix: bool) -> None:
+    """Refuse to bootstrap into a target dir whose name doesn't start
+    with `spec-` (the convention for domain spec repos). Override with
+    --allow-non-prefix."""
+    name = target.name
+    if name.startswith(SPEC_PREFIX) or allow_non_prefix:
+        return
+    raise BootstrapError(
+        f"target directory name {name!r} doesn't start with the "
+        f"{SPEC_PREFIX!r} prefix. Domain spec repos are named "
+        f"`{SPEC_PREFIX}<domain-slug>` so they're easy to spot in a list "
+        "of sibling repos. Either rename the directory (recommended) or "
+        "pass --allow-non-prefix to bypass this check (for legacy targets)."
+    )
+
+
 def bootstrap(args: argparse.Namespace) -> int:
     target = pathlib.Path(args.target).resolve()
     if not target.is_dir():
         raise BootstrapError(f"target directory does not exist: {target}")
+
+    _check_spec_prefix(target, allow_non_prefix=args.allow_non_prefix)
 
     manifest = load_manifest()
     subs = build_substitutions(args)
@@ -373,6 +394,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--force",
         action="store_true",
         help="Refresh manifest-owned files in a non-empty target. Never touches spec content.",
+    )
+    parser.add_argument(
+        "--allow-non-prefix",
+        action="store_true",
+        help=(
+            f"Bypass the `{SPEC_PREFIX}` target-directory-name check. "
+            "Use only for legacy targets that pre-date the convention."
+        ),
     )
     return parser.parse_args(argv)
 

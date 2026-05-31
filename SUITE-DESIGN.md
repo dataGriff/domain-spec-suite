@@ -139,6 +139,12 @@ Bootstrap is mechanical, not interactive. The only user interaction is a
 confirmation at the start: "I'm about to set up this directory as a domain
 spec repo. This will create [N files]. Proceed?"
 
+**Target directory naming.** Bootstrap refuses if the target directory
+name doesn't start with `spec-` (the convention for domain spec repos
+— `spec-items`, `spec-dog-walking`, `spec-orders`). The prefix makes
+spec repos easy to identify in a list of sibling repos. Pass
+`--allow-non-prefix` to bypass for legacy targets.
+
 If the target directory already contains files, bootstrap refuses by default
 and exits with a message pointing to `--force` (manifest-aware re-bootstrap
 for shell upgrades) or `task suite:upgrade-shell` (the same operation

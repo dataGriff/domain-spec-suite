@@ -70,9 +70,16 @@ by Phases 1–6 as the user walks through the rest of the suite.
    the wrong directory, stop and ask before proceeding. Quote the
    target path back to the user verbatim and ask "set up this directory
    as a domain spec repo? This will create [N] files."
+
+   **Naming convention.** The target directory MUST be named
+   `spec-<domain-slug>` (e.g. `spec-items`, `spec-dog-walking`,
+   `spec-orders`). Bootstrap refuses other names with a clear error.
+   If the user picked a non-prefixed name, recommend renaming. Use
+   `--allow-non-prefix` only for documented legacy targets.
+
 2. **Ask for the `domain_name`.** This populates `{{domain_name}}`
-   placeholders in `README.md`, `mkdocs.yml`, `docs/index.md`, and
-   `AGENTS.md`. Use the user's words (e.g. "Items", "Orders",
+   placeholders in `README.md`, `mkdocs.yml`, `docs/index.md`.
+   Use the user's words (e.g. "Items", "Orders",
    "Catalogue") — title case, no quoting.
 3. **Run the script** via Bash. From any directory:
 
