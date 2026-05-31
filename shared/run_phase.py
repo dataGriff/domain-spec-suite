@@ -154,12 +154,27 @@ def load_gate(phase: str) -> dict:
     return yaml.safe_load(gate_path.read_text())
 
 
-def run_phase(phase: str, repo: pathlib.Path) -> tuple[int, list[CheckOutcome]]:
+def run_phase(
+    phase: str,
+    repo: pathlib.Path,
+    *,
+    exclude: set[str] | None = None,
+) -> tuple[int, list[CheckOutcome]]:
     """Run every check listed in the phase's gate against `repo`.
     Returns (exit_code, outcomes). exit_code is 0 only if every
-    error-severity check that actually ran passed."""
+    error-severity check that actually ran passed.
+
+    `exclude` is an optional set of check ids to skip. Excluded checks
+    don't appear in outcomes at all (different from `skipped` which
+    indicates the check ran but a prerequisite wasn't met). Used by
+    the spec-repo `task audit:cross-file` to skip placeholder, sha256,
+    force-advance, ambiguity, and generator checks for a faster
+    pre-push variant.
+    """
     if phase not in PHASE_TO_SKILL:
         raise ValueError(f"unknown phase '{phase}'. Expected one of: {', '.join(PHASE_TO_SKILL)}")
+
+    exclude = exclude or set()
 
     gate = load_gate(phase)
     checks_by_id = discover_checks(phase)
@@ -168,6 +183,8 @@ def run_phase(phase: str, repo: pathlib.Path) -> tuple[int, list[CheckOutcome]]:
 
     for entry in gate.get("checks", []):
         check_id = entry["id"]
+        if check_id in exclude:
+            continue
         if check_id not in checks_by_id:
             outcomes.append(
                 CheckOutcome(
@@ -273,6 +290,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=".",
         help="Path to the target domain repo. Defaults to the current directory.",
     )
+    parser.add_argument(
+        "--exclude",
+        default="",
+        help=(
+            "Comma-separated check ids to skip. Used by `task audit:cross-file` "
+            "to skip placeholder / sha256 / force-advance / ambiguity / generator "
+            "checks for a faster pre-push variant."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -282,7 +308,8 @@ def main(argv: list[str] | None = None) -> int:
     if not repo.is_dir():
         print(f"run_phase: target repo does not exist: {repo}", file=sys.stderr)
         return 2
-    exit_code, outcomes = run_phase(args.phase, repo)
+    exclude = {x.strip() for x in args.exclude.split(",") if x.strip()}
+    exit_code, outcomes = run_phase(args.phase, repo, exclude=exclude)
 
     # Audit-phase post-processing: respect prior-phase engagement.
     # Mirrors sign_off.py so `task audit` and `task sign-off:audit` show

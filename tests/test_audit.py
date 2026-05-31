@@ -143,3 +143,28 @@ def test_runner_render_includes_summary_counts() -> None:
     output = run_phase.render("audit", ITEMS_FIXTURE, outcomes)
     assert "summary:" in output
     assert "passed" in output
+
+
+def test_exclude_flag_skips_named_checks() -> None:
+    """run_phase(..., exclude={ids}) omits those checks from outcomes
+    entirely. Used by the spec-repo `task audit:cross-file` to skip
+    placeholder + sha256 + force-advance + ambiguity + generator
+    checks for a faster pre-push variant."""
+    excluded = {
+        "NO-TEMPLATE-PLACEHOLDERS",
+        "SIGNOFF-SHA256-MATCHES",
+        "FORCE-ADVANCES-ALL-ACCEPTED",
+        "AMBIGUITIES-NO-AUDIT-REQUIRED",
+        "GENERATOR-CLEAN-OUTPUT",
+    }
+    _exit_code, outcomes = run_phase.run_phase("audit", ITEMS_FIXTURE, exclude=excluded)
+    fired_ids = {o.id for o in outcomes}
+    assert not (excluded & fired_ids), (
+        f"excluded check ids appeared in outcomes: {excluded & fired_ids}"
+    )
+    # And every NON-excluded check from the audit gate still ran.
+    import yaml
+
+    gate = yaml.safe_load((REPO / "skills/domain-conformance-audit/gate.yaml").read_text())
+    expected = {entry["id"] for entry in gate["checks"]} - excluded
+    assert fired_ids == expected, f"expected {expected}, got {fired_ids}"
