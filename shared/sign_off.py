@@ -26,7 +26,7 @@ if str(SUITE_ROOT) not in sys.path:
 
 import yaml  # noqa: E402
 
-from shared import run_phase  # noqa: E402
+from shared import run_phase, spec_paths  # noqa: E402
 
 SUITE_VERSION = yaml.safe_load((SUITE_ROOT / "suite-version.yaml").read_text())["suite_version"]
 GATE_VERSION = yaml.safe_load((SUITE_ROOT / "gate-version.yaml").read_text())["gate_version"]
@@ -40,21 +40,11 @@ def _now() -> str:
 
 
 def _sidecar_path(repo: pathlib.Path, phase: str) -> pathlib.Path:
-    phase_num = {
-        "bootstrap": 0,
-        "discovery": 1,
-        "modeling": 2,
-        "access-control": 3,
-        "flows": 4,
-        "nfrs": 5,
-        "contracts": 6,
-        "audit": 7,
-    }[phase]
-    return repo / "docs" / "specifications" / f"_phase-{phase_num}-passed.yaml"
+    return spec_paths.phase_sidecar_path(repo, phase)
 
 
 def _progress_path(repo: pathlib.Path) -> pathlib.Path:
-    return repo / "docs" / "specifications" / "_progress.yaml"
+    return spec_paths.progress_path(repo)
 
 
 def _sha256(path: pathlib.Path) -> str:

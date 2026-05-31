@@ -21,7 +21,7 @@ ITEMS_FIXTURE = REPO / "tests" / "fixtures" / "items"
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from shared import prior_engagement, run_phase, sign_off  # noqa: E402
+from shared import prior_engagement, run_phase, sign_off, spec_paths  # noqa: E402
 
 pytestmark = pytest.mark.audit
 
@@ -35,7 +35,7 @@ def _copy_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
 def _set_flows_warning_na(repo: pathlib.Path, check_id: str, reason: str) -> None:
     """Patch flows sidecar with a warnings_responded n-a entry for the
     given check id."""
-    sidecar = repo / "docs/specifications/_phase-4-passed.yaml"
+    sidecar = spec_paths.phase_sidecar_path(repo, "flows")
     doc = yaml.safe_load(sidecar.read_text())
     doc.setdefault("warnings_responded", []).append(
         {
@@ -63,7 +63,7 @@ def test_read_prior_engagement_ignores_resolved_entries(tmp_path: pathlib.Path) 
     issue was fixed; if the check fires again at audit, that's a NEW
     finding worth surfacing."""
     target = _copy_fixture(tmp_path)
-    sidecar = target / "docs/specifications/_phase-4-passed.yaml"
+    sidecar = spec_paths.phase_sidecar_path(target, "flows")
     doc = yaml.safe_load(sidecar.read_text())
     doc.setdefault("warnings_responded", []).append(
         {"id": "RESOLVED-CHECK", "response": "resolved", "reason": "fixed it"}
@@ -183,7 +183,7 @@ def test_audit_signoff_accepts_downgraded_warning_without_user_response(
     rc = sign_off.sign_off("audit", target)
     assert rc == 0, "audit sign-off should succeed when only downgraded warnings remain"
 
-    audit_sidecar = target / "docs/specifications/_phase-7-passed.yaml"
+    audit_sidecar = spec_paths.phase_sidecar_path(target, "audit")
     doc = yaml.safe_load(audit_sidecar.read_text())
     responded_ids = {entry["id"] for entry in doc.get("warnings_responded", [])}
     # If LIFECYCLE downgraded, its carry-forward should appear in the sidecar.

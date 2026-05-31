@@ -1,5 +1,5 @@
-"""Audit check: _ambiguities.md has no items still flagged as required
-by the audit.
+"""Audit check: `.spec-suite/ambiguities.md` has no items still flagged
+as required by the audit.
 
 Items deferred during soft-gate phases can name a `required_by` value
 (typically `audit`). The audit refuses to declare complete while any
@@ -11,6 +11,7 @@ from __future__ import annotations
 import pathlib
 import re
 
+from shared import spec_paths
 from shared.check_result import CheckResult
 
 metadata = {
@@ -19,7 +20,7 @@ metadata = {
     "phases": ["audit"],
     "severity_by_phase": {"audit": "error"},
     "prerequisites": [
-        {"file_exists": "docs/specifications/_ambiguities.md"},
+        {"file_exists": ".spec-suite/ambiguities.md"},
     ],
 }
 
@@ -35,7 +36,7 @@ RESOLVED_HEADING = re.compile(r"(?im)^##\s+resolved\s*$")
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
-    path = repo_root / "docs" / "specifications" / "_ambiguities.md"
+    path = spec_paths.ambiguities_path(repo_root)
     text = path.read_text(encoding="utf-8")
 
     # Trim to the section above the Resolved heading.
@@ -51,10 +52,10 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         return CheckResult.ok()
 
     return CheckResult.fail(
-        "_ambiguities.md still has items flagged for resolution before "
-        "the audit phase. The audit refuses to declare the spec set "
-        "complete while these are open. Either resolve each item (and "
-        "move it under the ## Resolved heading), or accept the deferral "
-        "via a force-advance entry on the originating phase.",
+        ".spec-suite/ambiguities.md still has items flagged for "
+        "resolution before the audit phase. The audit refuses to declare "
+        "the spec set complete while these are open. Either resolve each "
+        "item (and move it under the ## Resolved heading), or accept the "
+        "deferral via a force-advance entry on the originating phase.",
         details=offenders,
     )

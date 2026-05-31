@@ -42,11 +42,15 @@ def _copy_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def _progress(repo: pathlib.Path) -> dict:
-    return yaml.safe_load((repo / "docs/specifications/_progress.yaml").read_text())
+    from shared import spec_paths
+
+    return yaml.safe_load(spec_paths.progress_path(repo).read_text())
 
 
 def _sidecar_path(repo: pathlib.Path, phase: str = "contracts") -> pathlib.Path:
-    return repo / "docs/specifications/_phase-6-passed.yaml"
+    from shared import spec_paths
+
+    return spec_paths.phase_sidecar_path(repo, phase)
 
 
 # ── gate against the fixture ─────────────────────────────────────
@@ -439,14 +443,14 @@ def test_init_phase_is_idempotent(tmp_path: pathlib.Path) -> None:
 
 def test_init_phase_template_path_mapping() -> None:
     """The canonical mapping converts docs/specifications/X to
-    docs/specifications/_template/X."""
+    .spec-suite/templates/X."""
     assert (
         init_phase.template_path_for("docs/specifications/contracts/openapi.yaml")
-        == "docs/specifications/_template/contracts/openapi.yaml"
+        == ".spec-suite/templates/contracts/openapi.yaml"
     )
     assert (
         init_phase.template_path_for("docs/specifications/domain-model.md")
-        == "docs/specifications/_template/domain-model.md"
+        == ".spec-suite/templates/domain-model.md"
     )
     # Paths outside docs/specifications/ have no template convention.
     assert init_phase.template_path_for("README.md") is None

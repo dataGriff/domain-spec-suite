@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import hashlib
 import pathlib
-import re
 import shutil
 import sys
 from collections.abc import Callable
@@ -33,7 +32,7 @@ ITEMS_FIXTURE = REPO / "tests" / "fixtures" / "items"
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from shared import run_phase  # noqa: E402
+from shared import run_phase, spec_paths  # noqa: E402
 
 pytestmark = pytest.mark.audit
 
@@ -41,30 +40,30 @@ pytestmark = pytest.mark.audit
 # ── helpers ──────────────────────────────────────────────────────
 
 
-_SHA_ENTRY = re.compile(
-    r'(?P<head>-\s*path:\s*(?P<path>\S+)\s*\n\s*sha256:\s*")(?P<sha>[0-9a-f]+)(?P<tail>")',
-    re.MULTILINE,
-)
-
-
 def _reseed_signoffs(repo: pathlib.Path) -> None:
     """Regenerate sha256 values across every sign-off sidecar so the
     SIGNOFF-SHA256-MATCHES check sees a clean state. Used by breaks
     that mutate signed spec files for purposes other than testing
     staleness."""
-    specs = repo / "docs" / "specifications"
-    for sidecar in sorted(specs.glob("_phase-*-passed.yaml")):
-        text = sidecar.read_text(encoding="utf-8")
-
-        def fix(match: re.Match[str]) -> str:
-            path = match.group("path")
+    for sidecar in spec_paths.all_phase_sidecars(repo):
+        doc = yaml.safe_load(sidecar.read_text(encoding="utf-8")) or {}
+        files_signed = doc.get("files_signed") or []
+        changed = False
+        for entry in files_signed:
+            if not isinstance(entry, dict):
+                continue
+            path = entry.get("path")
+            if not path:
+                continue
             target = repo / path
             if not target.is_file():
-                return match.group(0)
+                continue
             actual = hashlib.sha256(target.read_bytes()).hexdigest()
-            return f"{match.group('head')}{actual}{match.group('tail')}"
-
-        sidecar.write_text(_SHA_ENTRY.sub(fix, text), encoding="utf-8")
+            if entry.get("sha256") != actual:
+                entry["sha256"] = actual
+                changed = True
+        if changed:
+            sidecar.write_text(yaml.safe_dump(doc, sort_keys=False))
 
 
 def _insert_into_entities_section(repo: pathlib.Path, content: str) -> None:
@@ -183,7 +182,7 @@ def _entity_without_openapi_schema(repo: pathlib.Path) -> None:
 
 
 def _unaccepted_force_advance(repo: pathlib.Path) -> None:
-    p = repo / "docs/specifications/_progress.yaml"
+    p = spec_paths.progress_path(repo)
     progress = yaml.safe_load(p.read_text())
     progress["force_advances"] = [
         {
@@ -198,7 +197,7 @@ def _unaccepted_force_advance(repo: pathlib.Path) -> None:
 
 
 def _unresolved_audit_ambiguity(repo: pathlib.Path) -> None:
-    p = repo / "docs/specifications/_ambiguities.md"
+    p = spec_paths.ambiguities_path(repo)
     text = p.read_text()
     assert "## Deferred to: audit\n\n_None._\n\n" in text, (
         "fixture: ambiguities.md structure changed"

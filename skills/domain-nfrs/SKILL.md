@@ -107,7 +107,7 @@ warning is common; typical responses:
 - **n-a** — the NFR is a behavioural guarantee, not threshold-bearing
   (e.g. "no field is removed within a major version")
 - **deferred** — the threshold can't be set yet; move the entry to
-  `_ambiguities.md` with `required_by: <phase>` and mark this
+  `.spec-suite/ambiguities.md` with `required_by: <phase>` and mark this
   warning n-a with reason "moved to ambiguities"
 
 ## How to run

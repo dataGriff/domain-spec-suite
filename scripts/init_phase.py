@@ -1,15 +1,15 @@
-"""Copy the blank `_template/` skeletons for an authoring phase into
+"""Copy the blank template skeletons for an authoring phase into
 their canonical `docs/specifications/` paths, *only* for files that
 don't already exist.
 
 Used by phases that produce content files (discovery, modeling,
 access-control, flows, nfrs, contracts). Each phase's `gate.yaml`
 declares `signs_files:` — the canonical destination paths. The
-matching template lives at the same path with `_template/` injected
-after `docs/specifications/`. So:
+matching template lives under `.spec-suite/templates/` with the
+same sub-path beneath `docs/specifications/`. So:
 
     docs/specifications/contracts/openapi.yaml
-      ←  docs/specifications/_template/contracts/openapi.yaml
+      ←  .spec-suite/templates/contracts/openapi.yaml
 
 Idempotent: re-running against a partially-populated repo only fills
 in the missing files; never overwrites user-authored content. That's
@@ -28,10 +28,9 @@ SUITE_ROOT = pathlib.Path(__file__).resolve().parent.parent
 if str(SUITE_ROOT) not in sys.path:
     sys.path.insert(0, str(SUITE_ROOT))
 
-from shared import run_phase  # noqa: E402
+from shared import run_phase, spec_paths  # noqa: E402
 
 SPECS_PREFIX = "docs/specifications/"
-TEMPLATE_PREFIX = "docs/specifications/_template/"
 
 
 def template_path_for(dest_rel: str) -> str | None:
@@ -40,7 +39,9 @@ def template_path_for(dest_rel: str) -> str | None:
     convention applies)."""
     if not dest_rel.startswith(SPECS_PREFIX):
         return None
-    return TEMPLATE_PREFIX + dest_rel[len(SPECS_PREFIX) :]
+    # Templates live in .spec-suite/templates/ with the same sub-path
+    # beneath docs/specifications/ stripped.
+    return f"{spec_paths.STATE_DIRNAME}/templates/" + dest_rel[len(SPECS_PREFIX) :]
 
 
 def init_phase(repo: pathlib.Path, phase: str) -> int:

@@ -36,7 +36,9 @@ def _copy_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
 
 def _sidecar(repo: pathlib.Path) -> pathlib.Path:
     # Phase 2 (modeling) sidecar.
-    return repo / "docs/specifications/_phase-2-passed.yaml"
+    from shared import spec_paths
+
+    return spec_paths.phase_sidecar_path(repo, "modeling")
 
 
 def test_soft_gate_refuses_when_warning_has_no_response(tmp_path: pathlib.Path) -> None:

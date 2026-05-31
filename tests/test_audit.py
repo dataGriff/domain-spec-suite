@@ -156,11 +156,13 @@ def test_signoff_sha256_matches_handles_bare_and_quoted(tmp_path: pathlib.Path) 
     drift is caught."""
     import shutil
 
+    from shared import spec_paths
     from shared.checks import signoff_sha256_matches
 
     target = tmp_path / "spec-sample"
     specs = target / "docs" / "specifications"
     specs.mkdir(parents=True)
+    spec_paths.ensure_state_skeleton(target)
 
     # Two files, two sidecar shapes (bare + quoted).
     bare_file = specs / "bare.md"
@@ -173,8 +175,9 @@ def test_signoff_sha256_matches_handles_bare_and_quoted(tmp_path: pathlib.Path) 
     bare_sha = hashlib.sha256(bare_file.read_bytes()).hexdigest()
     quoted_sha = hashlib.sha256(quoted_file.read_bytes()).hexdigest()
 
+    phases = spec_paths.phases_dir(target)
     # Sidecar 1: bare sha256
-    (specs / "_phase-1-passed.yaml").write_text(
+    (phases / "phase-1-passed.yaml").write_text(
         f"""phase: bare-format-test
 files_signed:
 - path: docs/specifications/bare.md
@@ -182,7 +185,7 @@ files_signed:
 """
     )
     # Sidecar 2: quoted sha256
-    (specs / "_phase-2-passed.yaml").write_text(
+    (phases / "phase-2-passed.yaml").write_text(
         f"""phase: quoted-format-test
 files_signed:
   - path: docs/specifications/quoted.md

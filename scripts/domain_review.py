@@ -33,7 +33,7 @@ SUITE_ROOT = pathlib.Path(__file__).resolve().parent.parent
 if str(SUITE_ROOT) not in sys.path:
     sys.path.insert(0, str(SUITE_ROOT))
 
-from shared import prior_engagement, run_phase  # noqa: E402
+from shared import prior_engagement, run_phase, spec_paths  # noqa: E402
 
 REVIEW_FILES = [
     "docs/specifications/prd.md",
@@ -47,10 +47,8 @@ REVIEW_FILES = [
     "docs/specifications/contracts/openapi.yaml",
     "docs/specifications/contracts/asyncapi.yaml",
     "docs/specifications/contracts/datacontract.yaml",
-    "docs/specifications/_ambiguities.md",
+    ".spec-suite/ambiguities.md",
 ]
-
-SIDECAR_GLOB = "_phase-*-passed.yaml"
 
 CATEGORIES = [
     ("CROSS-DOC-TYPE-SHAPE", "Cross-document type / shape inconsistencies"),
@@ -89,7 +87,7 @@ def verify_audit_green(repo: pathlib.Path) -> tuple[bool, str]:
 def list_files_for_review(repo: pathlib.Path) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
     """Return (spec_files, sidecars) that exist in the target."""
     spec_files = [repo / rel for rel in REVIEW_FILES if (repo / rel).is_file()]
-    sidecars = sorted((repo / "docs/specifications").glob(SIDECAR_GLOB))
+    sidecars = spec_paths.all_phase_sidecars(repo)
     return spec_files, sidecars
 
 
@@ -134,7 +132,7 @@ def render_context_bundle(
     lines.append("")
     lines.append(
         "Once the report body is ready, write it to "
-        f"`docs/specifications/_review-{_file_safe_ts()}.md` via "
+        f"`.spec-suite/reviews/{_file_safe_ts()}.md` via "
         f"`python scripts/domain_review.py --repo <target> "
         f"--write-report <path-or-->`."
     )
@@ -143,10 +141,10 @@ def render_context_bundle(
 
 def write_report(repo: pathlib.Path, body: str) -> pathlib.Path:
     """Write the agent-produced report body to a timestamped file
-    under docs/specifications/. Returns the path written."""
-    specs = repo / "docs" / "specifications"
-    specs.mkdir(parents=True, exist_ok=True)
-    out = specs / f"_review-{_file_safe_ts()}.md"
+    under .spec-suite/reviews/. Returns the path written."""
+    reviews = spec_paths.reviews_dir(repo)
+    reviews.mkdir(parents=True, exist_ok=True)
+    out = reviews / f"{_file_safe_ts()}.md"
     out.write_text(body, encoding="utf-8")
     return out
 
@@ -166,7 +164,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Path to a markdown file containing the report body (or '-' for "
             "stdin). When set, writes the report to "
-            "docs/specifications/_review-<timestamp>.md and exits. When "
+            ".spec-suite/reviews/<timestamp>.md and exits. When "
             "absent, runs pre-flight + emits the context bundle to stdout."
         ),
     )

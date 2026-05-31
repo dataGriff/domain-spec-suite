@@ -37,7 +37,7 @@ through filling in the templates.
 3. **Author half.** If any of `contracts/openapi.yaml`,
    `contracts/asyncapi.yaml`, `contracts/datacontract.yaml` is missing,
    runs `task init:contracts -- --repo <target>` to copy the blank
-   `_template/contracts/*.yaml` skeletons into place. Never
+   `.spec-suite/templates/contracts/*.yaml` skeletons into place. Never
    overwrites existing files (the user's authored work is safe).
    Then walks the user through populating each section using the
    upstream specs as the source of truth (see "Authoring" below).
@@ -46,12 +46,12 @@ through filling in the templates.
    every check listed in `gate.yaml`.
 5. If every check passes: invokes `shared/sign_off.py contracts`
    which computes sha256s for the three contract files and writes
-   `_phase-6-passed.yaml`.
+   `.spec-suite/phases/phase-6-passed.yaml`.
 6. If any check fails: reports the failing check ids verbatim. Does
    not write the sign-off file. Tells the user to either fix the
    underlying issues or, in genuine emergencies, run
    `task suite:force-advance contracts --reason '<text>'` (which
-   writes a `force_advances` entry to `_progress.yaml` that the audit
+   writes a `force_advances` entry to `.spec-suite/progress.yaml` that the audit
    surfaces until cleared via `task suite:accept-force`).
 
 ## Authoring
@@ -201,5 +201,5 @@ Listed in `gate.yaml` under `signs_files:`:
 - `docs/specifications/contracts/datacontract.yaml`
 
 `shared/sign_off.py` computes sha256 for each and records it in
-`_phase-6-passed.yaml`. The audit's `SIGNOFF-SHA256-MATCHES` check
+`.spec-suite/phases/phase-6-passed.yaml`. The audit's `SIGNOFF-SHA256-MATCHES` check
 verifies these later.

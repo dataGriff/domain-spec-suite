@@ -1,9 +1,10 @@
 """Audit check: no template placeholder strings remain in the spec set.
 
-Scans every markdown and YAML file under `docs/specifications/`,
-excluding the `_template/` skeleton directory (which legitimately
-contains placeholders). Looks for the standard placeholder shapes:
-`[Resource1]`, `[Domain]`, and `{{...}}`.
+Scans every markdown and YAML file under `docs/specifications/`.
+Looks for the standard placeholder shapes: `[Resource1]`,
+`[Domain]`, and `{{...}}`. Template skeletons (with placeholders
+intact) live in `.spec-suite/templates/` and are outside this
+directory, so they're not scanned.
 """
 
 from __future__ import annotations

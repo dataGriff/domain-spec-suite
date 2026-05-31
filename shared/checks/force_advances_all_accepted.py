@@ -1,5 +1,5 @@
-"""Audit check: every force-advance entry in _progress.yaml must be
-explicitly accepted before the audit can pass.
+"""Audit check: every force-advance entry in `.spec-suite/progress.yaml`
+must be explicitly accepted before the audit can pass.
 
 Force-advances are an honesty mechanism (SUITE-DESIGN §11/Decision 5):
 they bypass a hard gate with a recorded reason, but the audit blocks
@@ -14,6 +14,7 @@ import pathlib
 
 import yaml
 
+from shared import spec_paths
 from shared.check_result import CheckResult
 
 metadata = {
@@ -22,20 +23,20 @@ metadata = {
     "phases": ["audit"],
     "severity_by_phase": {"audit": "error"},
     "prerequisites": [
-        {"file_exists": "docs/specifications/_progress.yaml"},
+        {"file_exists": ".spec-suite/progress.yaml"},
     ],
 }
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
-    progress_path = repo_root / "docs" / "specifications" / "_progress.yaml"
+    progress_path = spec_paths.progress_path(repo_root)
     progress = yaml.safe_load(progress_path.read_text())
     entries = progress.get("force_advances") or []
     if not isinstance(entries, list):
         return CheckResult.fail(
-            "force_advances in _progress.yaml is not a list — the file "
-            "may have been edited by hand. Restore the [] / list-of-"
-            "objects shape (see SUITE-DESIGN §4) and re-run audit.",
+            "force_advances in .spec-suite/progress.yaml is not a list — "
+            "the file may have been edited by hand. Restore the [] / list-"
+            "of-objects shape (see SUITE-DESIGN §4) and re-run audit.",
         )
 
     unaccepted = [e for e in entries if not e.get("accepted")]

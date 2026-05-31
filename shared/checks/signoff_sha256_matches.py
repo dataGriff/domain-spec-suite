@@ -19,6 +19,7 @@ import pathlib
 
 import yaml
 
+from shared import spec_paths
 from shared.check_result import CheckResult
 
 metadata = {
@@ -31,17 +32,16 @@ metadata = {
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
-    specs = repo_root / "docs" / "specifications"
-    if not specs.is_dir():
+    if not spec_paths.state_dir(repo_root).is_dir():
         return CheckResult.fail(
-            "There's no docs/specifications/ directory to scan. "
+            "There's no .spec-suite/ directory to scan. "
             "Has Phase 0 (Bootstrap) been run against this repo?",
         )
 
-    sidecars = sorted(specs.glob("_phase-*-passed.yaml"))
+    sidecars = spec_paths.all_phase_sidecars(repo_root)
     if not sidecars:
         return CheckResult.fail(
-            "No phase sign-off sidecars (_phase-*-passed.yaml) found. "
+            "No phase sign-off sidecars in .spec-suite/phases/. "
             "Audit can't run before at least Phase 0 (Bootstrap) has "
             "signed off. Has the bootstrap script been run?",
         )

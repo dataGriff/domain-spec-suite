@@ -30,7 +30,7 @@ guarantees.
 ## What this skill does
 
 1. Resolves the target repo (current working directory by default).
-2. Verifies Phase 0 (`_bootstrap.yaml`) is present — if not, refuses
+2. Verifies Phase 0 (`.spec-suite/bootstrap.yaml`) is present — if not, refuses
    and tells the user to run the `domain-bootstrap` skill first.
 3. Invokes `shared/run_phase.py audit --repo <target>`.
 4. Renders the structured report the runner produces (pass/fail per
@@ -65,7 +65,7 @@ task audit -- --repo <target-dir>
   verbatim; the user decides what to do about it.
 - Never bypasses a check. The only escape hatch for a stuck check is
   `task suite:force-advance <phase> --reason '<text>'`, which writes
-  an entry to `_progress.yaml` that the audit then surfaces as a
+  an entry to `.spec-suite/progress.yaml` that the audit then surfaces as a
   finding until accepted via `task suite:accept-force`.
 
 ## Checks the audit runs

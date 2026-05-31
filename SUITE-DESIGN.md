@@ -64,9 +64,9 @@ A populated repository containing:
 - `contracts/openapi.yaml` — REST contract
 - `contracts/asyncapi.yaml` — Event contract
 - `contracts/datacontract.yaml` — Data contract
-- `_ambiguities.md` — Resolved and deferred open questions
-- `_progress.yaml` — Phase state (suite-managed, not user-edited)
-- `_phase-N-passed.yaml` × 7 — Phase sign-off sidecars
+- `.spec-suite/ambiguities.md` — Resolved and deferred open questions
+- `.spec-suite/progress.yaml` — Phase state (suite-managed, not user-edited)
+- `.spec-suite/phases/phase-N-passed.yaml` × 7 — Phase sign-off sidecars
 - Repository shell: `Taskfile.yml`, linting configs, `mkdocs.yml`, generator
   scripts, hooks, CI workflows, instruction files
 
@@ -92,7 +92,7 @@ accordingly — see §10).
 Bootstrap refuses to run in a non-empty directory by default. The `--force`
 flag honours `skills/domain-bootstrap/template_manifest.yaml` and only
 overwrites files listed there; user-authored specs in
-`docs/specifications/*.md` and the `_*.yaml` state files are never touched.
+`docs/specifications/*.md` and the `.spec-suite/` state directory are never touched.
 This makes shell upgrades safe (see also `task suite:upgrade-shell` in §9).
 
 ---
@@ -167,10 +167,10 @@ Bootstrap produces:
 - `.github/workflows/audit.yml` (Section 9, PR-time conformance audit)
 - `.github/workflows/docs.yml` (Section 9, GitHub Pages deploy on push to main)
 - `.github/CODEOWNERS`
-- Empty `_progress.yaml` with Phase 0 marked complete and Phase 1 ready
-- `_bootstrap.yaml` recording the suite and gate versions that produced
+- Empty `.spec-suite/progress.yaml` with Phase 0 marked complete and Phase 1 ready
+- `.spec-suite/bootstrap.yaml` recording the suite and gate versions that produced
   the shell
-- `_template_manifest.yaml` listing every file bootstrap owns (used by
+- `.spec-suite/template-manifest.yaml` listing every file bootstrap owns (used by
   `--force` re-bootstrap and `task suite:upgrade-shell` to know what may
   be overwritten)
 
@@ -192,13 +192,13 @@ the entry point for all user interaction with the suite.
 
 ### Responsibilities
 
-**On invocation, read state.** Load `_progress.yaml` if present. Identify
+**On invocation, read state.** Load `.spec-suite/progress.yaml` if present. Identify
 current phase status: not-started, in-progress, passed (with version and
 timestamp), or stale (file modified after sign-off — see Section 6).
 
 **Decide what to do.**
 
-- No `_progress.yaml`: this is a new domain. Confirm with the user, explain
+- No `.spec-suite/progress.yaml`: this is a new domain. Confirm with the user, explain
   the process (Section 7), initialize progress, prompt for Phase 0 Bootstrap.
 - In-progress phase exists: resume it.
 - All phases through N passed, N+1 not started: prompt to start N+1.
@@ -234,7 +234,7 @@ The orchestrator only reads sign-offs and progress state and routes the user.
 
 ## 4. The Progress Schema
 
-`_progress.yaml` is the authoritative state for the suite. The orchestrator
+`.spec-suite/progress.yaml` is the authoritative state for the suite. The orchestrator
 reads it on every invocation. Phase skills update it when they complete.
 
 ```yaml
@@ -298,7 +298,7 @@ session_log:
 
 ### Per-phase sign-off sidecars
 
-`_phase-N-passed.yaml` records the per-phase audit trail:
+`.spec-suite/phases/phase-N-passed.yaml` records the per-phase audit trail:
 
 ```yaml
 phase: discovery
@@ -366,7 +366,7 @@ clones.
 
 ### The ambiguities file
 
-`_ambiguities.md` tracks deferrals in markdown so it's human-readable:
+`.spec-suite/ambiguities.md` tracks deferrals in markdown so it's human-readable:
 
 ```markdown
 # Open Ambiguities
@@ -429,7 +429,7 @@ directly outside the orchestrator. Defense in depth.
 2. Load existing output files (if resuming) or copy from templates.
 3. Load relevant upstream files (PRD for modeling, etc.).
 4. Run gate checks → collect failures.
-5. If no failures and no warnings → write sign-off, update _progress.yaml,
+5. If no failures and no warnings → write sign-off, update .spec-suite/progress.yaml,
    return to orchestrator.
 6. If failures (hard gate) or warnings (soft gate):
    a. Pick highest-priority finding.
@@ -528,7 +528,7 @@ live as prose in the phase skill's `SKILL.md` under a clearly marked
 
 1. The agent reads the prose rubric and the spec file.
 2. For each rubric rule it emits a finding with verdict `pass` or `warn`.
-3. Findings are written into the phase's `_phase-N-passed.yaml` under
+3. Findings are written into the phase's `.spec-suite/phases/phase-N-passed.yaml` under
    `rubric_findings:` (schema in §4).
 4. Each `warn` finding feeds the soft-gate engagement loop — the user must
    resolve, defer, or mark non-applicable with reason before sign-off.
@@ -581,7 +581,7 @@ task gate:<phase>
 
 ### Sign-off
 
-`shared/sign_off.py` is the **only** way `_phase-N-passed.yaml` is written.
+`shared/sign_off.py` is the **only** way `.spec-suite/phases/phase-N-passed.yaml` is written.
 It does this:
 
 1. Runs `task gate:<phase>`.
@@ -592,10 +592,10 @@ It does this:
    `decisions:` block is optional but expected on soft-middle and
    contracts phases — see Decision Log above.
 4. Compute sha256 for every file the phase signed.
-5. Write `_phase-N-passed.yaml`, update `_progress.yaml`.
+5. Write `.spec-suite/phases/phase-N-passed.yaml`, update `.spec-suite/progress.yaml`.
 
 The only way to bypass step 2 is `task suite:force-advance` (Decision 5 /
-§9), which writes an entry to `_progress.yaml`'s `force_advances:` array
+§9), which writes an entry to `.spec-suite/progress.yaml`'s `force_advances:` array
 that the audit will surface as a finding until cleared by
 `task suite:accept-force`.
 
@@ -621,7 +621,7 @@ this through targeted update mode.
 
 On every orchestrator invocation, compute each spec file's current sha256 and
 compare against the value recorded in the corresponding
-`_phase-N-passed.yaml`. Any mismatch marks that phase as `stale`.
+`.spec-suite/phases/phase-N-passed.yaml`. Any mismatch marks that phase as `stale`.
 
 `mtime` is **not** consulted. It's recorded in the sign-off file for human
 readability only. mtime resets on `git checkout`, IDE saves, fresh clones,
@@ -708,7 +708,7 @@ review categories:
 5. Decision Log drift
 
 Output is a structured markdown report at
-`docs/specifications/_review-<ISO-timestamp>.md`. The report is
+`.spec-suite/reviews/<ISO-timestamp>.md`. The report is
 read-only: the user reads findings and decides what to action via
 the normal update-mode flow (no automatic fixes).
 
@@ -733,7 +733,7 @@ phase's `warnings_responded`), re-firing it at audit-error would lose
 the engagement.
 
 `shared/prior_engagement.py` reads every prior phase's
-`_phase-N-passed.yaml`, builds a map of `check_id →
+`.spec-suite/phases/phase-N-passed.yaml`, builds a map of `check_id →
 {response, reason, phase}` for any entry whose response is `n-a` or
 `deferred`, and downgrades matching audit error outcomes to warning.
 The downgrade attaches a carry-forward note in the audit output
@@ -905,8 +905,8 @@ banks for each phase live in their respective skill directories
 Structural checks:
 - All expected files exist at expected paths
 - All files have valid syntax (YAML files parse, markdown is well-formed)
-- `_progress.yaml` initialized with Phase 0 status passed
-- `_bootstrap.yaml` records suite and gate version
+- `.spec-suite/progress.yaml` initialized with Phase 0 status passed
+- `.spec-suite/bootstrap.yaml` records suite and gate version
 
 ### Phase 1: Discovery — Hard gate
 
@@ -994,11 +994,11 @@ Cross-reference checks:
 Runs all phases 1-6 cross-reference checks simultaneously. Additionally:
 - Verifies no unreplaced template placeholders (no `[Resource1]`, `[Domain]`,
   or `{{` strings remain in any spec file or rendered output)
-- Verifies `_ambiguities.md` has no items marked `required-by: audit` that
+- Verifies `.spec-suite/ambiguities.md` has no items marked `required-by: audit` that
   remain unresolved
-- Verifies all `_phase-N-passed.yaml` sidecars are present and not stale
+- Verifies all `.spec-suite/phases/phase-N-passed.yaml` sidecars are present and not stale
   (sha256 comparison per §6)
-- Verifies `_progress.yaml`'s `force_advances:` array contains no entries
+- Verifies `.spec-suite/progress.yaml`'s `force_advances:` array contains no entries
   with `accepted: false`. Any unaccepted force-advance fails the audit and
   surfaces a finding instructing the user to either resolve the underlying
   check failures or run `task suite:accept-force <phase> --reason '<text>'`
@@ -1104,11 +1104,11 @@ bumps; gate-version bumps are rarer and more deliberate.
 
 ### What happens to existing spec sets
 
-- Every `_phase-N-passed.yaml` records the `gate_version` it was signed off
+- Every `.spec-suite/phases/phase-N-passed.yaml` records the `gate_version` it was signed off
   against.
-- `_progress.yaml` records the `gate_version` of the suite when the domain
+- `.spec-suite/progress.yaml` records the `gate_version` of the suite when the domain
   was started.
-- `_bootstrap.yaml` records the `gate_version` of the shell that was
+- `.spec-suite/bootstrap.yaml` records the `gate_version` of the shell that was
   initially copied into the repo.
 - The orchestrator, on detecting that the suite's current gate-version is
   newer than the spec set's, says: "This spec set was audited under
@@ -1119,7 +1119,7 @@ bumps; gate-version bumps are rarer and more deliberate.
 - If no, the spec set remains valid at its original gate version.
 
 After a re-audit, per-phase sign-off files may carry a different
-`gate_version` from `_bootstrap.yaml` and from each other (e.g. discovery
+`gate_version` from `.spec-suite/bootstrap.yaml` and from each other (e.g. discovery
 re-signed under 1.1 while modeling is still at 1.0). This is **expected
 and correct** — it reflects the actual audit history of the spec set.
 The orchestrator never rewrites historical `gate_version` values; it only
@@ -1146,7 +1146,7 @@ In the suite repo:
 ### Known limitations (deferred to v2+)
 
 **Multi-user collaboration is out of scope for v1.** The suite assumes one
-user at a time editing a given spec set. `_progress.yaml` and the phase
+user at a time editing a given spec set. `.spec-suite/progress.yaml` and the phase
 sign-off files are not designed for concurrent access. If two users edit
 simultaneously, last-write-wins, and the orchestrator may report
 inconsistent state on the next run. Recommended workflow: spec set work

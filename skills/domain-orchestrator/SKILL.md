@@ -1,7 +1,7 @@
 ---
 name: domain-orchestrator
 description: |
-  Entry point for the domain-spec-suite. Reads `_progress.yaml` and
+  Entry point for the domain-spec-suite. Reads `.spec-suite/progress.yaml` and
   per-phase sidecars in the target repo, identifies what's done /
   in-progress / stale / next, and routes the user into the appropriate
   phase skill with explicit confirmation. Never auto-advances between
@@ -32,7 +32,7 @@ into the right phase skill with an explicit confirmation.
    yourself; the script enforces sha256-based staleness detection
    per SUITE-DESIGN §6 and you cannot drift from it.
 3. **Decide the action.** The report's `next_action.action` is one of:
-   - `bootstrap` — no `_progress.yaml`. Confirm with the user, set
+   - `bootstrap` — no `.spec-suite/progress.yaml`. Confirm with the user, set
      expectations per SUITE-DESIGN §7, route into `domain-bootstrap`.
    - `start` — next phase is implemented and not started. Prompt the
      user with phase name, what it produces, what later phases depend
@@ -63,7 +63,7 @@ into the right phase skill with an explicit confirmation.
    ask phase-specific questions, does not run phase gates itself, and
    does not write any spec files.
 5. **On phase completion, re-read state.** The just-finished skill
-   updates `_progress.yaml` and writes its sidecar via
+   updates `.spec-suite/progress.yaml` and writes its sidecar via
    `shared/sign_off.py`. Re-invoke `orchestrator_status.py` to get
    the next action, then prompt the user with the next phase per
    step 3. Never chain phases without acknowledgment (§3).
@@ -118,7 +118,7 @@ prompt in your own words per §7, don't echo the summary verbatim.
 ## What this skill never does
 
 - Never runs `task gate:<phase>` itself. Phase skills own their gates.
-- Never edits `_progress.yaml`, `_phase-N-passed.yaml`, or any spec
+- Never edits `.spec-suite/progress.yaml`, `.spec-suite/phases/phase-N-passed.yaml`, or any spec
   file. `shared/sign_off.py` is the only writer.
 - Never auto-advances between phases — every phase boundary requires
   an explicit "Ready to begin Phase N?" confirmation.
@@ -130,9 +130,9 @@ prompt in your own words per §7, don't echo the summary verbatim.
 
 ## Files this skill reads
 
-- `docs/specifications/_progress.yaml` — phase status, force-advance
+- `.spec-suite/progress.yaml` — phase status, force-advance
   log, session log
-- `docs/specifications/_phase-N-passed.yaml` (each one that exists)
+- `.spec-suite/phases/phase-N-passed.yaml` (each one that exists)
   — file-level sign-off with sha256 manifest
 - `docs/specifications/<file>` for each path in any sidecar's
   `files_signed` (to compare sha256 against the recorded value —

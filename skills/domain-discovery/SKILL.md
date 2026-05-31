@@ -7,7 +7,7 @@ description: |
   must all be resolved before sign-off. The PRD is the foundational
   spec — every later phase derives from it.
 prerequisites:
-  - Phase 0 (bootstrap) has signed off — `_phase-0-passed.yaml` exists
+  - Phase 0 (bootstrap) has signed off — `.spec-suite/phases/phase-0-passed.yaml` exists
     and lists `docs/specifications/prd.md` (the template) among its
     expected files.
 trigger_phrases:
@@ -32,7 +32,7 @@ purely conversational.
 2. Verifies Phase 0 (bootstrap) has signed off — refuses if not.
 3. **Author half.** If `docs/specifications/prd.md` doesn't exist,
    runs `task init:discovery -- --repo <target>` to copy the blank
-   `_template/prd.md` skeleton into place. Never overwrites existing
+   `.spec-suite/templates/prd.md` skeleton into place. Never overwrites existing
    files. Then walks the user through populating each section using
    `questions.md` as the elicitation script (see "Authoring" below).
 4. **Validate half.** Invokes the runner
@@ -45,7 +45,7 @@ purely conversational.
    marked non-applicable (with reason) before sign-off proceeds.
 6. If every structural check passes AND every rubric `warn` has a
    response: invokes `shared/sign_off.py discovery` which computes
-   sha256 for `prd.md` and writes `_phase-1-passed.yaml`.
+   sha256 for `prd.md` and writes `.spec-suite/phases/phase-1-passed.yaml`.
 7. If any structural check fails: looks up the question by
    `binds_to_check` in `questions.md`, runs the §5 interview loop,
    re-runs affected checks, repeats until clean.
@@ -83,14 +83,14 @@ Section-by-section ordering is the natural one:
 For a brand-new domain expect 30–60 minutes of focused interview —
 roughly one session. Resumption is supported (see Section 6 of
 SUITE-DESIGN); the orchestrator detects an in-progress phase from
-`_progress.yaml` and re-enters this skill where it left off.
+`.spec-suite/progress.yaml` and re-enters this skill where it left off.
 
 ## Rubric checks
 
 Two rubric judgements live here as prose (per SUITE-DESIGN §5.5).
 Read the prose against the current `prd.md` and emit a finding for
 each rubric id below with `verdict: pass` or `verdict: warn` plus a
-short detail. Findings go into `_phase-1-passed.yaml` under
+short detail. Findings go into `.spec-suite/phases/phase-1-passed.yaml` under
 `rubric_findings:` via the sign-off engagement loop — each `warn`
 needs an explicit response (resolved, deferred-with-required-by, or
 n-a-with-reason) before sign-off completes.
@@ -197,6 +197,6 @@ Listed in `gate.yaml` under `signs_files:`:
 - `docs/specifications/prd.md`
 
 `shared/sign_off.py` computes sha256 and records it in
-`_phase-1-passed.yaml`. The audit's `SIGNOFF-SHA256-MATCHES` check
+`.spec-suite/phases/phase-1-passed.yaml`. The audit's `SIGNOFF-SHA256-MATCHES` check
 verifies it later; any post-sign-off edit to the PRD marks discovery
 stale until it's re-signed.

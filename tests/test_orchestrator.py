@@ -26,6 +26,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from scripts import force_advance, orchestrator_status  # noqa: E402
+from shared import spec_paths  # noqa: E402
 
 pytestmark = pytest.mark.orchestrator
 
@@ -71,15 +72,14 @@ def test_bootstrapped_only_routes_to_discovery(tmp_path: pathlib.Path) -> None:
     """Tear off everything past bootstrap; orchestrator should
     propose starting discovery."""
     target = _copy_fixture(tmp_path)
-    specs = target / "docs/specifications"
     # Remove all phase sign-offs except bootstrap and clear the
     # progress phase entries that imply later phases ran.
     for phase_num in range(1, 8):
-        sidecar = specs / f"_phase-{phase_num}-passed.yaml"
+        sidecar = spec_paths.phases_dir(target) / f"phase-{phase_num}-passed.yaml"
         if sidecar.is_file():
             sidecar.unlink()
 
-    progress_path = specs / "_progress.yaml"
+    progress_path = spec_paths.progress_path(target)
     progress = yaml.safe_load(progress_path.read_text())
     progress["phases"] = {"bootstrap": progress["phases"]["bootstrap"]}
     progress["force_advances"] = []
@@ -140,12 +140,11 @@ def test_status_reports_unimplemented_phases_honestly(
     IMPLEMENTED_PHASES via monkeypatch to keep the no-stub-routing
     contract guarded as future phases are added."""
     target = _copy_fixture(tmp_path)
-    specs = target / "docs/specifications"
     for phase_num in range(2, 8):
-        sidecar = specs / f"_phase-{phase_num}-passed.yaml"
+        sidecar = spec_paths.phases_dir(target) / f"phase-{phase_num}-passed.yaml"
         if sidecar.is_file():
             sidecar.unlink()
-    progress_path = specs / "_progress.yaml"
+    progress_path = spec_paths.progress_path(target)
     progress = yaml.safe_load(progress_path.read_text())
     progress["phases"] = {
         "bootstrap": progress["phases"]["bootstrap"],

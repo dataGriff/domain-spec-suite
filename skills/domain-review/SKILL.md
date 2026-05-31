@@ -45,11 +45,11 @@ This skill is the qualitative pass that catches that class of issue.
    issues first.
 2. **Read every spec file** under `docs/specifications/` and
    `docs/specifications/contracts/`, plus every
-   `_phase-N-passed.yaml` sidecar (for Decision Log entries).
+   `.spec-suite/phases/phase-N-passed.yaml` sidecar (for Decision Log entries).
 3. **Walk the five review categories** (below). For each, produce a
    list of findings or an explicit "checked and OK" note.
 4. **Write a structured report** to
-   `docs/specifications/_review-<ISO-timestamp>.md` AND echo to
+   `.spec-suite/reviews/<ISO-timestamp>.md` AND echo to
    stdout. The report is append-only — each run produces a new
    timestamped file; older reviews are kept for historical reference.
 5. **Suggest next steps.** For each finding, the report includes a
@@ -143,7 +143,7 @@ Required behaviour that isn't tested or specified. Check:
 
 ### 5. Decision Log drift
 
-For each `decisions:` entry across `_phase-N-passed.yaml` sidecars,
+For each `decisions:` entry across `.spec-suite/phases/phase-N-passed.yaml` sidecars,
 verify the implementation still matches the stated intent:
 
 - Does the decision still apply to the current spec, or has subsequent
@@ -176,7 +176,7 @@ The `scripts/domain_review.py` runner:
 4. Prints the file list and category checklist
 5. Hands off to the agent (this skill) to do the qualitative pass
 6. Receives the structured report from the agent and writes it to
-   `docs/specifications/_review-<timestamp>.md`
+   `.spec-suite/reviews/<timestamp>.md`
 
 The agent's job is **between steps 5 and 6**: read everything, apply
 the five categories, write the report content. The runner does the
@@ -263,12 +263,12 @@ All of:
 - `docs/specifications/contracts/openapi.yaml`
 - `docs/specifications/contracts/asyncapi.yaml`
 - `docs/specifications/contracts/datacontract.yaml`
-- Every `docs/specifications/_phase-N-passed.yaml` sidecar (for
+- Every `.spec-suite/phases/phase-N-passed.yaml` sidecar (for
   Decision Log entries)
-- `docs/specifications/_ambiguities.md` (for context on deferrals)
+- `.spec-suite/ambiguities.md` (for context on deferrals)
 
 ## Files this skill writes
 
-- `docs/specifications/_review-<ISO-timestamp>.md` — the report.
+- `.spec-suite/reviews/<ISO-timestamp>.md` — the report.
   Each run produces a new file; old reviews stay for historical
   reference.

@@ -12,6 +12,12 @@ import pytest
 import yaml
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
+
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from shared import spec_paths  # noqa: E402
+
 BOOTSTRAP = REPO / "scripts" / "bootstrap.py"
 TEMPLATES_DIR = REPO / "skills" / "domain-bootstrap" / "templates"
 MANIFEST = yaml.safe_load(
@@ -90,10 +96,9 @@ def test_bootstrap_in_empty_dir_succeeds(tmp_path: pathlib.Path) -> None:
         assert (target / dst_rel).is_file(), f"missing: {dst_rel}"
 
     # State files exist and parse.
-    specs = target / "docs" / "specifications"
-    progress = yaml.safe_load((specs / "_progress.yaml").read_text())
-    bootstrap_record = yaml.safe_load((specs / "_bootstrap.yaml").read_text())
-    template_manifest = yaml.safe_load((specs / "_template_manifest.yaml").read_text())
+    progress = yaml.safe_load(spec_paths.progress_path(target).read_text())
+    bootstrap_record = yaml.safe_load(spec_paths.bootstrap_path(target).read_text())
+    template_manifest = yaml.safe_load(spec_paths.template_manifest_path(target).read_text())
 
     assert progress["domain_name"] == "Sample"
     assert progress["phases"]["bootstrap"]["status"] == "passed"
@@ -204,7 +209,7 @@ def test_bootstrap_force_refreshes_manifest_files(tmp_path: pathlib.Path) -> Non
     user_spec.write_text("# my domain PRD\n")
 
     # Also mutate a state file — should also survive --force.
-    progress = target / "docs" / "specifications" / "_progress.yaml"
+    progress = spec_paths.progress_path(target)
     original_progress = progress.read_text()
 
     result = run_bootstrap(
@@ -283,8 +288,8 @@ def test_bootstrap_allow_non_prefix_bypass(tmp_path: pathlib.Path) -> None:
 
 
 def test_bootstrap_force_preserves_progress_yaml(tmp_path: pathlib.Path) -> None:
-    """--force must NOT clobber _progress.yaml, _bootstrap.yaml,
-    _ambiguities.md, or _phase-0-passed.yaml. These accumulate user
+    """--force must NOT clobber progress.yaml, bootstrap.yaml,
+    ambiguities.md, or phase-0-passed.yaml. These accumulate user
     state (phase progress, force-advance entries, ambiguity log,
     decisions) and a shell refresh shouldn't wipe them."""
     target = spec_target(tmp_path)
@@ -293,7 +298,7 @@ def test_bootstrap_force_preserves_progress_yaml(tmp_path: pathlib.Path) -> None
 
     # Simulate state accumulation: mark discovery as passed in progress
     # and add an ambiguity.
-    progress_path = target / "docs" / "specifications" / "_progress.yaml"
+    progress_path = spec_paths.progress_path(target)
     progress = yaml.safe_load(progress_path.read_text())
     progress["phases"]["discovery"] = {
         "status": "passed",
@@ -302,7 +307,7 @@ def test_bootstrap_force_preserves_progress_yaml(tmp_path: pathlib.Path) -> None
     }
     progress_path.write_text(yaml.safe_dump(progress))
 
-    ambig_path = target / "docs" / "specifications" / "_ambiguities.md"
+    ambig_path = spec_paths.ambiguities_path(target)
     ambig_path.write_text(
         "# Open Ambiguities\n\n## Deferred to: audit\n\n"
         "### ITEM-001: tax handling\n- Recorded in phase: nfrs\n"
@@ -316,4 +321,4 @@ def test_bootstrap_force_preserves_progress_yaml(tmp_path: pathlib.Path) -> None
     assert progress_after["phases"]["discovery"]["status"] == "passed", (
         "--force clobbered discovery phase status — state files must be preserved"
     )
-    assert "ITEM-001" in ambig_path.read_text(), "--force clobbered _ambiguities.md"
+    assert "ITEM-001" in ambig_path.read_text(), "--force clobbered ambiguities.md"

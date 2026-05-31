@@ -8,7 +8,7 @@ description: |
   each have an explicit response in `warnings_responded` (resolved /
   deferred / n-a) before sign-off completes.
 prerequisites:
-  - Phase 1 (discovery) has signed off — `_phase-1-passed.yaml` exists
+  - Phase 1 (discovery) has signed off — `.spec-suite/phases/phase-1-passed.yaml` exists
     and prd.md carries the personas + user stories the model will
     cross-reference.
 trigger_phrases:
@@ -30,7 +30,7 @@ gate plus the soft-gate engagement loop).
 2. Verifies Phase 1 (discovery) has signed off — refuses if not.
 3. **Author half.** If either output file is missing, runs
    `task init:modeling -- --repo <target>` to copy the blank templates
-   from `_template/`. Never overwrites existing files. Then walks the
+   from `.spec-suite/templates/`. Never overwrites existing files. Then walks the
    user through populating the entities, relationships, lifecycles,
    and glossary entries via `questions.md`.
 4. **Validate half.** Invokes the runner. Hard checks (duplicate
@@ -45,7 +45,7 @@ gate plus the soft-gate engagement loop).
    any rubric findings — none for modeling), then invoke
    `task sign-off:modeling -- --repo <target> --findings <yaml>`.
    The script verifies every warning has a response, then writes
-   `_phase-2-passed.yaml` with sha256s for both files.
+   `.spec-suite/phases/phase-2-passed.yaml` with sha256s for both files.
 
 ## Authoring
 

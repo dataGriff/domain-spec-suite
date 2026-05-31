@@ -6,9 +6,9 @@ description: |
   Invoked at the start of any new domain spec set, or by the orchestrator
   when it detects an unbootstrapped target. Produces the Taskfile,
   linting configs, mise tooling pins, hooks, CI workflows, agent
-  instruction files, blank `docs/specifications/_template/*` skeletons,
-  and the initial `_progress.yaml`, `_bootstrap.yaml`, and
-  `_template_manifest.yaml` state files. Phase 0 in the suite's eight-phase
+  instruction files, blank `.spec-suite/templates/*` skeletons,
+  and the initial `.spec-suite/progress.yaml`, `.spec-suite/bootstrap.yaml`, and
+  `.spec-suite/template-manifest.yaml` state files. Phase 0 in the suite's eight-phase
   model.
 prerequisites:
   - Target directory exists.
@@ -49,14 +49,14 @@ A populated repository shell containing:
 spec-set changes go through the suite's orchestrator and phase
 skills — those are the only sanctioned interface. A bootstrapped
 domain repo is intentionally a slate that the skills drive.
-- `docs/specifications/_template/*` (blank skeletons for every spec the
+- `.spec-suite/templates/*` (blank skeletons for every spec the
   later phases will populate)
-- `docs/specifications/_progress.yaml` (Phase 0 marked passed,
+- `.spec-suite/progress.yaml` (Phase 0 marked passed,
   `force_advances: []`)
-- `docs/specifications/_bootstrap.yaml` (suite + gate version
+- `.spec-suite/bootstrap.yaml` (suite + gate version
   recording)
-- `docs/specifications/_ambiguities.md` (empty)
-- `docs/specifications/_template_manifest.yaml` (the manifest of files
+- `.spec-suite/ambiguities.md` (empty)
+- `.spec-suite/template-manifest.yaml` (the manifest of files
   this skill installed — consulted by `--force` re-bootstrap and by
   `task suite:upgrade-shell`)
 
@@ -123,7 +123,7 @@ by Phases 1–6 as the user walks through the rest of the suite.
 
 - Never populates `docs/specifications/<spec>.md` — those are written
   by Phases 1–6.
-- Never edits `_progress.yaml` after creation — that's the orchestrator's
+- Never edits `.spec-suite/progress.yaml` after creation — that's the orchestrator's
   and phase skills' responsibility.
 - Never re-runs Phase 1+ checks — Phase 0 has its own trivial gate
   (every expected file exists and parses); other phases run independently.
@@ -136,9 +136,9 @@ Per `SUITE-DESIGN.md` §8 Phase 0:
 
 - All expected files exist at expected paths.
 - All YAML files parse, all markdown is well-formed.
-- `_progress.yaml` is present and has Phase 0 marked `passed`.
-- `_bootstrap.yaml` records the suite and gate version.
-- `_template_manifest.yaml` is present and lists every file the
+- `.spec-suite/progress.yaml` is present and has Phase 0 marked `passed`.
+- `.spec-suite/bootstrap.yaml` records the suite and gate version.
+- `.spec-suite/template-manifest.yaml` is present and lists every file the
   bootstrap owns.
 
 The script raises and exits non-zero if any of these fail. If you see

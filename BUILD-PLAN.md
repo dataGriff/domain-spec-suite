@@ -89,17 +89,17 @@ Sub-tasks:
       (numbers, percentages, or time units — no aspirational language).
 - [ ] Write `docs/specifications/acceptance-scenarios.md` (Given/When/Then
       structure) mapping to PRD user stories.
-- [ ] Write `docs/specifications/_progress.yaml` with all eight phases
+- [ ] Write `.spec-suite/progress.yaml` with all eight phases
       marked passed, `force_advances: []`, and the session_log section.
-- [ ] Write `docs/specifications/_phase-{0..7}-passed.yaml` sidecars in the
+- [ ] Write `.spec-suite/phases/phase-{0..7}-passed.yaml` sidecars in the
       schema defined in `SUITE-DESIGN.md` §4 (`checks_passed`,
       `warnings_responded`, `rubric_findings`, `files_signed`). sha256s are
       seeded by hand for this fixture; `task fixtures:seed-signoffs`
       (introduced in 2.1) will regenerate them whenever fixture content
       changes.
-- [ ] Write `docs/specifications/_ambiguities.md` with an empty Resolved
+- [ ] Write `.spec-suite/ambiguities.md` with an empty Resolved
       section (Items has no open ambiguities by design).
-- [ ] Write `docs/specifications/_bootstrap.yaml` recording the suite and
+- [ ] Write `.spec-suite/bootstrap.yaml` recording the suite and
       gate version that produced the shell.
 - [ ] Author `.githooks/pre-push` per `SUITE-DESIGN.md` §9 Tier 2 (Spectral
       on contracts, datacontract-cli, cross-file consistency, <15 s
@@ -118,8 +118,8 @@ Sub-tasks:
 
 **Exit criterion:** A hand-walk of every Phase 7 check enumerated in
 `SUITE-DESIGN.md` §8 passes against `domain-api-template/`. Specifically:
-no template placeholders remain, `_ambiguities.md` has no audit-required
-unresolved items, every `_phase-N-passed.yaml` is present with sha256s
+no template placeholders remain, `.spec-suite/ambiguities.md` has no audit-required
+unresolved items, every `.spec-suite/phases/phase-N-passed.yaml` is present with sha256s
 that match current file contents, and `force_advances:` is empty.
 
 🛑 **Review checkpoint:** Walk through the fixture together. Confirm the
@@ -165,19 +165,19 @@ the suite *installs* in domain repos):
 - `task lint` — lint suite's own code/configs
 - `task fixtures:reset` — reset test fixtures to known state
 - `task fixtures:seed-signoffs` — regenerate sha256s in every
-  `tests/fixtures/*/docs/specifications/_phase-*-passed.yaml` against
+  `tests/fixtures/*/.spec-suite/phases/phase-*-passed.yaml` against
   current file contents. Run whenever fixture content changes so the
   fixture's sign-off files stay valid against the staleness check.
 - `task suite:force-advance` — wrapper that calls
   `shared/scripts/force_advance.py <phase> --reason '<text>'` on the
   current working domain repo. Used during dev to test the audit's
-  force-advance handling. Writes an entry to `_progress.yaml`'s
+  force-advance handling. Writes an entry to `.spec-suite/progress.yaml`'s
   `force_advances:` array.
 - `task suite:accept-force` — marks a `force_advances:` entry as
   `accepted: true` with a reason. Required to clear an audit failure
   caused by a force-advance.
 - `task suite:upgrade-shell` — manifest-aware re-bootstrap that preserves
-  spec content. Reads the target's `_template_manifest.yaml`, diffs
+  spec content. Reads the target's `.spec-suite/template-manifest.yaml`, diffs
   against the bootstrap skill's templates, applies updates only to
   manifest entries. Never touches `docs/specifications/*.md` or
   `_*.yaml` state files.
@@ -229,7 +229,7 @@ Sub-tasks:
   - `README.md.template` (with `{{domain_name}}` placeholder)
   - `mkdocs.yml.template`
   - `docs/index.md.template`
-  - `docs/specifications/_template/*` (the blank spec templates,
+  - `.spec-suite/templates/*` (the blank spec templates,
     including glossary/error-catalogue/nfr/acceptance-scenarios
     skeletons added in M2.0)
   - `scripts/generate_domain_overview.py`
@@ -251,9 +251,9 @@ Sub-tasks:
   any domain repo it has bootstrapped.
 - [ ] Implement the bootstrap logic: walk templates dir, copy each file to
   the target, substitute placeholders where present, create empty
-  `_progress.yaml` (with `force_advances: []`) with Phase 0 marked passed,
-  create `_bootstrap.yaml` recording suite/gate versions, copy the
-  manifest into the target as `_template_manifest.yaml`.
+  `.spec-suite/progress.yaml` (with `force_advances: []`) with Phase 0 marked passed,
+  create `.spec-suite/bootstrap.yaml` recording suite/gate versions, copy the
+  manifest into the target as `.spec-suite/template-manifest.yaml`.
 - [ ] Implement non-empty-directory handling: refuse by default with a
   message pointing at `--force` or `task suite:upgrade-shell`; `--force`
   overwrites only files listed in the manifest, never spec content or
@@ -289,10 +289,10 @@ Sub-tasks:
   - `prd_story_persona_link.py` — prd stories ↔ prd personas
   - `lifecycle_in_flows.py` — domain-model lifecycles ↔ sequence-diagrams
   - `no_template_placeholders.py` — no `[Resource1]`, `[Domain]`, `{{`
-  - `signoff_sha256_matches.py` — `_phase-N-passed.yaml` ↔ file sha256s
-  - `ambiguities_no_audit_required.py` — `_ambiguities.md` has no
+  - `signoff_sha256_matches.py` — `.spec-suite/phases/phase-N-passed.yaml` ↔ file sha256s
+  - `ambiguities_no_audit_required.py` — `.spec-suite/ambiguities.md` has no
     audit-required open items
-  - `force_advances_all_accepted.py` — `_progress.yaml` `force_advances:`
+  - `force_advances_all_accepted.py` — `.spec-suite/progress.yaml` `force_advances:`
     has no `accepted: false` entries
 - [ ] Create `skills/domain-conformance-audit/SKILL.md` referencing the
   prompting style in §7 and the rubric handling in §5.5 (audit itself has
@@ -380,7 +380,7 @@ consistency, refusing sign-off unless all checks pass.
 - [ ] Implement: skill loads contracts (or copies templates if absent),
   runs the §5 gate loop, and refuses sign-off via `shared/sign_off.py`
   while any check fails (the mechanical-enforcement path per §5.5).
-- [ ] Sign-off writes `_phase-6-passed.yaml` with sha256s and timestamp.
+- [ ] Sign-off writes `.spec-suite/phases/phase-6-passed.yaml` with sha256s and timestamp.
 
 **Exit criterion:** Skill against the Items fixture produces clean sign-off.
 Skill against deliberately malformed contracts produces actionable failures
@@ -395,7 +395,7 @@ and refuses sign-off.
   `shared/sign_off.py` writes the file, and it refuses on non-zero exit.
 - [ ] Confirm the only escape is `task suite:force-advance contracts
   --reason '<text>'`. The test verifies:
-  - A `force_advances:` entry is appended to `_progress.yaml` with
+  - A `force_advances:` entry is appended to `.spec-suite/progress.yaml` with
     `accepted: false`.
   - The phase is signed off despite the failure.
   - Running the audit immediately reports
@@ -404,7 +404,7 @@ and refuses sign-off.
     entry to `accepted: true` and a re-audit then passes.
 
 **Exit criterion:** Hard gate is genuinely hard. No path to false sign-off
-exists. The force-advance escape is honest — visible in `_progress.yaml`
+exists. The force-advance escape is honest — visible in `.spec-suite/progress.yaml`
 and fails the audit until explicitly accepted.
 
 🛑 **Review checkpoint:** Demo contracts skill, including failure mode and
@@ -450,7 +450,7 @@ elicitation quality.
   section carrying the two Phase 1 rubric rules
   (`RUBRIC-PROBLEM-USER-PAIN`, `RUBRIC-METRICS-MEASURABLE`). Prose
   describes the pass/warn conditions; SUITE-DESIGN §5.5 governs how
-  the agent emits findings into `_phase-1-passed.yaml`.
+  the agent emits findings into `.spec-suite/phases/phase-1-passed.yaml`.
 - [x] `skills/domain-discovery/gate.yaml` references the 8 structural
   check ids from SUITE-DESIGN §8 Phase 1. Six modules live under
   `skills/domain-discovery/checks/` (phase-local); `PRD-STORY-PERSONA-LINK`
@@ -472,7 +472,7 @@ elicitation quality.
 orchestrator + discovery skill can drive a user through producing a valid
 `prd.md` that passes Phase 1's hard gate. Test on a new domain (not Items —
 choose something different to avoid overfitting). Confirm `rubric_findings:`
-appear in the resulting `_phase-1-passed.yaml` with the user's responses.
+appear in the resulting `.spec-suite/phases/phase-1-passed.yaml` with the user's responses.
 **Status:** ✅ machine-verified by `tests/test_discovery.py` (gate passes
 against Items, every BUILD-PLAN id appears in gate + questions, 8
 deliberate breaks each fail their expected check). End-to-end on a
@@ -517,12 +517,12 @@ gates instead of hard gates. They can be built in any order or in parallel.
 ### 5.1 Modeling skill (Phase 2) — [x]
 
 - [x] `SKILL.md`, `gate.yaml`, `questions.md`. Templates already in
-  bootstrap (`_template/domain-model.md`, `_template/glossary.md`)
+  bootstrap (`.spec-suite/templates/domain-model.md`, `.spec-suite/templates/glossary.md`)
 - [x] Mandatory-engagement loop documented in SKILL.md
 - [x] Cross-references via shared `ENTITY-IN-GLOSSARY` and
   `GLOSSARY-COVERS-ATTRIBUTES` (both also run at audit)
 - [x] 6 phase-local checks (3 hard error, 3 warning) + 1 shared cross-ref
-- [x] Sign-off writes `_phase-2-passed.yaml`
+- [x] Sign-off writes `.spec-suite/phases/phase-2-passed.yaml`
 - [ ] Known v1 limitation: no PRD-ENTITY-IN-MODEL heuristic (false-positive
   cost too high; documented in SKILL.md)
 
@@ -679,6 +679,52 @@ All 6 items surfaced during M6.2 / M6.3 / M6.4 now addressed:
   the agent at it.
 
 🛑 **Final review.** Declare suite v1.0.0 complete if user agrees.
+
+### 6.7 v1.0.3 — hoist suite bookkeeping out of docs/specifications/ — [x]
+
+After the v1.0.2 review session it became obvious that the spec
+folder had drifted: ~26 entries with only 35% actual spec content,
+the rest suite bookkeeping (sidecars, progress, ambiguities,
+template stash, growing review archive). The mix was noise to any
+human opening the folder to read the spec.
+
+Decision: move all suite-managed state to `.spec-suite/` at repo
+root, mirroring `.git/` / `.github/`. `docs/specifications/`
+becomes purely the publishable spec view (markdown + contracts +
+generated HTML).
+
+- ✅ `shared/spec_paths.py` central helper — every read/write of
+  suite state routes through `state_dir`, `phases_dir`,
+  `reviews_dir`, `templates_dir`, `progress_path`,
+  `bootstrap_path`, `ambiguities_path`,
+  `template_manifest_path`, `phase_sidecar_path`,
+  `all_phase_sidecars`, `ensure_state_skeleton`.
+- ✅ Suite-side migration: `shared/sign_off.py`,
+  `shared/prior_engagement.py`, `scripts/bootstrap.py`,
+  `scripts/init_phase.py`, `scripts/orchestrator_status.py`,
+  `scripts/force_advance.py`, `scripts/accept_force.py`,
+  `scripts/domain_review.py`, and the three audit-only checks
+  (`signoff_sha256_matches`, `force_advances_all_accepted`,
+  `ambiguities_no_audit_required`) all route through
+  `spec_paths`.
+- ✅ Bootstrap-installed templates moved:
+  `skills/domain-bootstrap/templates/.spec-suite/templates/*`
+  (was `docs/specifications/_template/*`);
+  `task domain:init` Taskfile loop reads from the new location;
+  `mkdocs.yml.template` `exclude_docs` no longer needed
+  (`.spec-suite/` is outside `docs/`).
+- ✅ `scripts/migrate_to_spec_suite_dir.py` — idempotent migration
+  for existing spec repos: moves files, rewrites `files_signed`
+  paths in sidecars, recomputes sha256 from new file locations.
+- ✅ `tests/fixtures/items/` migrated to the new layout; all
+  test helpers updated to import + use `spec_paths`.
+- ✅ Bonus: `tests/test_audit_breaks.py` `_reseed_signoffs` was
+  using regex line edits (the source of the M6.6 sha256 bug);
+  rewritten to use `yaml.safe_load` + `yaml.safe_dump`.
+- ✅ SUITE-DESIGN.md, BUILD-PLAN.md, and every SKILL.md updated
+  to reference the new paths.
+
+135/135 tests green throughout.
 
 ---
 

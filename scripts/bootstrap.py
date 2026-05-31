@@ -145,11 +145,22 @@ def destination_for(rel_template_path: str) -> str:
 
 
 def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[str]:
-    """Write _progress.yaml, _bootstrap.yaml, _ambiguities.md, and a copy of
-    the manifest into the target's docs/specifications/. Returns the list of
-    paths written (relative to target)."""
-    specs_dir = target / "docs" / "specifications"
-    specs_dir.mkdir(parents=True, exist_ok=True)
+    """Write suite bookkeeping into `<target>/.spec-suite/`:
+    progress.yaml, bootstrap.yaml, ambiguities.md, the Phase 0 sidecar,
+    and a copy of the manifest. State files are preserved on subsequent
+    --force runs (so accumulated phase progress, ambiguities, and
+    decisions survive a shell refresh). Returns the list of paths
+    written (relative to target)."""
+    # Import here so this script remains usable without the suite root
+    # on sys.path for the legacy call sites.
+    import sys
+
+    suite_root = pathlib.Path(__file__).resolve().parent.parent
+    if str(suite_root) not in sys.path:
+        sys.path.insert(0, str(suite_root))
+    from shared import spec_paths
+
+    spec_paths.ensure_state_skeleton(target)
     now = _dt.datetime.now(_dt.UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
     progress = {
@@ -196,27 +207,32 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
 
     written: list[str] = []
 
-    def write(rel: str, content: str, preserve_existing: bool = False) -> None:
-        path = specs_dir / rel
+    def write(path: pathlib.Path, content: str, preserve_existing: bool = False) -> None:
         if preserve_existing and path.is_file():
             # State files (post-bootstrap user content) are preserved on
             # subsequent --force runs so spec authoring state survives a
             # shell refresh. First-time bootstrap (file absent) still
             # creates them.
             return
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         written.append(str(path.relative_to(target)))
 
-    # State files are preserved on subsequent runs (preserve_existing=True)
-    # so --force can refresh manifest files without wiping accumulated
-    # phase progress, ambiguities, or the bootstrap record.
-    write("_progress.yaml", yaml.safe_dump(progress, sort_keys=False), preserve_existing=True)
     write(
-        "_bootstrap.yaml",
+        spec_paths.progress_path(target),
+        yaml.safe_dump(progress, sort_keys=False),
+        preserve_existing=True,
+    )
+    write(
+        spec_paths.bootstrap_path(target),
         yaml.safe_dump(bootstrap_record, sort_keys=False),
         preserve_existing=True,
     )
-    write("_ambiguities.md", ambiguities, preserve_existing=True)
+    write(
+        spec_paths.ambiguities_path(target),
+        ambiguities,
+        preserve_existing=True,
+    )
 
     # Phase 0 sign-off sidecar. Bootstrap is its own sign-off — there's
     # no upstream sign_off.py path because bootstrap creates the file
@@ -225,7 +241,7 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
     # and audit treat every phase uniformly.
     import hashlib  # local import — only needed here
 
-    bootstrap_sha = hashlib.sha256((specs_dir / "_bootstrap.yaml").read_bytes()).hexdigest()
+    bootstrap_sha = hashlib.sha256(spec_paths.bootstrap_path(target).read_bytes()).hexdigest()
     sidecar = {
         "phase": "bootstrap",
         "signed_off_at": now,
@@ -235,22 +251,24 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
         "rubric_findings": [],
         "files_signed": [
             {
-                "path": "docs/specifications/_bootstrap.yaml",
+                "path": ".spec-suite/bootstrap.yaml",
                 "sha256": bootstrap_sha,
                 "mtime": now,
             }
         ],
     }
     write(
-        "_phase-0-passed.yaml",
+        spec_paths.phase_sidecar_path(target, "bootstrap"),
         yaml.safe_dump(sidecar, sort_keys=False),
         preserve_existing=True,
     )
 
     # Carry a copy of the manifest into the target so upgrade-shell knows
     # which files were originally installed and what their hashes were.
-    shutil.copyfile(MANIFEST_PATH, specs_dir / "_template_manifest.yaml")
-    written.append(str((specs_dir / "_template_manifest.yaml").relative_to(target)))
+    # The manifest itself is suite-state — refresh on every bootstrap.
+    manifest_dest = spec_paths.template_manifest_path(target)
+    shutil.copyfile(MANIFEST_PATH, manifest_dest)
+    written.append(str(manifest_dest.relative_to(target)))
 
     return written
 
@@ -260,11 +278,17 @@ def write_state_files(target: pathlib.Path, args: argparse.Namespace) -> list[st
 
 def run_phase_0_gate(target: pathlib.Path) -> list[str]:
     """Returns a list of failure messages. Empty list = pass."""
+    import sys
+
+    suite_root = pathlib.Path(__file__).resolve().parent.parent
+    if str(suite_root) not in sys.path:
+        sys.path.insert(0, str(suite_root))
+    from shared import spec_paths
+
     failures: list[str] = []
-    specs_dir = target / "docs" / "specifications"
-    progress_path = specs_dir / "_progress.yaml"
-    bootstrap_path = specs_dir / "_bootstrap.yaml"
-    manifest_target = specs_dir / "_template_manifest.yaml"
+    progress_path = spec_paths.progress_path(target)
+    bootstrap_path = spec_paths.bootstrap_path(target)
+    manifest_target = spec_paths.template_manifest_path(target)
 
     # Files exist
     if not progress_path.is_file():

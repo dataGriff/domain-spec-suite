@@ -34,6 +34,8 @@ if str(SUITE_ROOT) not in sys.path:
 
 import yaml  # noqa: E402
 
+from shared import spec_paths  # noqa: E402
+
 PHASE_ORDER = [
     "bootstrap",
     "discovery",
@@ -93,11 +95,11 @@ def _sha256(path: pathlib.Path) -> str:
 
 
 def _sidecar_path(repo: pathlib.Path, phase: str) -> pathlib.Path:
-    return repo / "docs" / "specifications" / f"_phase-{PHASE_NUMBER[phase]}-passed.yaml"
+    return spec_paths.phase_sidecar_path(repo, phase)
 
 
 def _progress(repo: pathlib.Path) -> dict | None:
-    progress_path = repo / "docs" / "specifications" / "_progress.yaml"
+    progress_path = spec_paths.progress_path(repo)
     if not progress_path.is_file():
         return None
     return yaml.safe_load(progress_path.read_text()) or {}

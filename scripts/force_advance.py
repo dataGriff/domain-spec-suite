@@ -19,13 +19,19 @@ import sys
 
 import yaml
 
+SUITE_ROOT = pathlib.Path(__file__).resolve().parent.parent
+if str(SUITE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SUITE_ROOT))
+
+from shared import spec_paths  # noqa: E402
+
 
 def _now() -> str:
     return _dt.datetime.now(_dt.UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def force_advance(repo: pathlib.Path, phase: str, reason: str) -> int:
-    progress_path = repo / "docs" / "specifications" / "_progress.yaml"
+    progress_path = spec_paths.progress_path(repo)
     if not progress_path.is_file():
         print(f"force_advance: {progress_path} does not exist", file=sys.stderr)
         return 1

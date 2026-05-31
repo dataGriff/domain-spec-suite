@@ -25,31 +25,28 @@ import pathlib
 
 import yaml
 
+from shared import spec_paths
 from shared.run_phase import CheckOutcome
 
 PRIOR_PHASES_IN_ORDER = [
-    ("bootstrap", 0),
-    ("discovery", 1),
-    ("modeling", 2),
-    ("access-control", 3),
-    ("flows", 4),
-    ("nfrs", 5),
-    ("contracts", 6),
+    "bootstrap",
+    "discovery",
+    "modeling",
+    "access-control",
+    "flows",
+    "nfrs",
+    "contracts",
 ]
 
 CARRY_FORWARD_RESPONSES = {"n-a", "deferred"}
-
-
-def _sidecar_path(repo: pathlib.Path, phase_num: int) -> pathlib.Path:
-    return repo / "docs" / "specifications" / f"_phase-{phase_num}-passed.yaml"
 
 
 def read_prior_engagement(repo: pathlib.Path) -> dict[str, dict]:
     """Build {check_id: {response, reason, phase}} from every prior
     phase's warnings_responded entries with a carry-forward response."""
     engagement: dict[str, dict] = {}
-    for phase_name, phase_num in PRIOR_PHASES_IN_ORDER:
-        sidecar = _sidecar_path(repo, phase_num)
+    for phase_name in PRIOR_PHASES_IN_ORDER:
+        sidecar = spec_paths.phase_sidecar_path(repo, phase_name)
         if not sidecar.is_file():
             continue
         doc = yaml.safe_load(sidecar.read_text(encoding="utf-8")) or {}
