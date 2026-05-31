@@ -15,10 +15,10 @@ gate_version: "1.0"
 #   executable: true only for files that must be chmod +x on copy
 files:
   - path: ".githooks/pre-commit"
-    sha256: "62e85b6be6dd88b748abd57b280ae41cd1029fead2a42ba19b531589be772987"
+    sha256: "c0d88f58b7120b0cbc4ea1b5e3f5b5a96591124ffec7fc16be79b4a8f7e609e8"
     executable: true
   - path: ".githooks/pre-push"
-    sha256: "597544130ed4e42dad0fd94d25191899f4166e3c699839f1111404b7de712584"
+    sha256: "ce0c8117b389df0bd02facb9c9ae66a54500739815e52df7ed78fd028b8524e8"
     executable: true
   - path: ".github/CODEOWNERS"
     sha256: "b6399ead063c6c467e41d17c56a4e1981c87a4313b5cd8757cb48902cda56e2e"
