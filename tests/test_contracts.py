@@ -86,6 +86,115 @@ def test_enum_values_consistent_catches_openapi_drift(tmp_path: pathlib.Path) ->
     assert any("Breed" in d and "missing from OpenAPI" in d for d in result.details)
 
 
+def test_event_payload_check_catches_thin_asyncapi(tmp_path: pathlib.Path) -> None:
+    """Removing a required attribute from the AsyncAPI message
+    payload makes EVENT-PAYLOAD-COVERS-ENTITY-STATE fail with a
+    clear (entity, field, edge) breadcrumb."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    doc = yaml.safe_load(asyncapi_path.read_text())
+    # Drop `description` from ItemData (Item entity has it; payload was carrying it).
+    doc["components"]["schemas"]["ItemData"]["properties"].pop("description")
+    asyncapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any("Item.description" in d and "AsyncAPI" in d for d in result.details), result.details
+
+
+def test_event_payload_check_catches_thin_datacontract(tmp_path: pathlib.Path) -> None:
+    """Same shape, this time the datacontract record drops a field
+    the model declares."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    doc = yaml.safe_load(dc_path.read_text())
+    items_record = next(r for r in doc["schema"] if r["name"] == "items")
+    items_record["properties"] = [
+        p for p in items_record["properties"] if p["name"] != "description"
+    ]
+    dc_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any("Item.description" in d and "datacontract" in d for d in result.details), (
+        result.details
+    )
+
+
+def test_event_payload_check_catches_asyncapi_datacontract_divergence(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Adding a field only to the datacontract record (without
+    adding it to the AsyncAPI payload) is caught by the
+    asyncapi-vs-datacontract edge."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    doc = yaml.safe_load(dc_path.read_text())
+    items_record = next(r for r in doc["schema"] if r["name"] == "items")
+    items_record["properties"].append(
+        {"name": "extraField", "logicalType": "string", "required": False}
+    )
+    dc_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any("extraField" in d and "AsyncAPI payload does not" in d for d in result.details), (
+        result.details
+    )
+
+
+def test_event_payload_check_respects_secret_marker(tmp_path: pathlib.Path) -> None:
+    """An attribute marked `[secret]` in the model's Description
+    column is exempt — the check doesn't complain when it's absent
+    from the AsyncAPI payload or datacontract record."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    # Tag `Item.description` as [secret] — should be exempt from the
+    # event-payload requirement.
+    text = model.read_text()
+    text = text.replace(
+        "| `description`",
+        "| `description`",  # leave name unchanged; munge the Description column
+    )
+    # Find the description row and inject [secret] into its description cell.
+    import re
+
+    text = re.sub(
+        r"(\|\s*`description`\s*\|[^|]*\|[^|]*\|)([^|\n]*)",
+        r"\1 [secret]\2",
+        text,
+        count=1,
+    )
+    model.write_text(text)
+
+    # Now also drop `description` from both AsyncAPI + datacontract.
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    a = yaml.safe_load(asyncapi_path.read_text())
+    a["components"]["schemas"]["ItemData"]["properties"].pop("description")
+    asyncapi_path.write_text(yaml.safe_dump(a, sort_keys=False))
+
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    d = yaml.safe_load(dc_path.read_text())
+    items_record = next(r for r in d["schema"] if r["name"] == "items")
+    items_record["properties"] = [
+        p for p in items_record["properties"] if p["name"] != "description"
+    ]
+    dc_path.write_text(yaml.safe_dump(d, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert result.passed, (
+        f"[secret]-marked field should not be required in events. details: {result.details}"
+    )
+
+
 def test_enum_values_consistent_catches_value_mismatch(tmp_path: pathlib.Path) -> None:
     """When the model and OpenAPI both declare an enum but the values
     diverge, the check reports the mismatch."""

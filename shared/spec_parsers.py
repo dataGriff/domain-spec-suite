@@ -73,6 +73,47 @@ def domain_model_attributes(domain_model: pathlib.Path) -> dict[str, list[str]]:
     return out
 
 
+def domain_model_published_attributes(domain_model: pathlib.Path) -> dict[str, list[str]]:
+    """Like `domain_model_attributes` but strips attributes whose
+    Description column is prefixed with the `[secret]` marker.
+
+    Used by `EVENT-PAYLOAD-COVERS-ENTITY-STATE` to compute the set
+    of attributes that MUST appear in event payloads + datacontract
+    records. Sensitive fields (password hashes, time-limited URLs)
+    carry the marker so they are intentionally excluded from the
+    historic record.
+
+    Example row that's excluded:
+        | `passwordHash` | string | Yes | [secret] bcrypt hash, never published |
+    """
+    text = domain_model.read_text(encoding="utf-8")
+    entities_section = _section(text, r"^##\s+Entities\s*$")
+    out: dict[str, list[str]] = {}
+
+    blocks = re.split(r"(?m)(?=^###\s+\S)", entities_section)
+    for block in blocks:
+        heading = re.match(r"###\s+(\S[^\n]*)", block)
+        if heading is None:
+            continue
+        name = heading.group(1).strip().split(" — ")[0].split("—")[0].strip()
+        attrs: list[str] = []
+        # Match the whole row so we can inspect the Description column
+        # and skip [secret]-marked entries.
+        for row in re.finditer(
+            r"^\|\s*`([^`]+)`\s*\|[^|]*\|[^|]*\|([^|\n]*)\|",
+            block,
+            re.MULTILINE,
+        ):
+            attr_name = row.group(1)
+            description = row.group(2)
+            if "[secret]" in description:
+                continue
+            attrs.append(attr_name)
+        if attrs:
+            out[name] = attrs
+    return out
+
+
 def domain_model_events(domain_model: pathlib.Path) -> list[dict[str, str]]:
     """List of {event, trigger, channel} dicts parsed from the
     Domain Events table."""
@@ -311,23 +352,111 @@ def contract_named_enums(doc: dict) -> dict[str, list[str]]:
     return out
 
 
+def _resolve_local_ref(node: dict, schemas: dict) -> dict:
+    """If `node` is a single-key `$ref` dict pointing to
+    `#/components/schemas/<Name>`, return the referenced schema.
+    Otherwise return `node` unchanged."""
+    if not isinstance(node, dict):
+        return node
+    ref = node.get("$ref")
+    if not isinstance(ref, str):
+        return node
+    # Only handle local refs into components/schemas
+    name = ref.rsplit("/", 1)[-1]
+    return schemas.get(name, node)
+
+
+def _find_data_property(envelope: dict, schemas: dict) -> dict | None:
+    """Given an AsyncAPI envelope schema, locate the `data` property
+    schema. Handles both shapes:
+      - allOf: [<CloudEvents base>, {properties: {data: {...}}}]
+      - {properties: {data: {...}}}  (envelope inlines data directly)
+
+    Resolves a `$ref` on the `data` value if present. Returns None if
+    no data property can be found."""
+    if not isinstance(envelope, dict):
+        return None
+    # allOf shape: walk each branch looking for properties.data
+    for branch in envelope.get("allOf", []):
+        resolved = _resolve_local_ref(branch, schemas)
+        data = (resolved.get("properties") or {}).get("data")
+        if data is not None:
+            return _resolve_local_ref(data, schemas)
+    # Direct shape: properties.data
+    data = (envelope.get("properties") or {}).get("data")
+    if data is not None:
+        return _resolve_local_ref(data, schemas)
+    return None
+
+
+def asyncapi_event_payloads(asyncapi: dict) -> dict[str, dict[str, dict]]:
+    """{message_name: {data_field_name: schema_dict}} parsed from the
+    AsyncAPI document.
+
+    Resolves each `components.messages.<Name>` to its payload
+    envelope (via `$ref` or inline), then locates the envelope's
+    `data` property schema (in `allOf` per CloudEvents convention, or
+    inline). Returns the `data` schema's `properties` dict.
+
+    Messages whose payload can't be resolved (e.g. payload is purely
+    a `$ref` to an external file) are silently omitted.
+    """
+    schemas = (asyncapi.get("components") or {}).get("schemas") or {}
+    messages = (asyncapi.get("components") or {}).get("messages") or {}
+
+    out: dict[str, dict[str, dict]] = {}
+    for msg_name, msg in messages.items():
+        if not isinstance(msg, dict):
+            continue
+        payload = msg.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        envelope = _resolve_local_ref(payload, schemas)
+        data_schema = _find_data_property(envelope, schemas)
+        if not isinstance(data_schema, dict):
+            continue
+        props = data_schema.get("properties") or {}
+        if isinstance(props, dict):
+            out[msg_name] = dict(props)
+    return out
+
+
+def datacontract_record_fields(datacontract: dict) -> dict[str, dict[str, dict]]:
+    """{record_name: {field_name: property_dict}} parsed from
+    `schema[*].properties[*]` per ODCS convention."""
+    out: dict[str, dict[str, dict]] = {}
+    for record in datacontract.get("schema") or []:
+        if not isinstance(record, dict):
+            continue
+        name = record.get("name")
+        if not name:
+            continue
+        fields: dict[str, dict] = {}
+        for prop in record.get("properties") or []:
+            if isinstance(prop, dict) and prop.get("name"):
+                fields[prop["name"]] = prop
+        out[name] = fields
+    return out
+
+
 def datacontract_named_enums(datacontract: dict) -> dict[str, list[str]]:
     """Datacontract field-level enums keyed by enum schema name. Walks
-    every record's fields; a field with an `enum:` list contributes
-    `{<record-or-schema-name>: [values]}` keyed by the field's `$ref`
-    target if one is declared, else by the field name. Returns empty
-    dict if no enum-typed fields exist."""
+    every record's `properties` list (per ODCS); a property with an
+    `enum:` list contributes `{<record-or-schema-name>: [values]}`
+    keyed by the property's `$ref` target if one is declared, else
+    by the property name. Returns empty dict if no enum-typed
+    properties exist."""
     out: dict[str, list[str]] = {}
     for record in datacontract.get("schema") or []:
         if not isinstance(record, dict):
             continue
-        for field_name, field in (record.get("fields") or {}).items():
-            if not isinstance(field, dict):
+        for prop in record.get("properties") or []:
+            if not isinstance(prop, dict):
                 continue
-            values = field.get("enum")
+            values = prop.get("enum")
             if isinstance(values, list) and values:
-                # Prefer the `$ref` target name; fall back to the field name.
-                ref = field.get("$ref") or field.get("ref")
-                key = ref.rsplit("/", 1)[-1] if isinstance(ref, str) else field_name
-                out[key] = [str(v) for v in values]
+                ref = prop.get("$ref") or prop.get("ref")
+                key = ref.rsplit("/", 1)[-1] if isinstance(ref, str) else prop.get("name")
+                if key:
+                    out[key] = [str(v) for v in values]
     return out

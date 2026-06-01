@@ -793,19 +793,82 @@ a value in OpenAPI, forgets the other two.
 is opt-in — silent on domains without an `## Enumerations`
 section, so existing fixtures (Items) are unaffected.
 
-### 6.10 v1.0.6 backlog — field shape alignment across all contracts
+### 6.10 v1.0.6 — events carry full domain state — [x]
 
-Spotted while designing the enum check: the existing
-`WRITE-OP-HAS-ASYNCAPI-CHANNEL` and `EVENT-IN-DATACONTRACT` only
-check *presence* (channel exists, record exists), not *shape*.
-Nothing verifies that field names — let alone types or required
-constraints — align across model → openapi → asyncapi →
-datacontract. `FIELD-MATCH-DOMAIN-OPENAPI` covers one edge
-(model ↔ openapi); the other three edges are uncovered.
+User flagged that the data contract should be the historic record:
+downstream analytics, audit logs, and time-travel reconstructions
+all depend on events carrying enough to recover what happened
+without re-querying the live API. Survey of dog-walking confirmed
+the problem is pervasive — 8 of 13 events are "thin" or "very
+thin" (mostly identifiers), and DogUpdated carries field *names*
+without values.
 
-Proposed: `FIELD-MATCH-DOMAIN-ASYNCAPI` + `FIELD-MATCH-DOMAIN-DATACONTRACT`
-(or one combined `FIELD-SHAPE-CONSISTENT` similar in spirit to
-`ENUM-VALUES-CONSISTENT`). Out of scope for v1.0.5; tracked here.
+Codifies a new architectural position in SUITE-DESIGN §4.5 plus a
+new mechanical check.
+
+- ✅ New SUITE-DESIGN.md §4.5 **Events carry full domain state**
+  states the principle, the `[secret]` exception, the removal-event
+  exception, and the v1.0.7 aggregate-children deferral.
+- ✅ `[secret]` marker convention: an attribute whose Description
+  column begins with `[secret]` is excluded from the
+  must-appear-in-events set. Visible inline; no separate file.
+- ✅ Three new parsers in `shared/spec_parsers.py`:
+  - `domain_model_published_attributes()` — wraps
+    `domain_model_attributes()` filtering `[secret]` rows.
+  - `asyncapi_event_payloads()` — walks every
+    `components.messages.<Name>.payload` (resolving `$ref`),
+    locates the envelope's `data` property (in `allOf` or inline),
+    returns `{event_name: {field_name: schema}}`.
+  - `datacontract_record_fields()` — walks
+    `schema[*].properties[*]` per ODCS, returns
+    `{record_name: {field_name: prop_dict}}`.
+- ✅ New check `EVENT-PAYLOAD-COVERS-ENTITY-STATE`. For every
+  event in `## Domain Events`: resolve the entity from the
+  channel slug; verify (a) every published attribute appears in
+  the matching AsyncAPI payload, (b) same in the matching
+  datacontract record, (c) AsyncAPI payload and datacontract
+  record field sets are equal (modulo the `id` ↔ `<entity>Id`
+  naming convention).
+- ✅ Removal events (action ∈ `removed` / `deleted` / `expired`)
+  are exempt; minimal payload accepted.
+- ✅ Wired into both Phase 6 (`domain-contracts`) and Phase 7
+  (`domain-conformance-audit`) gates at error severity.
+- ✅ Modeling + contracts + audit SKILL.md updated; template
+  `domain-model.md` carries an inline comment documenting the
+  `[secret]` and `enum:Name` description-column conventions.
+- ✅ Four regression tests covering: missing-from-asyncapi
+  failure, missing-from-datacontract failure, asyncapi-vs-
+  datacontract divergence, `[secret]` exemption.
+- ✅ Bonus: fixed a latent bug in `datacontract_named_enums`
+  (was reading `.fields` dict; ODCS actually uses
+  `.properties` list).
+
+145/145 tests green (was 139, +6: 2 from new check picked up by
+the parametrized happy-path test, 4 from new regression tests).
+Convention is opt-in: silent on domains without a `## Domain
+Events` table.
+
+### 6.11 v1.0.7 backlog — aggregate-child coverage + per-event opt-outs
+
+The `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check enforces single-entity
+coverage today. Two follow-ups are tracked here:
+
+1. **Aggregate-child coverage.** RateCardUpdated should carry the
+   entries array; InvoiceIssued should carry line items. Needs
+   the check to consult the model's `## Aggregates` section and
+   walk child entities. Bigger parser work + bigger spec
+   refactor on dog-walking (RateCard + entries, Invoice + line
+   items).
+2. **Per-event opt-outs.** Some non-removal events legitimately
+   don't need full state (e.g. a future low-value "telemetry"
+   event). Mechanism: a `payload: minimal` marker on the Domain
+   Events table row. Not needed for current dog-walking events;
+   wait for a real case.
+3. **Type alignment across edges.** Today the new check enforces
+   *presence*. Enum value alignment is covered by
+   `ENUM-VALUES-CONSISTENT`. Plain-type alignment (e.g. the
+   model says `string` but openapi says `integer`) is uncovered.
+   Worth a `FIELD-TYPE-CONSISTENT` follow-up.
 
 ---
 

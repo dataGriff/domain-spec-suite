@@ -93,8 +93,15 @@ to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
   the table directly (e.g. `items.item.added`).
 - **`components.messages`**: one message per channel. CloudEvents 1.0
   envelope (`specversion`, `type`, `source`, `id`, `time`,
-  `datacontenttype`) wrapping a `data` payload that matches the
-  entity's domain-model attributes.
+  `datacontenttype`) wrapping a `data` payload that carries the
+  **full state of the affected entity at the moment of the event**
+  — every required attribute from the model's entity table
+  (minus those tagged `[secret]`). This is the load-bearing
+  principle behind the data contract being a historic record
+  (SUITE-DESIGN §4.5); `EVENT-PAYLOAD-COVERS-ENTITY-STATE`
+  enforces it.
+- Removal events (action ∈ `removed` / `deleted` / `expired`) are
+  exempt and may carry a minimal payload (id + timestamp).
 - **`info.contact`**: same RFC 2606 example values as openapi.yaml.
 
 ### `contracts/datacontract.yaml`
@@ -151,6 +158,9 @@ Listed in `gate.yaml`. Two categories:
     datacontract.yaml
   - `WRITE-OP-HAS-ASYNCAPI-CHANNEL` — every write op has an event
   - `EVENT-IN-DATACONTRACT` — every event has a datacontract record
+  - `EVENT-PAYLOAD-COVERS-ENTITY-STATE` — every event payload +
+    datacontract record carries the full entity state per
+    SUITE-DESIGN §4.5
   - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔ openapi
   - `ERROR-CODE-IN-CATALOGUE` — error codes traced back to catalogue
 

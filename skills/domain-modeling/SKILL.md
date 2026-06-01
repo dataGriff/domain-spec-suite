@@ -59,6 +59,28 @@ walk each through:
 3. Business rules (at least one if applicable)
 4. Lifecycle table (if the entity has a `status` attribute)
 
+### Sensitive attributes — the `[secret]` marker
+
+Some attributes must never appear in event payloads or the data
+contract — bcrypt password hashes, time-limited signed URLs, raw
+tokens. Mark these by prefixing the attribute's Description column
+with `[secret]`:
+
+```markdown
+| `passwordHash` | string | Yes | [secret] bcrypt hash, never published to events |
+```
+
+The `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check (Phase 6 + audit)
+treats `[secret]`-marked attributes as exempt — they remain in the
+domain model and the OpenAPI request/response shapes (where
+required by the API surface) but are dropped from the
+must-appear-in-events set. See SUITE-DESIGN §4.5.
+
+Only use `[secret]` for fields that are *security-sensitive*; not
+for fields that are merely uninteresting to downstream consumers.
+If a field's value matters to *any* historic-record consumer (audit
+log, time-travel reconstruction, analytics), it belongs in events.
+
 ### Enumerations
 
 Attributes with a finite, closed set of values (`breed`,

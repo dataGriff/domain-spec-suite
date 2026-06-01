@@ -388,6 +388,52 @@ clones.
 
 ---
 
+## 4.5. Events Carry Full Domain State
+
+Every domain event publishes the full state of its affected entity
+at the moment of the event. The data contract records that state.
+Together they form the audit-grade historic record — every
+downstream consumer (analytics, audit log, time-travel
+reconstruction, event-sourced reader) can recover what happened
+from the event stream alone, without re-querying the live API.
+
+Thin events are an anti-pattern. An event payload that carries
+only identifiers (`{dogId, ownerId}` without `name, breed, ageYears,
+…`) forces every consumer back to the API, couples downstream
+availability to API availability, and reduces the data contract
+to a record of *that an event happened* rather than *what it
+carried*. The contract loses its audit value.
+
+The `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check (§5.5) enforces this
+at Phase 6 + audit. For every event in the model's `## Domain
+Events` table, every required entity attribute must appear in the
+matching AsyncAPI message payload and the matching datacontract
+record. The asyncapi payload and datacontract record must also
+agree with each other.
+
+**Sensitive fields** are excluded via the `[secret]` marker in the
+attribute's Description column:
+
+```markdown
+| `passwordHash` | string | Yes | [secret] bcrypt hash, never published to events |
+```
+
+The parser strips `[secret]`-tagged attributes from the
+must-appear set. Visible to reviewers in the model itself; no
+separate exclusion file.
+
+**Removal events** (channel action ∈ `removed` / `deleted` /
+`expired`) are exempt: the entity is gone, so a minimal payload
+(id + timestamp) is the right shape.
+
+**Aggregate roots with contained collections** (Invoice + line
+items, RateCard + entries) carry the root attributes today.
+Whether the contained collection must also be in the event
+payload is v1.0.7 follow-up work (the check would consult the
+model's `## Aggregates` section).
+
+---
+
 ## 5. The Phase Skill Pattern
 
 Every phase skill follows the same structure. This is what makes the suite

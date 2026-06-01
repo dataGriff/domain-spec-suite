@@ -15,7 +15,17 @@ TODO: Replace with your domain overview.
 
 ## Entities
 
-<!-- For each entity: name, description, attributes, and business rules. -->
+<!--
+For each entity: name, description, attributes, and business rules.
+
+Attribute Description prefixes the parser recognizes:
+- `[secret]` — sensitive value, excluded from event payloads + datacontract
+  records (e.g. `passwordHash`, signed-URL fragments). The attribute is
+  still required by OpenAPI request/response shapes where applicable.
+
+Type column also recognizes `enum:Name` to reference a closed-set value
+declared in `## Enumerations` below.
+-->
 
 ### [Entity1]
 

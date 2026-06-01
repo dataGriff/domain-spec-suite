@@ -31,6 +31,7 @@ checks:
   # Event / data contract alignment
   - id: WRITE-OP-HAS-ASYNCAPI-CHANNEL
   - id: EVENT-IN-DATACONTRACT
+  - id: EVENT-PAYLOAD-COVERS-ENTITY-STATE
 
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
