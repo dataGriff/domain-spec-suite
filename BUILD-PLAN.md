@@ -848,10 +848,41 @@ the parametrized happy-path test, 4 from new regression tests).
 Convention is opt-in: silent on domains without a `## Domain
 Events` table.
 
-### 6.11 v1.0.7 backlog — aggregate-child coverage + per-event opt-outs
+### 6.11 v1.0.7 — data contract HTML rendering convention — [ ]
+
+After v1.0.6 fattened every event payload to carry full entity
+state, the data contract became the audit-grade historic record
+the user wanted — but the spec site only exposed it as raw YAML
+or as duplicated inline tables in `domain-overview.html`. The
+other two contracts already had dedicated interactive reference
+pages (OpenAPI via Scalar, AsyncAPI via AsyncAPI-React); the
+datacontract had no peer.
+
+`datacontract-cli` already ships an HTML exporter
+(`datacontract export html <yaml> --output <path>`); it produces
+a self-contained Tailwind-styled page. This version codifies its
+use as the third contract-reference convention.
+
+- ✅ `skills/domain-contracts/SKILL.md` — new "Publishing the
+  contract as HTML" subsection prescribing the exporter command
+  + the `docs/specifications/datacontract-reference.html`
+  destination convention.
+- ✅ No new phase-gate check. `DATACONTRACT-LINT` already proves
+  the YAML is exportable; render failure would also fail lint.
+- ✅ spec-dog-walking adopted the convention: new
+  `docs:render-datacontract` Taskfile task; `docs:generate`
+  invokes it alongside `generate_domain_overview.py`; home-page
+  nav links the new reference; `generate_domain_overview.py`
+  trims its inline Data Contract section in favour of a
+  link-out paragraph; `.github/workflows/docs.yml` installs
+  `datacontract-cli` before `task docs:build`.
+- ✅ Decision Log entry on the contracts sidecar:
+  `DATACONTRACT-HTML-EXPORT-CONVENTION`.
+
+### 6.12 v1.0.8 backlog — aggregate-child coverage + per-event opt-outs
 
 The `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check enforces single-entity
-coverage today. Two follow-ups are tracked here:
+coverage today. Three follow-ups are tracked here:
 
 1. **Aggregate-child coverage.** RateCardUpdated should carry the
    entries array; InvoiceIssued should carry line items. Needs

@@ -113,6 +113,31 @@ to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
 - **`slaProperties`**: `availability` and `retention` come from
   `nfr.md` (NFR-AVAIL-002, NFR-DATA-001 in the Items example).
 
+#### Publishing the contract as HTML
+
+The data contract MUST be published as a standalone HTML reference
+at `docs/specifications/datacontract-reference.html`, generated
+via the datacontract CLI's HTML exporter. It joins
+`api-reference.html` (Scalar) and `asyncapi-reference.html`
+(AsyncAPI React) as the third peer contract reference on the spec
+site, so consumers have an interactive view of every record
+without grepping the YAML.
+
+The exporter is built into `datacontract-cli` (already on PATH
+for Phase 6 because of `DATACONTRACT-LINT`). Command shape:
+
+```bash
+datacontract export html \
+  docs/specifications/contracts/datacontract.yaml \
+  --output docs/specifications/datacontract-reference.html
+```
+
+Wire this into the target repo's docs build task (typically
+`docs:generate` in `Taskfile.yml`) so the page is regenerated on
+every docs build and gh-deploy. Rendering is a site-build concern,
+not gated by a Phase 6 check — `DATACONTRACT-LINT` already proves
+the YAML is exportable, so a failing render would also fail lint.
+
 After every contract section, run `task gate:contracts -- --repo
 <target>` to surface lint and cross-reference errors early. Iterate
 until clean, then sign off.
