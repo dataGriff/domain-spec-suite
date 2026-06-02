@@ -109,6 +109,114 @@ references them. If an asyncapi schema declares the enum
 inline, values must match openapi.yaml + datacontract.yaml.
 `ENUM-VALUES-CONSISTENT` enforces this.
 
+## Tools
+
+Bootstrap-installed tasks for AsyncAPI authoring:
+
+- **`task asyncapi:skeleton`** — derives a complete asyncapi.yaml
+  skeleton from `domain-model.md`'s events table + entities +
+  `## Aggregates` + `## Enumerations`. One channel per event,
+  CloudEvents envelope wired, full-state payloads, aggregate
+  children carried via `$ref` to per-child payload schemas.
+  Removal events get the minimal id+timestamp payload. Idempotent
+  (refuses to overwrite a real asyncapi.yaml unless `--force`).
+- **`task lint:asyncapi`** — Spectral against the suite's
+  `.spectral-asyncapi.yaml` ruleset.
+- **`task lint:fix-descriptions`** — auto-inserts `description:`
+  lines on every `operationId:` that lacks one. Run after the
+  skeleton.
+- **`task gate:contracts`** — runs the full Phase 6 gate.
+
+## Worked YAML patterns
+
+### CloudEvents envelope (declared once, allOf-extended)
+
+```yaml
+components:
+  schemas:
+    CloudEventsBase:
+      type: object
+      required: [specversion, type, source, id, time, datacontenttype]
+      properties:
+        specversion: { type: string, const: '1.0' }
+        type: { type: string }
+        source: { type: string, format: uri-reference }
+        id: { type: string, format: uuid }
+        time: { type: string, format: date-time }
+        datacontenttype: { type: string, const: application/json }
+```
+
+### Full-state event payload (single entity)
+
+```yaml
+DogAddedEnvelope:
+  allOf:
+    - $ref: '#/components/schemas/CloudEventsBase'
+    - type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [dogId, name, breed, ownerId, createdAt, updatedAt]
+          properties:
+            dogId: { type: string, format: uuid }
+            name: { type: string }
+            breed: { $ref: '#/components/schemas/Breed' }
+            ownerId: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+```
+
+Note: model's `id` becomes `<entity>Id` in payloads
+(`Dog.id` → `dogId`). The check accepts either.
+
+### Aggregate-root event carrying its children
+
+```yaml
+RateCardEntryPayload:
+  type: object
+  required: [id, rateCardId, walkType, durationMinutes, priceCents, createdAt, updatedAt]
+  properties:
+    id: { type: string, format: uuid }
+    rateCardId: { type: string, format: uuid }
+    walkType: { type: string }
+    durationMinutes: { type: integer, minimum: 1 }
+    priceCents: { type: integer, minimum: 1 }
+    createdAt: { type: string, format: date-time }
+    updatedAt: { type: string, format: date-time }
+
+RateCardUpdatedEnvelope:
+  allOf:
+    - $ref: '#/components/schemas/CloudEventsBase'
+    - type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [rateCardId, walkerId, currency, createdAt, updatedAt, entries]
+          properties:
+            rateCardId: { type: string, format: uuid }
+            walkerId: { type: string, format: uuid }
+            currency: { type: string, minLength: 3, maxLength: 3 }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+            entries:
+              type: array
+              items: { $ref: '#/components/schemas/RateCardEntryPayload' }
+```
+
+## Common pitfalls
+
+| Anti-pattern | Check that catches it |
+|---|---|
+| Thin event payload (id + timestamp only) on a non-removal event | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` |
+| Aggregate root event missing its declared child collection | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate block) |
+| Write op in openapi but no corresponding asyncapi channel | `WRITE-OP-HAS-ASYNCAPI-CHANNEL` |
+| `[secret]` field appearing in an event payload | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (the secret marker excludes it from the must-appear set, so adding it back creates asymmetry with datacontract — caught) |
+| asyncapi enum values diverge from openapi or datacontract | `ENUM-VALUES-CONSISTENT` |
+| Forgetting to rename `id` → `<entity>Id` in the payload | Soft: the check accepts both, but the convention is `<entity>Id` for top-level + `id` for nested aggregate items |
+| Child item schema misses one of the child's published attributes | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (asyncapi vs model edge) |
+
 ## Authoring-time validation
 
 After every significant section change, run the gate from the

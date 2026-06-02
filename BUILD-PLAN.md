@@ -963,7 +963,46 @@ same sign-off, same sidecar. dog-walking is unaffected.
 - ✅ `tests/test_smoke.py::test_skills_directories_exist` — three
   new skill names added to the expected set.
 
-### 6.15 v1.0.11 backlog — per-event opt-outs + type alignment
+### 6.15 v1.0.11 — make contract sub-skills useful — [x]
+
+After v1.0.10 split the contract authoring into three sibling
+sub-skills, the sub-skill content was largely *rules* with no
+worked examples and no scaffolding scripts. v1.0.11 fills both
+gaps with three new bootstrap-installed skeleton scripts (one
+per contract) and a content augmentation pass on each sub-skill
+SKILL.md.
+
+- ✅ `skills/domain-bootstrap/templates/scripts/openapi_skeleton.py`
+  — derives openapi.yaml from auth-matrix.md + domain-model.md +
+  error-catalogue.md; wires Idempotency-Key on every POST,
+  entity + enum schemas, generic Error/ValidationError schemas,
+  reusable parameters + responses. Refuses to overwrite a real
+  openapi.yaml unless `--force`.
+- ✅ `skills/domain-bootstrap/templates/scripts/asyncapi_skeleton.py`
+  — derives asyncapi.yaml from domain-model.md events + entities
+  + aggregates. CloudEvents envelope (allOf-extended), full-state
+  payloads, aggregate-child collections via $ref to per-child
+  payload schemas, removal events with minimal id+timestamp
+  payload.
+- ✅ `skills/domain-bootstrap/templates/scripts/datacontract_skeleton.py`
+  — derives datacontract.yaml from asyncapi.yaml (post-author)
+  + nfr.md. Mirrors event payloads into ODCS records grouped by
+  entity, with nested array fields for aggregate children.
+- ✅ Bootstrap Taskfile template gains three new entries
+  (`openapi:skeleton`, `asyncapi:skeleton`,
+  `datacontract:skeleton`).
+- ✅ Items fixture: scripts copied to `tests/fixtures/items/scripts/`
+  + matching Taskfile entries.
+- ✅ `skills/domain-openapi/SKILL.md`, `skills/domain-asyncapi/SKILL.md`,
+  `skills/domain-datacontract/SKILL.md` each gain three new
+  sections: **Tools** (skeleton + lint + fix-descriptions +
+  gate task references), **Worked YAML patterns** (2-3 concrete
+  snippets showing the correct shape), **Common pitfalls**
+  (anti-patterns paired with the check that catches each).
+- ✅ `skills/domain-bootstrap/template_manifest.yaml` regenerated
+  to include the three new scripts.
+
+### 6.16 v1.0.12 backlog — per-event opt-outs + type alignment
 
 Two remaining follow-ups from the v1.0.7 deferral list, neither
 of which has a current driver:

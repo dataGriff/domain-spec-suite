@@ -29,6 +29,7 @@ OUTPUT_FILE = os.environ.get("DOMAIN_OVERVIEW_OUTPUT") or os.path.join(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def load_yaml(path):
     with open(path, "r", encoding="utf-8") as fh:
         return yaml.safe_load(fh)
@@ -46,10 +47,10 @@ def h(text):
 
 
 METHOD_COLORS = {
-    "get":    "#61affe",
-    "post":   "#49cc90",
-    "patch":  "#fca130",
-    "put":    "#fca130",
+    "get": "#61affe",
+    "post": "#49cc90",
+    "patch": "#fca130",
+    "put": "#fca130",
     "delete": "#f93e3e",
 }
 
@@ -63,7 +64,7 @@ def method_badge(method):
     return (
         f'<span class="badge method-badge" '
         f'style="background:{color};color:#fff">'
-        f'{h(method.upper())}</span>'
+        f"{h(method.upper())}</span>"
     )
 
 
@@ -80,6 +81,7 @@ def tag_badge(tag):
 # ---------------------------------------------------------------------------
 # Section builders
 # ---------------------------------------------------------------------------
+
 
 def build_summary_section(openapi):
     info = openapi.get("info", {})
@@ -100,7 +102,7 @@ def build_summary_section(openapi):
 
     servers = openapi.get("servers", [])
     server_rows = "".join(
-        f"<tr><td>{h(s.get('url',''))}</td><td>{h(s.get('description',''))}</td></tr>"
+        f"<tr><td>{h(s.get('url', ''))}</td><td>{h(s.get('description', ''))}</td></tr>"
         for s in servers
     )
 
@@ -111,7 +113,7 @@ def build_summary_section(openapi):
         if cname or cemail:
             contact_html = (
                 f'<p class="contact">Contact: <strong>{h(cname)}</strong>'
-                + (f' &lt;{h(cemail)}&gt;' if cemail else "")
+                + (f" &lt;{h(cemail)}&gt;" if cemail else "")
                 + "</p>"
             )
 
@@ -181,14 +183,16 @@ def build_operations_section(openapi):
             op_tags = op.get("tags", ["Other"])
             requires_auth = bool(op.get("security"))
             for tag in op_tags:
-                by_tag.setdefault(tag, []).append({
-                    "method": method,
-                    "path": path,
-                    "summary": op.get("summary", ""),
-                    "description": op.get("description", ""),
-                    "auth": requires_auth,
-                    "operationId": op.get("operationId", ""),
-                })
+                by_tag.setdefault(tag, []).append(
+                    {
+                        "method": method,
+                        "path": path,
+                        "summary": op.get("summary", ""),
+                        "description": op.get("description", ""),
+                        "auth": requires_auth,
+                        "operationId": op.get("operationId", ""),
+                    }
+                )
 
     # Sort tags by declared order
     ordered_tags = [t for t in tags_order if t in by_tag] + [
@@ -248,7 +252,7 @@ def build_events_section(asyncapi):
     return f"""
 <section id="events" class="card">
   <h2>📡 Domain Events</h2>
-  <p>{h(info.get('description', '').splitlines()[0] if info.get('description') else '')}</p>
+  <p>{h(info.get("description", "").splitlines()[0] if info.get("description") else "")}</p>
   <table>
     <thead><tr><th>Channel</th><th>Event</th><th>Description</th></tr></thead>
     <tbody>{rows}</tbody>
@@ -268,8 +272,8 @@ def build_event_operation_correlation(openapi, asyncapi):
          items.item.removed → DELETE      /v1/items/{itemId}
     """
     channel_to_method = {
-        "added":   ("POST",   "Add"),
-        "edited":  ("PATCH",  "Edit"),
+        "added": ("POST", "Add"),
+        "edited": ("PATCH", "Edit"),
         "removed": ("DELETE", "Remove"),
     }
 
@@ -308,7 +312,8 @@ def build_event_operation_correlation(openapi, asyncapi):
             f"<td>"
             + (
                 f"{method_badge(method_info[0])} <code>{h(matched_path)}</code> — {h(matched_summary)}"
-                if method_info and matched_path else "—"
+                if method_info and matched_path
+                else "—"
             )
             + f"</td>"
             f"</tr>"
@@ -353,8 +358,7 @@ def build_entities_section(openapi):
     schemas = openapi.get("components", {}).get("schemas", {})
     # Show main domain entities only (skip request/response wrappers)
     entity_names = [
-        name for name in schemas
-        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
+        name for name in schemas if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
     ]
 
     blocks = []
@@ -410,11 +414,11 @@ def build_data_contract_section(datacontract):
             req = "✓" if p.get("required") else ""
             rows += (
                 f"<tr>"
-                f"<td><code>{h(p.get('name',''))}</code>{h(pk)}</td>"
-                f"<td>{h(p.get('logicalType',''))}</td>"
-                f"<td>{h(p.get('physicalType',''))}</td>"
+                f"<td><code>{h(p.get('name', ''))}</code>{h(pk)}</td>"
+                f"<td>{h(p.get('logicalType', ''))}</td>"
+                f"<td>{h(p.get('physicalType', ''))}</td>"
                 f"<td>{h(req)}</td>"
-                f"<td>{h(p.get('description',''))}</td>"
+                f"<td>{h(p.get('description', ''))}</td>"
                 f"</tr>"
             )
         blocks.append(f"""
@@ -444,8 +448,7 @@ def build_erd_section(openapi):
     schemas = openapi.get("components", {}).get("schemas", {})
 
     entity_names = {
-        name for name in schemas
-        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
+        name for name in schemas if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
     }
 
     lines = ["erDiagram"]
@@ -470,8 +473,10 @@ def build_erd_section(openapi):
                 # Try to find a matching entity whose name appears in the field name
                 # e.g. contributorId → look for an entity whose name is in "contributorid"
                 for candidate in entity_names:
-                    if candidate.lower() in field.lower() or field.lower().startswith(candidate.lower()):
-                        lines.append(f"    {candidate} ||--o{{ {name} : \"owns\"")
+                    if candidate.lower() in field.lower() or field.lower().startswith(
+                        candidate.lower()
+                    ):
+                        lines.append(f'    {candidate} ||--o{{ {name} : "owns"')
                         break
 
     diagram = "\n".join(lines)
@@ -488,6 +493,7 @@ def build_erd_section(openapi):
 # ---------------------------------------------------------------------------
 # Full page assembly
 # ---------------------------------------------------------------------------
+
 
 def build_page(openapi, asyncapi, datacontract):
     title = openapi.get("info", {}).get("title", "Domain")
@@ -764,6 +770,7 @@ def build_page(openapi, asyncapi, datacontract):
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main():
     openapi_path = os.path.join(CONTRACTS_DIR, "openapi.yaml")

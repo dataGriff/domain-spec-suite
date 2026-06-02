@@ -40,7 +40,7 @@ def parse_entities(domain_model_text: str) -> list[tuple[str, list[str]]]:
     entities_start = re.search(r"(?m)^##\s+Entities\s*$", domain_model_text)
     if not entities_start:
         return []
-    after = domain_model_text[entities_start.end():]
+    after = domain_model_text[entities_start.end() :]
     next_section = re.search(r"(?m)^##\s+\S", after)
     section = after[: next_section.start()] if next_section else after
 
@@ -63,15 +63,9 @@ def render_glossary(entities: list[tuple[str, list[str]]], domain_name: str) -> 
     lines: list[str] = []
     lines.append(f"# Glossary — {domain_name}")
     lines.append("")
-    lines.append(
-        f"> The ubiquitous language for the {domain_name} domain. Every entity"
-    )
-    lines.append(
-        "> name and every attribute name used in `domain-model.md` (and the"
-    )
-    lines.append(
-        "> later contracts files) appears here exactly as it is used. Code,"
-    )
+    lines.append(f"> The ubiquitous language for the {domain_name} domain. Every entity")
+    lines.append("> name and every attribute name used in `domain-model.md` (and the")
+    lines.append("> later contracts files) appears here exactly as it is used. Code,")
     lines.append("> docs, and conversation must use these terms.")
     lines.append("")
     lines.append("---")
@@ -83,8 +77,7 @@ def render_glossary(entities: list[tuple[str, list[str]]], domain_name: str) -> 
         lines.append(f"### {name}")
         lines.append("")
         lines.append(
-            f"<!-- TODO: one or two sentence description of what a {name} is "
-            "in this domain. -->"
+            f"<!-- TODO: one or two sentence description of what a {name} is in this domain. -->"
         )
         lines.append("")
 
@@ -158,8 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     entities = parse_entities(text)
     if not entities:
         print(
-            "glossary_skeleton: no entities found under `## Entities` in "
-            f"{dm_path}",
+            f"glossary_skeleton: no entities found under `## Entities` in {dm_path}",
             file=sys.stderr,
         )
         return 1
@@ -173,11 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     glossary_path = pathlib.Path(args.glossary).resolve()
     if glossary_path.is_file() and not args.force:
         existing = glossary_path.read_text(encoding="utf-8")
-        looks_template = (
-            len(existing) < 200
-            or "[Domain]" in existing
-            or "[Resource1]" in existing
-        )
+        looks_template = len(existing) < 200 or "[Domain]" in existing or "[Resource1]" in existing
         if not looks_template:
             print(
                 f"glossary_skeleton: {glossary_path} already exists and "

@@ -105,6 +105,111 @@ Server-side replay-store implementation is a runtime concern
 (typical: a Redis or Postgres TTL table at ~24h); not gated by
 the suite.
 
+## Tools
+
+Bootstrap-installed tasks for OpenAPI authoring (run from the
+target spec repo):
+
+- **`task openapi:skeleton`** — derives a complete openapi.yaml
+  skeleton from `auth-matrix.md` + `domain-model.md` +
+  `error-catalogue.md`. One path per auth-matrix row,
+  Idempotency-Key wired on every POST, one schema per entity
+  with type-mapped properties, one schema per named enum.
+  TODO-marked descriptions for the agent to fill. Idempotent
+  (refuses to overwrite a real openapi.yaml unless `--force`).
+- **`task lint:openapi`** — Spectral against the suite's
+  `.spectral-openapi.yaml` ruleset.
+- **`task lint:fix-descriptions`** — auto-inserts `description:`
+  lines on every `operationId:` that lacks one. Run after the
+  skeleton to clear Spectral's operation-description fails in
+  one pass.
+- **`task gate:contracts`** — runs the full Phase 6 gate
+  (Spectral + cross-references). Iterate against this as you
+  author.
+
+## Worked YAML patterns
+
+### Paginated list endpoint
+
+```yaml
+/v1/dogs:
+  get:
+    tags: [Dogs]
+    operationId: listDogs
+    summary: List dogs
+    description: List dogs scoped to the caller's ownership.
+    parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+    responses:
+      '200':
+        description: Paginated list of dogs
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DogList' }
+      '401': { $ref: '#/components/responses/Unauthorized' }
+```
+
+### POST with Idempotency-Key
+
+```yaml
+/v1/walks:
+  post:
+    tags: [Walks]
+    operationId: scheduleWalk
+    summary: Schedule walk
+    description: Schedule a walk.
+    parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/WalkCreateRequest' }
+    responses:
+      '201':
+        description: Walk created
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Walk' }
+      '400': { $ref: '#/components/responses/ValidationError' }
+      '401': { $ref: '#/components/responses/Unauthorized' }
+      '403': { $ref: '#/components/responses/Forbidden' }
+      '409': { $ref: '#/components/responses/IdempotencyKeyConflict' }
+```
+
+### Named enum reference
+
+```yaml
+components:
+  schemas:
+    Breed:
+      type: string
+      enum: [labrador, poodle, mixed, unknown]
+    Dog:
+      type: object
+      required: [id, name, breed, ownerId, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        breed: { $ref: '#/components/schemas/Breed' }
+        ownerId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+```
+
+## Common pitfalls
+
+| Anti-pattern | Check that catches it |
+|---|---|
+| POST op declared without `Idempotency-Key` parameter | `IDEMPOTENCY-KEY-ON-POST-OPS` |
+| Operation in openapi but missing from auth-matrix | `AUTH-MATRIX-OPENAPI-MATCH` |
+| Inline enum on an attribute that also has a named enum in `## Enumerations` | `ENUM-VALUES-CONSISTENT` |
+| Entity in `## Entities` but no matching `components.schemas` entry | `ENTITY-IN-OPENAPI-SCHEMA` |
+| Attribute names in domain-model vs openapi schema diverge | `FIELD-MATCH-DOMAIN-OPENAPI` |
+| Error response references a code missing from `error-catalogue.md` | `ERROR-CODE-IN-CATALOGUE` |
+| Free-text enum string column → openapi `enum: [...]` values don't match the model | `ENUM-VALUES-CONSISTENT` |
+| `passwordHash`/`token` field exposed in a response schema | (manual review — flag via `[secret]` in domain-model and use a `<Entity>Summary` projection for responses) |
+
 ## Authoring-time validation
 
 After every significant section change, run the gate from the

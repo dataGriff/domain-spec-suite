@@ -105,6 +105,99 @@ concern, not gated by a Phase 6 check — `DATACONTRACT-LINT`
 already proves the YAML is exportable, so a failing render
 would also fail lint.
 
+## Tools
+
+Bootstrap-installed tasks for datacontract authoring:
+
+- **`task datacontract:skeleton`** — derives a complete
+  datacontract.yaml skeleton from `contracts/asyncapi.yaml` (one
+  record per channel family, fields mirroring the asyncapi
+  payload) + `nfr.md` (best-effort lookup of NFR-AVAIL-002 +
+  NFR-DATA-001 for slaProperties). Aggregate-child collections
+  emit nested ODCS array fields. Run AFTER `task
+  asyncapi:skeleton`. Idempotent (refuses to overwrite a real
+  datacontract.yaml unless `--force`).
+- **`task lint:datacontract`** — `datacontract lint
+  contracts/datacontract.yaml`.
+- **`task docs:render-datacontract`** — emits the
+  `datacontract-reference.html` peer reference. Wired into
+  `task docs:generate` so it regenerates on every docs build.
+- **`task gate:contracts`** — runs the full Phase 6 gate.
+
+## Worked YAML patterns
+
+### Simple record (single entity)
+
+```yaml
+schema:
+  - name: dog
+    description: >
+      Dog records published via the dogwalking.dog.added and
+      dogwalking.dog.updated channels.
+    physicalType: topic
+    properties:
+      - { name: dogId, description: Dog identifier., logicalType: string, physicalType: uuid, required: true, unique: true, primaryKey: true, primaryKeyPosition: 1 }
+      - { name: name, description: Dog's display name., logicalType: string, required: true }
+      - { name: breed, description: Closed-set breed value., logicalType: string, required: true }
+      - { name: ownerId, description: Owner reference., logicalType: string, physicalType: uuid, required: true }
+      - { name: createdAt, description: Creation timestamp., logicalType: timestamp, required: true }
+      - { name: updatedAt, description: Last update timestamp., logicalType: timestamp, required: true }
+```
+
+### Record with nested aggregate-child array
+
+```yaml
+- name: ratecard
+  description: >
+    RateCard root plus contained RateCardEntry rows.
+  physicalType: topic
+  properties:
+    - { name: rateCardId, description: RateCard identifier., logicalType: string, physicalType: uuid, required: true, unique: true, primaryKey: true, primaryKeyPosition: 1 }
+    - { name: walkerId, description: Walker whose rate card changed., logicalType: string, physicalType: uuid, required: true }
+    - { name: currency, description: ISO 4217 currency code., logicalType: string, required: true }
+    - { name: createdAt, description: Creation timestamp., logicalType: timestamp, required: true }
+    - { name: updatedAt, description: Last update timestamp., logicalType: timestamp, required: true }
+    - name: entries
+      description: Rate-card entries on this rate card.
+      logicalType: array
+      required: true
+      items:
+        logicalType: object
+        properties:
+          - { name: id, description: RateCardEntry identifier., logicalType: string, physicalType: uuid, required: true }
+          - { name: rateCardId, description: FK to parent RateCard., logicalType: string, physicalType: uuid, required: true }
+          - { name: walkType, description: Walk type for this entry., logicalType: string, required: true }
+          - { name: durationMinutes, description: Duration in minutes., logicalType: integer, required: true }
+          - { name: priceCents, description: Price in minor units., logicalType: integer, required: true }
+          - { name: createdAt, description: Entry creation timestamp., logicalType: timestamp, required: true }
+          - { name: updatedAt, description: Entry last update timestamp., logicalType: timestamp, required: true }
+```
+
+### slaProperties from NFRs
+
+```yaml
+slaProperties:
+  - property: availability
+    value: "99.5"
+    unit: "%"
+    description: Events are delivered at least 99.5% of the time (NFR-AVAIL-002).
+  - property: retention
+    value: 30
+    unit: d
+    description: Events are retained for 30 days for replay (NFR-DATA-001).
+```
+
+## Common pitfalls
+
+| Anti-pattern | Check that catches it |
+|---|---|
+| Event in asyncapi without a matching datacontract record | `EVENT-IN-DATACONTRACT` |
+| Record field set diverges from the asyncapi payload property set | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (asyncapi↔datacontract symmetry edge) |
+| Aggregate root record missing its declared child collection | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate block, datacontract side) |
+| Child item field set diverges between asyncapi item schema and datacontract `items.properties` | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate item symmetry) |
+| Using `logicalType: string` for a UUID field instead of `{logicalType: string, physicalType: uuid}` | `DATACONTRACT-LINT` (loose), but agent convention prefers explicit `physicalType` for clarity |
+| Forgetting to declare `slaProperties` | Soft — `DATACONTRACT-LINT` may pass but NFR-AVAIL/RETENTION values must surface somewhere |
+
 ## Authoring-time validation
 
 After every significant section change, run the gate from the
