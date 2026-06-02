@@ -937,7 +937,33 @@ required `Idempotency-Key` header parameter.
   fail-when-omitted, accepts-inline, rejects-required-false,
   silent-when-no-posts, accepts-path-level.
 
-### 6.14 v1.0.10 backlog — per-event opt-outs + type alignment
+### 6.14 v1.0.10 — split contract authoring into three sub-skills — [x]
+
+A multi-channel design review surfaced that
+`skills/domain-contracts/SKILL.md` had grown to 269 lines mixing
+OpenAPI, AsyncAPI, and ODCS authoring with cross-reference rules
+— every recent v1.0.x increment landed content in the same file
+even though each piece of guidance belongs to one contract.
+
+Splits the authoring guidance into three sibling sub-skills,
+leaving the parent skill focused on the Phase 6 gate and
+cross-reference rules. No Phase 6 mechanics change: same gate,
+same sign-off, same sidecar. dog-walking is unaffected.
+
+- ✅ `skills/domain-openapi/SKILL.md` — OpenAPI 3.0.3 conventions
+  including the Idempotency-Key on POST convention.
+- ✅ `skills/domain-asyncapi/SKILL.md` — AsyncAPI 2.6 + CloudEvents
+  conventions, full-state-in-events, aggregate-child collections.
+- ✅ `skills/domain-datacontract/SKILL.md` — ODCS 3.1 conventions,
+  nested aggregate fields, HTML rendering convention.
+- ✅ `skills/domain-contracts/SKILL.md` slimmed from 269 → ~206
+  lines, focused on gate orchestration + sub-skill routing.
+- ✅ `SUITE-DESIGN.md` §5 — new "Parent + sub-skill phases"
+  subsection documenting the pattern.
+- ✅ `tests/test_smoke.py::test_skills_directories_exist` — three
+  new skill names added to the expected set.
+
+### 6.15 v1.0.11 backlog — per-event opt-outs + type alignment
 
 Two remaining follow-ups from the v1.0.7 deferral list, neither
 of which has a current driver:

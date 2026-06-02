@@ -503,6 +503,33 @@ predictable and the orchestrator's job possible.
 5. A `questions.md` or equivalent — the question bank the skill uses to elicit
    information
 
+### Parent + sub-skill phases
+
+Some phases produce multiple output files with different
+authoring conventions. To keep `SKILL.md` files scannable, a
+phase MAY be implemented as a **parent skill plus authoring
+sub-skills**:
+
+- The parent owns the phase: `PHASE_TO_SKILL` maps to it, its
+  `gate.yaml` lists every check, `sign_off.py` signs the
+  combined output. The parent's `SKILL.md` orchestrates and
+  carries the cross-reference rules.
+- Each sub-skill owns the authoring conventions for one part of
+  the phase's surface. Sub-skills have a `SKILL.md` only — no
+  `gate.yaml`, no checks, no templates of their own. They're
+  loaded by reference from the parent.
+
+**Phase 6 is the canonical example.** `domain-contracts` is the
+parent and runs the gate; `domain-openapi`,
+`domain-asyncapi`, and `domain-datacontract` are authoring
+sub-skills that the parent's `SKILL.md` routes to depending on
+which contract the user is editing.
+
+This pattern is opt-in. Most phases produce one document and
+don't need it; the splitting cost is only worth paying when
+authoring conventions diverge enough that mixing them in one
+file becomes a readability problem.
+
 ### Prerequisites declaration
 
 At the top of each phase's `gate.yaml`:

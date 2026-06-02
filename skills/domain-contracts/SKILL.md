@@ -1,19 +1,38 @@
 ---
 name: domain-contracts
 description: |
-  Phase 6. Validates the three contract files
+  Phase 6. Conformance gate over the three contract files
   (`contracts/openapi.yaml`, `contracts/asyncapi.yaml`,
-  `contracts/datacontract.yaml`) against tool linters AND against every
-  upstream spec (domain model, glossary, auth matrix, error catalogue).
-  Hard gate: no warnings, no rubric judgements — every check is
-  mechanical and every check must pass for sign-off. The only escape
-  is `task suite:force-advance contracts --reason '<text>'`, which the
-  audit then surfaces until accepted.
+  `contracts/datacontract.yaml`). Lints each, then
+  cross-references them against every upstream spec (domain
+  model, glossary, auth matrix, error catalogue) and against
+  each other. Hard gate: no warnings, no rubric judgements —
+  every check is mechanical and every check must pass for
+  sign-off. The only escape is
+  `task suite:force-advance contracts --reason '<text>'`, which
+  the audit then surfaces until accepted.
+
+  Per-contract authoring conventions live in three sibling
+  sub-skills:
+
+  - [`domain-openapi`](../domain-openapi/SKILL.md) — OpenAPI
+    3.0.3 conventions, including the Idempotency-Key on POST
+    convention.
+  - [`domain-asyncapi`](../domain-asyncapi/SKILL.md) — AsyncAPI
+    2.6 + CloudEvents conventions, full-state-in-events, and
+    aggregate-child collections.
+  - [`domain-datacontract`](../domain-datacontract/SKILL.md) —
+    ODCS 3.1 conventions, nested aggregate fields, and HTML
+    rendering.
+
+  This skill owns the gate; the sub-skills own the authoring
+  guidance.
 prerequisites:
-  - Phases 1-5 have signed off (the contracts gate cross-references
-    every prior phase's outputs).
-  - Target repo has `spectral` and `datacontract` on PATH (pinned via
-    the target's `.mise.toml`; the bootstrap installs that for you).
+  - Phases 1-5 have signed off (the contracts gate
+    cross-references every prior phase's outputs).
+  - Target repo has `spectral` and `datacontract` on PATH
+    (pinned via the target's `.mise.toml`; the bootstrap
+    installs them for you).
 trigger_phrases:
   - "phase 6"
   - "run the contracts gate"
@@ -23,141 +42,72 @@ trigger_phrases:
 
 # Phase 6 — Contracts
 
-This skill has two halves: **author** (produce three contract YAML
-files from upstream specs) and **validate + sign-off** (mechanical
-gate against the result). The validate half is purely mechanical —
-contracts are right or they aren't, no rubric checks. The author half
-is interactive: the skill reads upstream specs and walks the user
-through filling in the templates.
+This skill has two halves: **author** (produce three contract
+YAML files from upstream specs) and **validate + sign-off**
+(mechanical gate against the result). The validate half is
+purely mechanical — contracts are right or they aren't, no
+rubric checks. The author half is interactive: the skill reads
+upstream specs and walks the user through filling in the
+templates.
+
+For the per-contract authoring conventions, route the user to
+the appropriate sub-skill:
+
+- OpenAPI section → `domain-openapi`
+- AsyncAPI section → `domain-asyncapi`
+- datacontract section → `domain-datacontract`
+
+This SKILL.md keeps the **gate**, **sign-off**, **cross-reference
+rules**, and **decision log** scope.
 
 ## What this skill does
 
-1. Resolves the target repo (current working directory by default).
-2. Verifies all earlier phases (1-5) have signed off — refuses if not.
+1. Resolves the target repo (current working directory by
+   default).
+2. Verifies all earlier phases (1-5) have signed off — refuses
+   if not.
 3. **Author half.** If any of `contracts/openapi.yaml`,
-   `contracts/asyncapi.yaml`, `contracts/datacontract.yaml` is missing,
-   runs `task init:contracts -- --repo <target>` to copy the blank
-   `.spec-suite/templates/contracts/*.yaml` skeletons into place. Never
-   overwrites existing files (the user's authored work is safe).
-   Then walks the user through populating each section using the
-   upstream specs as the source of truth (see "Authoring" below).
+   `contracts/asyncapi.yaml`, `contracts/datacontract.yaml` is
+   missing, runs `task init:contracts -- --repo <target>` to
+   copy the blank `.spec-suite/templates/contracts/*.yaml`
+   skeletons into place. Never overwrites existing files (the
+   user's authored work is safe). Then routes the user to the
+   relevant sub-skill for that contract's conventions and walks
+   them through populating each section using the upstream
+   specs as the source of truth.
 4. **Validate half.** Invokes the runner
-   (`shared/run_phase.py contracts --repo <target>`), which runs
-   every check listed in `gate.yaml`.
+   (`shared/run_phase.py contracts --repo <target>`), which
+   runs every check listed in `gate.yaml`.
 5. If every check passes: invokes `shared/sign_off.py contracts`
-   which computes sha256s for the three contract files and writes
-   `.spec-suite/phases/phase-6-passed.yaml`.
-6. If any check fails: reports the failing check ids verbatim. Does
-   not write the sign-off file. Tells the user to either fix the
-   underlying issues or, in genuine emergencies, run
-   `task suite:force-advance contracts --reason '<text>'` (which
-   writes a `force_advances` entry to `.spec-suite/progress.yaml` that the audit
-   surfaces until cleared via `task suite:accept-force`).
+   which computes sha256s for the three contract files and
+   writes `.spec-suite/phases/phase-6-passed.yaml`.
+6. If any check fails: reports the failing check ids verbatim.
+   Does not write the sign-off file. Tells the user to either
+   fix the underlying issues or, in genuine emergencies, run
+   `task suite:force-advance contracts --reason '<text>'`
+   (which writes a `force_advances` entry to
+   `.spec-suite/progress.yaml` that the audit surfaces until
+   cleared via `task suite:accept-force`).
 
-## Authoring
+## Authoring routing
 
-The three contracts are largely *derivable* from upstream specs — the
-job is mechanical synthesis, not creative writing. Walk the user
-through each contract in order. Reflect each significant edit back
-to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
+The three contracts are largely *derivable* from upstream specs
+— the job is mechanical synthesis, not creative writing. The
+sub-skills above carry the conventions for each contract
+individually; this skill orchestrates the sequence:
 
-### `contracts/openapi.yaml`
-
-- **`info`**: title from the PRD's domain name; version starts at
-  `1.0.0`; contact uses the RFC 2606 example-domain pattern for
-  Spectral's `info-contact` rule.
-- **`paths`**: one path per row in `auth-matrix.md`'s operations
-  table. Method, path, and rough operationId are all there.
-- **`components.schemas`**: one schema per entity in
-  `domain-model.md`, with one property per attribute. Use the type
-  hints from the domain-model attribute table (`UUID` → `string` +
-  `format: uuid`, `ISO 8601` → `string` + `format: date-time`,
-  `enum:<Name>` → `$ref: '#/components/schemas/<Name>'`). Sensitive
-  attributes (e.g. password hashes) belong in a `<Entity>Summary`
-  projection, not the bare entity.
-- **Named enums** declared in `domain-model.md`'s `## Enumerations`
-  section MUST also appear under `components.schemas` as
-  `<Name>: {type: string, enum: [...]}` with values matching the
-  model exactly. `ENUM-VALUES-CONSISTENT` enforces this. The same
-  schema name in AsyncAPI + Datacontract must match too (if
-  declared at all).
-- **`components.responses`**: one entry per `4xx`/`5xx` code from
-  `error-catalogue.md`, all bound to a generic `Error` shape
-  (`{code, message}`) plus `ValidationError` for 400 (which
-  additionally has `details[]`).
-- **`Idempotency-Key` header on every POST**: declare a reusable
-  parameter under `components.parameters.IdempotencyKey` (`name:
-  Idempotency-Key`, `in: header`, `required: true`, UUID schema)
-  and `$ref` it from every POST operation's `parameters` list.
-  Add an `IDEMPOTENCY_KEY_CONFLICT` (409) row to the error
-  catalogue. POST is the only verb that creates new state from
-  scratch; without an idempotency key, a retried POST produces
-  duplicates. PUT/PATCH/DELETE are verb-idempotent so the header
-  is optional there. `IDEMPOTENCY-KEY-ON-POST-OPS` enforces this
-  (per SUITE-DESIGN §4 "Idempotent mutating ops"). Server-side
-  replay-store implementation is a runtime concern (typical: a
-  Redis or Postgres TTL table at ~24h); not gated.
-
-### `contracts/asyncapi.yaml`
-
-- **`channels`**: one channel per domain event row in
-  `domain-model.md`'s Domain Events table. Channel name comes from
-  the table directly (e.g. `items.item.added`).
-- **`components.messages`**: one message per channel. CloudEvents 1.0
-  envelope (`specversion`, `type`, `source`, `id`, `time`,
-  `datacontenttype`) wrapping a `data` payload that carries the
-  **full state of the affected entity at the moment of the event**
-  — every required attribute from the model's entity table
-  (minus those tagged `[secret]`). This is the load-bearing
-  principle behind the data contract being a historic record
-  (SUITE-DESIGN §4.5); `EVENT-PAYLOAD-COVERS-ENTITY-STATE`
-  enforces it.
-- Removal events (action ∈ `removed` / `deleted` / `expired`) are
-  exempt and may carry a minimal payload (id + timestamp).
-- **Aggregate roots** declared in the model's `## Aggregates`
-  section carry their child collections in the same event. The
-  payload's `data.<collection>` is an array of objects whose item
-  schema covers the child's published attributes (see
-  SUITE-DESIGN §4.5).
-- **`info.contact`**: same RFC 2606 example values as openapi.yaml.
-
-### `contracts/datacontract.yaml`
-
-- **`schema[*]`**: one record per *family* of channels (typically
-  one per entity, plus reduced-payload variants for removal events).
-  Field names + types come straight from the AsyncAPI message
-  payload.
-- **`slaProperties`**: `availability` and `retention` come from
-  `nfr.md` (NFR-AVAIL-002, NFR-DATA-001 in the Items example).
-
-#### Publishing the contract as HTML
-
-The data contract MUST be published as a standalone HTML reference
-at `docs/specifications/datacontract-reference.html`, generated
-via the datacontract CLI's HTML exporter. It joins
-`api-reference.html` (Scalar) and `asyncapi-reference.html`
-(AsyncAPI React) as the third peer contract reference on the spec
-site, so consumers have an interactive view of every record
-without grepping the YAML.
-
-The exporter is built into `datacontract-cli` (already on PATH
-for Phase 6 because of `DATACONTRACT-LINT`). Command shape:
-
-```bash
-datacontract export html \
-  docs/specifications/contracts/datacontract.yaml \
-  --output docs/specifications/datacontract-reference.html
-```
-
-Wire this into the target repo's docs build task (typically
-`docs:generate` in `Taskfile.yml`) so the page is regenerated on
-every docs build and gh-deploy. Rendering is a site-build concern,
-not gated by a Phase 6 check — `DATACONTRACT-LINT` already proves
-the YAML is exportable, so a failing render would also fail lint.
+1. Start with `domain-openapi` — the REST surface is the most
+   visible to consumers and the easiest to validate against the
+   auth matrix.
+2. Then `domain-asyncapi` — every write op needs at least one
+   channel; the event payload schemas reuse openapi schemas
+   where possible.
+3. Then `domain-datacontract` — the historic record mirrors the
+   asyncapi payloads, so it's effectively the last step.
 
 After every contract section, run `task gate:contracts -- --repo
-<target>` to surface lint and cross-reference errors early. Iterate
-until clean, then sign off.
+<target>` to surface lint and cross-reference errors early.
+Iterate until clean, then sign off.
 
 ## How to run
 
@@ -186,34 +136,38 @@ python <suite-root>/shared/sign_off.py contracts --repo <target-dir>
 
 Listed in `gate.yaml`. Two categories:
 
-- **Tool checks** (subprocess linters; skipped if the tool isn't on
-  PATH):
+- **Tool checks** (subprocess linters; skipped if the tool isn't
+  on PATH):
   - `SPECTRAL-OPENAPI` — `spectral lint contracts/openapi.yaml`
   - `SPECTRAL-ASYNCAPI` — `spectral lint contracts/asyncapi.yaml`
   - `DATACONTRACT-LINT` — `datacontract lint contracts/datacontract.yaml`
-- **Cross-phase consistency** (shared modules; the audit re-runs the
-  same modules at error severity):
+- **Cross-phase consistency** (shared modules; the audit re-runs
+  the same modules at error severity):
   - `ENTITY-IN-OPENAPI-SCHEMA` — domain entity ↔ OpenAPI schema
   - `FIELD-MATCH-DOMAIN-OPENAPI` — attribute names align
   - `ENUM-VALUES-CONSISTENT` — named enums in `## Enumerations`
     have matching values in openapi.yaml + asyncapi.yaml +
     datacontract.yaml
   - `WRITE-OP-HAS-ASYNCAPI-CHANNEL` — every write op has an event
-  - `EVENT-IN-DATACONTRACT` — every event has a datacontract record
+  - `EVENT-IN-DATACONTRACT` — every event has a datacontract
+    record
   - `EVENT-PAYLOAD-COVERS-ENTITY-STATE` — every event payload +
     datacontract record carries the full entity state per
     SUITE-DESIGN §4.5
-  - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔ openapi
-  - `ERROR-CODE-IN-CATALOGUE` — error codes traced back to catalogue
-  - `IDEMPOTENCY-KEY-ON-POST-OPS` — every POST declares a required
-    `Idempotency-Key` header so retries are safe (SUITE-DESIGN §4)
+  - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔
+    openapi
+  - `ERROR-CODE-IN-CATALOGUE` — error codes traced back to
+    catalogue
+  - `IDEMPOTENCY-KEY-ON-POST-OPS` — every POST declares a
+    required `Idempotency-Key` header so retries are safe
+    (SUITE-DESIGN §4.6)
 
 ## Decision Log
 
 Per SUITE-DESIGN §5.5 Decision Log. Contract drafting is mostly
 mechanical synthesis from upstream specs, but several semantic
-choices have no check that catches them. Emit `decisions:` for any
-non-trivial choice:
+choices have no check that catches them. Emit `decisions:` for
+any non-trivial choice:
 
 ```yaml
 decisions:
@@ -226,35 +180,18 @@ decisions:
       docs/specifications/nfr.md]
 ```
 
-### Decision-prone areas in this phase
-
-- **Pagination defaults and caps.** Where pageSize maxima sit and
-  why.
-- **Snapshot / denormalisation on line items.** When line items
-  copy fields from their source (e.g. `InvoiceLineItem.walkType`
-  copied from Walk) and why.
-- **Enum extension policy.** Closed enums vs open (or "MUST be one
-  of X, MAY add Y in minor versions"). Often pinned by NFR-COMPAT
-  but the decision is recorded here too.
-- **Photo / file upload model.** Direct upload (multipart) vs URL
-  vs signed-URL flow. Each has implications for the contract.
-- **Currency / units.** `priceCents` (integer minor units) vs
-  decimal vs string. The choice locks every downstream impl.
-- **Token / session lifetime in OpenAPI responses.** Whether tokens
-  are exposed as opaque strings or with explicit expiry claims in
-  the response shape.
-- **Idempotency keys** on POST endpoints — supported or not.
-- **CloudEvents envelope choices** in AsyncAPI — what goes in
-  `type`, `source` URI scheme, where the domain id lives.
+Decision-prone areas specific to each contract are documented in
+the corresponding sub-skill.
 
 ## What this skill never does
 
 - Never edits a contract file. Contracts are user-authored.
-- Never relaxes a check. Every failure is surfaced; the user fixes
-  the contract or force-advances.
+- Never relaxes a check. Every failure is surfaced; the user
+  fixes the contract or force-advances.
 - Never writes the sign-off file directly. That's
-  `shared/sign_off.py`'s sole prerogative — and it refuses unless
-  `task gate:contracts` exits 0 (or `--force-advance` is given).
+  `shared/sign_off.py`'s sole prerogative — and it refuses
+  unless `task gate:contracts` exits 0 (or `--force-advance` is
+  given).
 
 ## Files this phase signs
 
@@ -265,5 +202,5 @@ Listed in `gate.yaml` under `signs_files:`:
 - `docs/specifications/contracts/datacontract.yaml`
 
 `shared/sign_off.py` computes sha256 for each and records it in
-`.spec-suite/phases/phase-6-passed.yaml`. The audit's `SIGNOFF-SHA256-MATCHES` check
-verifies these later.
+`.spec-suite/phases/phase-6-passed.yaml`. The audit's
+`SIGNOFF-SHA256-MATCHES` check verifies these later.

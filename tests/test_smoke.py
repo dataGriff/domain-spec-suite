@@ -36,6 +36,9 @@ def test_skills_directories_exist() -> None:
         "domain-flows",
         "domain-nfrs",
         "domain-contracts",
+        "domain-openapi",
+        "domain-asyncapi",
+        "domain-datacontract",
         "domain-conformance-audit",
     }
     found = {p.name for p in (REPO / "skills").iterdir() if p.is_dir()}
