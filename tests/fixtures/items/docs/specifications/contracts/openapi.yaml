@@ -35,6 +35,8 @@ paths:
       summary: Register a new user
       description: Create a new user account with either `contributor` or `viewer` role. Returns access and refresh tokens on success.
       operationId: registerUser
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -59,6 +61,8 @@ paths:
       summary: Log in
       description: Authenticate with email and password. Returns access and refresh tokens.
       operationId: loginUser
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -83,6 +87,8 @@ paths:
       summary: Refresh access token
       description: Exchange a refresh token for a new access token and refresh token pair.
       operationId: refreshToken
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -107,6 +113,8 @@ paths:
       operationId: logoutUser
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '204':
           description: Logged out successfully
@@ -141,6 +149,8 @@ paths:
       operationId: createItem
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -241,6 +251,18 @@ components:
       bearerFormat: JWT
 
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >
+        Client-generated UUID per intent. Lets the server replay the
+        original response on retry. See SUITE-DESIGN §4 "Idempotent
+        mutating ops".
+      schema:
+        type: string
+        format: uuid
+
     ItemId:
       name: itemId
       in: path

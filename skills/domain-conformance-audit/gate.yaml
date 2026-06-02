@@ -32,6 +32,9 @@ checks:
   - id: AUTH-ROLE-TRACES-TO-PERSONA
   - id: ERROR-CODE-IN-CATALOGUE
 
+  # Safe-retry semantics
+  - id: IDEMPOTENCY-KEY-ON-POST-OPS
+
   # PRD <-> downstream alignment
   - id: PRD-STORY-PERSONA-LINK
   - id: STORY-HAS-FLOW

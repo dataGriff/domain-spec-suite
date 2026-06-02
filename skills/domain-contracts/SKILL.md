@@ -85,6 +85,18 @@ to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
   `error-catalogue.md`, all bound to a generic `Error` shape
   (`{code, message}`) plus `ValidationError` for 400 (which
   additionally has `details[]`).
+- **`Idempotency-Key` header on every POST**: declare a reusable
+  parameter under `components.parameters.IdempotencyKey` (`name:
+  Idempotency-Key`, `in: header`, `required: true`, UUID schema)
+  and `$ref` it from every POST operation's `parameters` list.
+  Add an `IDEMPOTENCY_KEY_CONFLICT` (409) row to the error
+  catalogue. POST is the only verb that creates new state from
+  scratch; without an idempotency key, a retried POST produces
+  duplicates. PUT/PATCH/DELETE are verb-idempotent so the header
+  is optional there. `IDEMPOTENCY-KEY-ON-POST-OPS` enforces this
+  (per SUITE-DESIGN §4 "Idempotent mutating ops"). Server-side
+  replay-store implementation is a runtime concern (typical: a
+  Redis or Postgres TTL table at ~24h); not gated.
 
 ### `contracts/asyncapi.yaml`
 
@@ -193,6 +205,8 @@ Listed in `gate.yaml`. Two categories:
     SUITE-DESIGN §4.5
   - `AUTH-MATRIX-OPENAPI-MATCH` — auth-matrix operations ↔ openapi
   - `ERROR-CODE-IN-CATALOGUE` — error codes traced back to catalogue
+  - `IDEMPOTENCY-KEY-ON-POST-OPS` — every POST declares a required
+    `Idempotency-Key` header so retries are safe (SUITE-DESIGN §4)
 
 ## Decision Log
 

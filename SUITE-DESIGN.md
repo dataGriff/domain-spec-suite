@@ -455,6 +455,39 @@ aggregates simply omit it.
 
 ---
 
+## 4.6. Idempotent Mutating Ops
+
+Networks lose responses. Clients retry. Without a per-intent
+identifier, the server can't tell a retried call from a fresh
+one. The result on a `POST` is a duplicate entity: two walks
+booked, two invoices paid, two of the same dog.
+
+The convention (Stripe / IETF
+`draft-ietf-httpapi-idempotency-key-header`):
+
+- Client generates a UUID **per intent** (not per attempt).
+- Client sends it in `Idempotency-Key: <uuid>`.
+- Server stores `{key → response}` for ~24h. On retry, the
+  stored response is replayed verbatim (same status, same body,
+  same `Location` header on creates).
+
+In the OpenAPI contract this is expressed as a reusable
+parameter declared under `components.parameters.IdempotencyKey`
+and `$ref`-ed from every POST operation. The error catalogue
+gains `IDEMPOTENCY_KEY_CONFLICT` (409) for the "same key, different
+body" case. `IDEMPOTENCY-KEY-ON-POST-OPS` enforces presence.
+
+**Scope: required on POST, not enforced on PUT/PATCH/DELETE.**
+POST is the only verb that creates new state from scratch — the
+dangerous one. PUT/PATCH/DELETE are verb-idempotent (same input
+→ same final state), so the header is optional there; declaring
+it adds *response* determinism but isn't load-bearing.
+
+The server-side replay-store implementation (Redis, Postgres TTL
+table, etc.) is a runtime concern outside the contract.
+
+---
+
 ## 5. The Phase Skill Pattern
 
 Every phase skill follows the same structure. This is what makes the suite

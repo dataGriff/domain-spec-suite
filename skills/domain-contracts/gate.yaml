@@ -36,3 +36,6 @@ checks:
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
   - id: ERROR-CODE-IN-CATALOGUE
+
+  # Safe-retry semantics
+  - id: IDEMPOTENCY-KEY-ON-POST-OPS

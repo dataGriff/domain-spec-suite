@@ -910,7 +910,34 @@ the child's full published-attribute set.
   (missing collection, thin items, asyncapi↔datacontract
   divergence).
 
-### 6.13 v1.0.9 backlog — per-event opt-outs + type alignment
+### 6.13 v1.0.9 — Idempotency-Key on POST ops — [x]
+
+A multi-channel review surfaced that the suite gave consumers
+(mobile, agentic, chat) no safe-retry semantics. Codifies the
+Stripe / IETF `draft-ietf-httpapi-idempotency-key-header`
+convention as a suite-level rule: every POST must declare a
+required `Idempotency-Key` header parameter.
+
+- ✅ `shared/checks/idempotency_key_on_post_ops.py` — new
+  Phase 6 + audit check `IDEMPOTENCY-KEY-ON-POST-OPS`. Walks
+  `paths[*].post` (and path-level parameters), resolves
+  `$ref`s against `components.parameters`, accepts any header
+  named Idempotency-Key (case-insensitive) marked
+  `required: true`.
+- ✅ Registered in `skills/domain-contracts/gate.yaml` and
+  `skills/domain-conformance-audit/gate.yaml`.
+- ✅ `skills/domain-contracts/SKILL.md` — new authoring bullet
+  on the openapi.yaml section and a new check entry.
+- ✅ `SUITE-DESIGN.md` §4.6 — new "Idempotent Mutating Ops"
+  section explaining the convention, scope (POST only), and
+  why PUT/PATCH/DELETE are exempt.
+- ✅ Items fixture extended: `components.parameters.IdempotencyKey`
+  declared once and `$ref`-ed from all 5 POSTs.
+- ✅ Tests in `tests/test_contracts.py`: pass-on-fixture,
+  fail-when-omitted, accepts-inline, rejects-required-false,
+  silent-when-no-posts, accepts-path-level.
+
+### 6.14 v1.0.10 backlog — per-event opt-outs + type alignment
 
 Two remaining follow-ups from the v1.0.7 deferral list, neither
 of which has a current driver:
@@ -920,11 +947,12 @@ of which has a current driver:
    event). Mechanism: a `payload: minimal` marker on the Domain
    Events table row. Not needed for current dog-walking events;
    wait for a real case.
-2. **Type alignment across edges.** Today the new check enforces
-   *presence*. Enum value alignment is covered by
-   `ENUM-VALUES-CONSISTENT`. Plain-type alignment (e.g. the
-   model says `string` but openapi says `integer`) is uncovered.
-   Worth a `FIELD-TYPE-CONSISTENT` follow-up.
+2. **Type alignment across edges.** Today the
+   `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check enforces *presence*.
+   Enum value alignment is covered by `ENUM-VALUES-CONSISTENT`.
+   Plain-type alignment (e.g. the model says `string` but
+   openapi says `integer`) is uncovered. Worth a
+   `FIELD-TYPE-CONSISTENT` follow-up.
 
 ---
 

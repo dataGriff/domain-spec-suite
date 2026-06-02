@@ -396,6 +396,127 @@ def test_event_payload_check_catches_aggregate_item_divergence(
     ), result.details
 
 
+def test_idempotency_key_check_passes_against_fixture(tmp_path: pathlib.Path) -> None:
+    """The Items fixture declares `Idempotency-Key` (via $ref to
+    components.parameters.IdempotencyKey) on every POST. The check
+    must accept that and pass."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    result = idempotency_key_on_post_ops.run(target)
+    assert result.passed, result.details
+
+
+def test_idempotency_key_check_fails_when_post_omits_header(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Dropping the Idempotency-Key $ref from one POST op must fail
+    the check with a clear breadcrumb."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text())
+    create_item = doc["paths"]["/v1/items"]["post"]
+    create_item["parameters"] = []
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = idempotency_key_on_post_ops.run(target)
+    assert not result.passed
+    assert any("/v1/items" in d and "Idempotency-Key" in d for d in result.details), result.details
+
+
+def test_idempotency_key_check_accepts_inline_declaration(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A POST op may declare the header inline (no $ref) — the check
+    must accept that as long as `in: header`, name matches
+    Idempotency-Key (case-insensitive), and `required: true`."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text())
+    create_item = doc["paths"]["/v1/items"]["post"]
+    create_item["parameters"] = [
+        {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": True,
+            "schema": {"type": "string", "format": "uuid"},
+        }
+    ]
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = idempotency_key_on_post_ops.run(target)
+    assert result.passed, result.details
+
+
+def test_idempotency_key_check_rejects_required_false(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Declaring the header with `required: false` is not enough —
+    the check enforces required: true so clients can't silently skip."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text())
+    create_item = doc["paths"]["/v1/items"]["post"]
+    create_item["parameters"] = [
+        {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": False,
+            "schema": {"type": "string", "format": "uuid"},
+        }
+    ]
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = idempotency_key_on_post_ops.run(target)
+    assert not result.passed
+
+
+def test_idempotency_key_check_silent_when_no_posts(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A spec set with only GET endpoints triggers no failures —
+    the check is scoped to POST."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text())
+    # Strip every POST from every path.
+    for path_item in doc["paths"].values():
+        path_item.pop("post", None)
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = idempotency_key_on_post_ops.run(target)
+    assert result.passed, result.details
+
+
+def test_idempotency_key_check_accepts_path_level_parameter(
+    tmp_path: pathlib.Path,
+) -> None:
+    """OpenAPI allows declaring parameters at path level (applies to
+    every operation under the path). The check must walk path-level
+    parameters as well as operation-level ones."""
+    from shared.checks import idempotency_key_on_post_ops
+
+    target = _copy_fixture(tmp_path)
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text())
+    # Drop op-level params from createItem, declare at path level.
+    items_path = doc["paths"]["/v1/items"]
+    items_path["post"]["parameters"] = []
+    items_path["parameters"] = [{"$ref": "#/components/parameters/IdempotencyKey"}]
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = idempotency_key_on_post_ops.run(target)
+    assert result.passed, result.details
+
+
 def test_enum_values_consistent_catches_value_mismatch(tmp_path: pathlib.Path) -> None:
     """When the model and OpenAPI both declare an enum but the values
     diverge, the check reports the mismatch."""

@@ -22,7 +22,7 @@ rubric_findings: []
 
 files_signed:
   - path: docs/specifications/contracts/openapi.yaml
-    sha256: "dbf5378b8dc9f57c7a0f915012b69b611d58b3bb1f99fce42634e71f24d0ad37"
+    sha256: "4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783"
     mtime: "2026-05-25T16:24:00Z"
   - path: docs/specifications/contracts/asyncapi.yaml
     sha256: "1c174ab84ecf6cc23528c0cd8a1ec01e08241924a15188a903e961309da79b9e"

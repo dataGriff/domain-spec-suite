@@ -65,6 +65,7 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "STORY-HAS-FLOW",
         "LIFECYCLE-IN-FLOWS",
         "GENERATOR-CLEAN-OUTPUT",
+        "IDEMPOTENCY-KEY-ON-POST-OPS",
     }
     assert gate_ids == expected, (
         f"gate.yaml ↔ expected checks diverge:\n"
