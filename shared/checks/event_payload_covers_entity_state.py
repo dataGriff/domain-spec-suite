@@ -217,9 +217,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                         f"(expected for {entity} → {child})."
                     )
                 else:
-                    item_props = asyncapi_array_item_properties(
-                        payload[collection], asyncapi
-                    )
+                    item_props = asyncapi_array_item_properties(payload[collection], asyncapi)
                     if item_props is None:
                         problems.append(
                             f"{event_name}: AsyncAPI payload field "
@@ -227,9 +225,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                             f"(expected for aggregate child {child})."
                         )
                     else:
-                        for missing in _missing_from_payload(
-                            child_attrs, child, item_props
-                        ):
+                        for missing in _missing_from_payload(child_attrs, child, item_props):
                             problems.append(
                                 f"{event_name}: child field "
                                 f"'{child}.{missing}' missing from AsyncAPI "
@@ -246,9 +242,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                         f"'{record_name}' (expected for {entity} → {child})."
                     )
                 else:
-                    dc_item_props = datacontract_array_item_properties(
-                        record_props[collection]
-                    )
+                    dc_item_props = datacontract_array_item_properties(record_props[collection])
                     if dc_item_props is None:
                         problems.append(
                             f"{event_name}: datacontract record "
@@ -257,9 +251,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                             f"aggregate child {child})."
                         )
                     else:
-                        for missing in _missing_from_payload(
-                            child_attrs, child, dc_item_props
-                        ):
+                        for missing in _missing_from_payload(child_attrs, child, dc_item_props):
                             problems.append(
                                 f"{event_name}: child field "
                                 f"'{child}.{missing}' missing from "
@@ -274,12 +266,8 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                 and collection in payload
                 and collection in records[record_name]
             ):
-                a_items = asyncapi_array_item_properties(
-                    payload[collection], asyncapi
-                )
-                d_items = datacontract_array_item_properties(
-                    records[record_name][collection]
-                )
+                a_items = asyncapi_array_item_properties(payload[collection], asyncapi)
+                d_items = datacontract_array_item_properties(records[record_name][collection])
                 if a_items is not None and d_items is not None:
                     a_only = a_items - d_items
                     d_only = d_items - a_items

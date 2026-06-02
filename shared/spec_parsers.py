@@ -471,9 +471,7 @@ def datacontract_record_fields(datacontract: dict) -> dict[str, dict[str, dict]]
     return out
 
 
-def asyncapi_array_item_properties(
-    field_schema: dict, asyncapi: dict
-) -> set[str] | None:
+def asyncapi_array_item_properties(field_schema: dict, asyncapi: dict) -> set[str] | None:
     """If `field_schema` is an array-of-object schema, return the set
     of property names declared on its items (resolving a `$ref`).
 

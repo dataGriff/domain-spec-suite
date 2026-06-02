@@ -342,9 +342,9 @@ def test_event_payload_check_catches_missing_aggregate_collection(
 
     result = event_payload_covers_entity_state.run(target)
     assert not result.passed
-    assert any(
-        "tags" in d and "missing from AsyncAPI payload" in d for d in result.details
-    ), result.details
+    assert any("tags" in d and "missing from AsyncAPI payload" in d for d in result.details), (
+        result.details
+    )
 
 
 def test_event_payload_check_catches_thin_aggregate_items(
@@ -365,10 +365,9 @@ def test_event_payload_check_catches_thin_aggregate_items(
 
     result = event_payload_covers_entity_state.run(target)
     assert not result.passed
-    assert any(
-        "ItemTag.label" in d and "AsyncAPI" in d and "items" in d
-        for d in result.details
-    ), result.details
+    assert any("ItemTag.label" in d and "AsyncAPI" in d and "items" in d for d in result.details), (
+        result.details
+    )
 
 
 def test_event_payload_check_catches_aggregate_item_divergence(
@@ -393,8 +392,7 @@ def test_event_payload_check_catches_aggregate_item_divergence(
     result = event_payload_covers_entity_state.run(target)
     assert not result.passed
     assert any(
-        "extraTagField" in d and "AsyncAPI 'tags[]' does not" in d
-        for d in result.details
+        "extraTagField" in d and "AsyncAPI 'tags[]' does not" in d for d in result.details
     ), result.details
 
 
