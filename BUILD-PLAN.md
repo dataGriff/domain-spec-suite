@@ -848,7 +848,7 @@ the parametrized happy-path test, 4 from new regression tests).
 Convention is opt-in: silent on domains without a `## Domain
 Events` table.
 
-### 6.11 v1.0.7 — data contract HTML rendering convention — [ ]
+### 6.11 v1.0.7 — data contract HTML rendering convention — [x]
 
 After v1.0.6 fattened every event payload to carry full entity
 state, the data contract became the audit-grade historic record
