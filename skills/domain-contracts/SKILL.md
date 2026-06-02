@@ -102,6 +102,11 @@ to the user before committing it (per SUITE-DESIGN §7 Hard Rule 3).
   enforces it.
 - Removal events (action ∈ `removed` / `deleted` / `expired`) are
   exempt and may carry a minimal payload (id + timestamp).
+- **Aggregate roots** declared in the model's `## Aggregates`
+  section carry their child collections in the same event. The
+  payload's `data.<collection>` is an array of objects whose item
+  schema covers the child's published attributes (see
+  SUITE-DESIGN §4.5).
 - **`info.contact`**: same RFC 2606 example values as openapi.yaml.
 
 ### `contracts/datacontract.yaml`

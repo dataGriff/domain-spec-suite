@@ -195,6 +195,209 @@ def test_event_payload_check_respects_secret_marker(tmp_path: pathlib.Path) -> N
     )
 
 
+def _add_item_tag_aggregate(target: pathlib.Path) -> None:
+    """Mutate the copied Items fixture to declare an Item → ItemTag
+    aggregate (collection `tags`) and add a well-formed asyncapi +
+    datacontract carrying it. Used as the pass-case baseline for
+    aggregate-coverage tests; failure tests further mutate from
+    here."""
+    model = target / "docs/specifications/domain-model.md"
+    text = model.read_text()
+    # Add ItemTag entity under ## Entities (before ## Relationships).
+    item_tag_entity = (
+        "### ItemTag\n\n"
+        "A short label attached to an Item.\n\n"
+        "| Attribute | Type | Required | Description |\n"
+        "|-----------|------|----------|-------------|\n"
+        "| `id` | UUID | Yes | Unique identifier |\n"
+        "| `itemId` | UUID | Yes | FK to parent Item |\n"
+        "| `label` | string | Yes | The tag text |\n\n"
+        "---\n\n"
+    )
+    text = text.replace("## Relationships", item_tag_entity + "## Relationships", 1)
+    # Append ## Aggregates section after Domain Events block.
+    aggregates_section = (
+        "\n## Aggregates\n\n"
+        "| Root | Child | Collection |\n"
+        "|------|-------|------------|\n"
+        "| `Item` | `ItemTag` | `tags` |\n"
+    )
+    text = text + aggregates_section
+    model.write_text(text, encoding="utf-8")
+
+    # AsyncAPI: add ItemTagPayload schema; reference it via tags array
+    # on ItemData.
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    a = yaml.safe_load(asyncapi_path.read_text())
+    a["components"]["schemas"]["ItemTagPayload"] = {
+        "type": "object",
+        "required": ["id", "itemId", "label"],
+        "properties": {
+            "id": {"type": "string", "format": "uuid"},
+            "itemId": {"type": "string", "format": "uuid"},
+            "label": {"type": "string"},
+        },
+    }
+    a["components"]["schemas"]["ItemData"]["properties"]["tags"] = {
+        "type": "array",
+        "items": {"$ref": "#/components/schemas/ItemTagPayload"},
+    }
+    a["components"]["schemas"]["ItemData"]["required"].append("tags")
+    asyncapi_path.write_text(yaml.safe_dump(a, sort_keys=False))
+
+    # Datacontract: nested ODCS array on the `items` record.
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    d = yaml.safe_load(dc_path.read_text())
+    items_record = next(r for r in d["schema"] if r["name"] == "items")
+    items_record["properties"].append(
+        {
+            "name": "tags",
+            "description": "Tags attached to this item.",
+            "logicalType": "array",
+            "required": True,
+            "items": {
+                "logicalType": "object",
+                "properties": [
+                    {
+                        "name": "id",
+                        "logicalType": "string",
+                        "physicalType": "uuid",
+                        "required": True,
+                    },
+                    {
+                        "name": "itemId",
+                        "logicalType": "string",
+                        "physicalType": "uuid",
+                        "required": True,
+                    },
+                    {"name": "label", "logicalType": "string", "required": True},
+                ],
+            },
+        }
+    )
+    dc_path.write_text(yaml.safe_dump(d, sort_keys=False))
+
+
+def test_aggregate_parser_picks_up_aggregates_section(tmp_path: pathlib.Path) -> None:
+    """domain_model_aggregates parses the new section into
+    {root: [{child, collection}, ...]}."""
+    from shared.spec_parsers import domain_model_aggregates
+
+    model = tmp_path / "domain-model.md"
+    model.write_text(
+        "# Domain\n\n## Aggregates\n\n"
+        "| Root | Child | Collection |\n"
+        "|------|-------|------------|\n"
+        "| `RateCard` | `RateCardEntry` | `entries` |\n"
+        "| `Invoice` | `InvoiceLineItem` | `lineItems` |\n",
+        encoding="utf-8",
+    )
+    out = domain_model_aggregates(model)
+    assert out == {
+        "RateCard": [{"child": "RateCardEntry", "collection": "entries"}],
+        "Invoice": [{"child": "InvoiceLineItem", "collection": "lineItems"}],
+    }
+
+
+def test_aggregate_parser_returns_empty_when_section_absent(tmp_path: pathlib.Path) -> None:
+    """domain_model_aggregates returns {} when the section is absent
+    (opt-in convention — must not error)."""
+    from shared.spec_parsers import domain_model_aggregates
+
+    model = tmp_path / "domain-model.md"
+    model.write_text("# Domain\n\n## Entities\n\n### Foo\n", encoding="utf-8")
+    assert domain_model_aggregates(model) == {}
+
+
+def test_event_payload_check_passes_with_well_formed_aggregate(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Adding an Item → ItemTag aggregate with the collection carried
+    in both asyncapi and datacontract must NOT trigger any aggregate
+    failures."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    _add_item_tag_aggregate(target)
+
+    result = event_payload_covers_entity_state.run(target)
+    assert result.passed, result.details
+
+
+def test_event_payload_check_catches_missing_aggregate_collection(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Aggregate declared in the model but the asyncapi payload
+    omits the collection → fail with a clear breadcrumb."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    _add_item_tag_aggregate(target)
+    # Drop tags from the asyncapi ItemData properties.
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    a = yaml.safe_load(asyncapi_path.read_text())
+    a["components"]["schemas"]["ItemData"]["properties"].pop("tags")
+    a["components"]["schemas"]["ItemData"]["required"].remove("tags")
+    asyncapi_path.write_text(yaml.safe_dump(a, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any(
+        "tags" in d and "missing from AsyncAPI payload" in d for d in result.details
+    ), result.details
+
+
+def test_event_payload_check_catches_thin_aggregate_items(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Aggregate collection is present but the child item shape
+    drops one of the child's published attributes → fail."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    _add_item_tag_aggregate(target)
+    # Remove `label` from the asyncapi child item schema.
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    a = yaml.safe_load(asyncapi_path.read_text())
+    a["components"]["schemas"]["ItemTagPayload"]["properties"].pop("label")
+    a["components"]["schemas"]["ItemTagPayload"]["required"].remove("label")
+    asyncapi_path.write_text(yaml.safe_dump(a, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any(
+        "ItemTag.label" in d and "AsyncAPI" in d and "items" in d
+        for d in result.details
+    ), result.details
+
+
+def test_event_payload_check_catches_aggregate_item_divergence(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The asyncapi child item schema and datacontract nested record
+    must agree on the property set — divergence is caught."""
+    from shared.checks import event_payload_covers_entity_state
+
+    target = _copy_fixture(tmp_path)
+    _add_item_tag_aggregate(target)
+    # Add a field only on the datacontract side.
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    d = yaml.safe_load(dc_path.read_text())
+    items_record = next(r for r in d["schema"] if r["name"] == "items")
+    tags_field = next(p for p in items_record["properties"] if p["name"] == "tags")
+    tags_field["items"]["properties"].append(
+        {"name": "extraTagField", "logicalType": "string", "required": False}
+    )
+    dc_path.write_text(yaml.safe_dump(d, sort_keys=False))
+
+    result = event_payload_covers_entity_state.run(target)
+    assert not result.passed
+    assert any(
+        "extraTagField" in d and "AsyncAPI 'tags[]' does not" in d
+        for d in result.details
+    ), result.details
+
+
 def test_enum_values_consistent_catches_value_mismatch(tmp_path: pathlib.Path) -> None:
     """When the model and OpenAPI both declare an enum but the values
     diverge, the check reports the mismatch."""

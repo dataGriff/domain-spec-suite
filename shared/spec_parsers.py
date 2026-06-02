@@ -183,6 +183,38 @@ def domain_model_enums(domain_model: pathlib.Path) -> dict[str, list[str]]:
     return out
 
 
+def domain_model_aggregates(domain_model: pathlib.Path) -> dict[str, list[dict[str, str]]]:
+    """Parse the `## Aggregates` section.
+
+    Aggregate roots MAY declare their child collections so the
+    contracts phase can verify aggregate-event payloads carry the
+    children too (per SUITE-DESIGN §4.5).
+
+    Expected table format:
+
+        | Root | Child | Collection |
+        |------|-------|------------|
+        | `RateCard` | `RateCardEntry` | `entries` |
+
+    Returns `{root_entity: [{"child": ..., "collection": ...}, ...]}`.
+    Empty dict if the section is absent (opt-in)."""
+    text = domain_model.read_text(encoding="utf-8")
+    section = _section(text, r"^##\s+Aggregates\s*$")
+    if not section:
+        return {}
+    out: dict[str, list[dict[str, str]]] = {}
+    for row in re.finditer(
+        r"^\|\s*`(?P<root>[^`]+)`\s*\|\s*`(?P<child>[^`]+)`\s*\|\s*`(?P<collection>[^`]+)`\s*\|",
+        section,
+        re.MULTILINE,
+    ):
+        root = row.group("root").strip()
+        child = row.group("child").strip()
+        collection = row.group("collection").strip()
+        out.setdefault(root, []).append({"child": child, "collection": collection})
+    return out
+
+
 # ── glossary ─────────────────────────────────────────────────────
 
 
@@ -437,6 +469,61 @@ def datacontract_record_fields(datacontract: dict) -> dict[str, dict[str, dict]]
                 fields[prop["name"]] = prop
         out[name] = fields
     return out
+
+
+def asyncapi_array_item_properties(
+    field_schema: dict, asyncapi: dict
+) -> set[str] | None:
+    """If `field_schema` is an array-of-object schema, return the set
+    of property names declared on its items (resolving a `$ref`).
+
+    Returns None if the schema is not `type: array`, or if its items
+    cannot be resolved to a property-bearing object schema. Used by
+    `EVENT-PAYLOAD-COVERS-ENTITY-STATE` to walk aggregate-child
+    collections in an asyncapi event payload."""
+    if not isinstance(field_schema, dict):
+        return None
+    if field_schema.get("type") != "array":
+        return None
+    items = field_schema.get("items")
+    if not isinstance(items, dict):
+        return None
+    schemas = (asyncapi.get("components") or {}).get("schemas") or {}
+    items = _resolve_local_ref(items, schemas)
+    props = items.get("properties") or {}
+    if not isinstance(props, dict):
+        return None
+    return set(props.keys())
+
+
+def datacontract_array_item_properties(field_prop: dict) -> set[str] | None:
+    """If `field_prop` is an ODCS array property, return the set of
+    item property names. ODCS shape:
+
+        - name: entries
+          logicalType: array
+          items:
+            logicalType: object
+            properties:
+              - {name: ..., logicalType: ...}
+
+    Returns None if the field isn't an array, or its items don't carry
+    a properties list."""
+    if not isinstance(field_prop, dict):
+        return None
+    if field_prop.get("logicalType") != "array":
+        return None
+    items = field_prop.get("items")
+    if not isinstance(items, dict):
+        return None
+    props = items.get("properties") or []
+    if not isinstance(props, list):
+        return None
+    names: set[str] = set()
+    for p in props:
+        if isinstance(p, dict) and p.get("name"):
+            names.add(p["name"])
+    return names if names else None
 
 
 def datacontract_named_enums(datacontract: dict) -> dict[str, list[str]]:

@@ -879,23 +879,48 @@ use as the third contract-reference convention.
 - ✅ Decision Log entry on the contracts sidecar:
   `DATACONTRACT-HTML-EXPORT-CONVENTION`.
 
-### 6.12 v1.0.8 backlog — aggregate-child coverage + per-event opt-outs
+### 6.12 v1.0.8 — aggregate-child coverage — [x]
 
-The `EVENT-PAYLOAD-COVERS-ENTITY-STATE` check enforces single-entity
-coverage today. Three follow-ups are tracked here:
+Closes follow-up #1 from the v1.0.7 deferral list:
+`EVENT-PAYLOAD-COVERS-ENTITY-STATE` now extends to aggregate
+roots. When the model declares a `## Aggregates` section, events
+on the root entity must carry every declared child collection,
+in both the asyncapi payload and the datacontract record, with
+the child's full published-attribute set.
 
-1. **Aggregate-child coverage.** RateCardUpdated should carry the
-   entries array; InvoiceIssued should carry line items. Needs
-   the check to consult the model's `## Aggregates` section and
-   walk child entities. Bigger parser work + bigger spec
-   refactor on dog-walking (RateCard + entries, Invoice + line
-   items).
-2. **Per-event opt-outs.** Some non-removal events legitimately
+- ✅ New `## Aggregates` markdown convention. Table format
+  `| Root | Child | Collection |` with backtick-wrapped values.
+  Opt-in; absent section = no aggregate enforcement.
+- ✅ `shared/spec_parsers.py` — new `domain_model_aggregates`,
+  `asyncapi_array_item_properties`,
+  `datacontract_array_item_properties`.
+- ✅ `shared/checks/event_payload_covers_entity_state.py` — new
+  aggregate-coverage block after the single-entity coverage
+  block. Verifies collection presence, item-shape coverage of
+  child published attrs, and asyncapi↔datacontract item-shape
+  symmetry.
+- ✅ `skills/domain-modeling/SKILL.md` — new "Aggregates"
+  subsection prescribing the convention.
+- ✅ `skills/domain-contracts/SKILL.md` — bullet under
+  asyncapi.yaml authoring noting the aggregate carry-rule.
+- ✅ `SUITE-DESIGN.md` §4.5 — expanded aggregate paragraph with
+  the new convention.
+- ✅ Tests in `tests/test_contracts.py`: parser pass + empty
+  paths; pass case (well-formed aggregate); fail cases
+  (missing collection, thin items, asyncapi↔datacontract
+  divergence).
+
+### 6.13 v1.0.9 backlog — per-event opt-outs + type alignment
+
+Two remaining follow-ups from the v1.0.7 deferral list, neither
+of which has a current driver:
+
+1. **Per-event opt-outs.** Some non-removal events legitimately
    don't need full state (e.g. a future low-value "telemetry"
    event). Mechanism: a `payload: minimal` marker on the Domain
    Events table row. Not needed for current dog-walking events;
    wait for a real case.
-3. **Type alignment across edges.** Today the new check enforces
+2. **Type alignment across edges.** Today the new check enforces
    *presence*. Enum value alignment is covered by
    `ENUM-VALUES-CONSISTENT`. Plain-type alignment (e.g. the
    model says `string` but openapi says `integer`) is uncovered.

@@ -427,10 +427,31 @@ separate exclusion file.
 (id + timestamp) is the right shape.
 
 **Aggregate roots with contained collections** (Invoice + line
-items, RateCard + entries) carry the root attributes today.
-Whether the contained collection must also be in the event
-payload is v1.0.7 follow-up work (the check would consult the
-model's `## Aggregates` section).
+items, RateCard + entries) MUST carry their declared child
+collections in the same event. Aggregates are declared in the
+model's `## Aggregates` section:
+
+```markdown
+## Aggregates
+
+| Root | Child | Collection |
+|------|-------|------------|
+| `Invoice` | `InvoiceLineItem` | `lineItems` |
+| `RateCard` | `RateCardEntry` | `entries` |
+```
+
+For each declared root → child → collection, the check verifies:
+
+- the asyncapi payload's `data.<collection>` is an array of
+  objects whose item properties cover the child's published
+  attributes;
+- the datacontract record's `<collection>` is an ODCS
+  `logicalType: array` whose `items.properties` cover the same
+  set;
+- the two sides agree on the item property set.
+
+The `## Aggregates` section is opt-in — domains with no
+aggregates simply omit it.
 
 ---
 

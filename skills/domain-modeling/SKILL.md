@@ -123,6 +123,40 @@ The check is silent when no `## Enumerations` section exists — the
 convention is opt-in. The moment you add the section, every entry
 in it must match every contract that declares it.
 
+### Aggregates
+
+When an entity is an *aggregate root* — it owns a collection of
+child entities that are conceptually inseparable from it (RateCard
+owns its entries, Invoice owns its line items) — declare the
+relationship in a `## Aggregates` section at the bottom of
+`domain-model.md`:
+
+```markdown
+## Aggregates
+
+| Root | Child | Collection |
+|------|-------|------------|
+| `RateCard` | `RateCardEntry` | `entries` |
+| `Invoice` | `InvoiceLineItem` | `lineItems` |
+```
+
+The `Collection` column names the property the contract surface
+uses to carry the children — `entries`, `lineItems`, etc. Phase 6's
+`EVENT-PAYLOAD-COVERS-ENTITY-STATE` consumes this section: events
+on an aggregate root must carry its children in the same payload,
+so a consumer of `RateCardUpdated` can reconstruct what the new
+rates *are* without re-querying the API.
+
+The section is opt-in — domains without aggregates omit it. Add it
+when you have a parent/child relationship where:
+- the child is meaningless outside the parent (a `RateCardEntry`
+  with no `RateCard` is incoherent);
+- the parent's events are the audit-grade record for both.
+
+If a child entity also emits its own events (e.g. a hypothetical
+`RateCardEntryRemoved`), it's no longer just an aggregate
+member — model it as a first-class entity instead.
+
 Glossary entries are mechanical: every entity gets a `### <Entity>`
 heading under `## Entities`, every attribute gets a `### <attribute>`
 heading under `## <Entity> attributes`. Don't type them by hand —

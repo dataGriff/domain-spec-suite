@@ -37,6 +37,17 @@ exempt — the entity is gone, so a minimal payload (id + timestamp)
 is the right shape. They still need a datacontract record for
 audit purposes (enforced by `EVENT-IN-DATACONTRACT`).
 
+**Aggregate roots.** If the affected entity is declared as an
+aggregate root in the model's `## Aggregates` section, every
+declared child collection is also verified:
+
+- The asyncapi payload's `data.<collection>` is an array-of-object
+  whose item properties cover the child's published attributes.
+- The datacontract record's `<collection>` field is `logicalType:
+  array` whose items.properties cover the same attribute set.
+- The two sides' item property sets are equal (modulo the
+  `id` ↔ `<entity>Id` naming convention).
+
 The check is silent when the model has no `## Domain Events` table
 (opt-in convention).
 """
@@ -48,8 +59,11 @@ import pathlib
 from shared.check_result import CheckResult
 from shared.checks.event_in_datacontract import _candidates as datacontract_candidates
 from shared.spec_parsers import (
+    asyncapi_array_item_properties,
     asyncapi_event_payloads,
+    datacontract_array_item_properties,
     datacontract_record_fields,
+    domain_model_aggregates,
     domain_model_entities,
     domain_model_events,
     domain_model_published_attributes,
@@ -112,6 +126,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
 
     entities = domain_model_entities(domain_model)
     published_attrs = domain_model_published_attributes(domain_model)
+    aggregates = domain_model_aggregates(domain_model)
     asyncapi = load_yaml(specs / "contracts" / "asyncapi.yaml")
     datacontract = load_yaml(specs / "contracts" / "datacontract.yaml")
     payloads = asyncapi_event_payloads(asyncapi)
@@ -177,6 +192,109 @@ def run(repo_root: pathlib.Path) -> CheckResult:
                     f"{event_name}: datacontract record '{record_name}' "
                     f"has '{f}' but AsyncAPI payload does not."
                 )
+
+        # Aggregate-child coverage: for every child collection declared
+        # on this entity, the asyncapi payload + datacontract record
+        # must carry an array whose item shape covers the child's
+        # published attributes.
+        for agg in aggregates.get(entity, []):
+            child = agg["child"]
+            collection = agg["collection"]
+            child_attrs = published_attrs.get(child)
+            if not child_attrs:
+                problems.append(
+                    f"{event_name}: aggregate child '{child}' declared in "
+                    f"`## Aggregates` has no attributes in `## Entities`."
+                )
+                continue
+
+            # asyncapi side
+            if payload is not None:
+                if collection not in payload:
+                    problems.append(
+                        f"{event_name}: aggregate child collection "
+                        f"'{collection}' missing from AsyncAPI payload "
+                        f"(expected for {entity} → {child})."
+                    )
+                else:
+                    item_props = asyncapi_array_item_properties(
+                        payload[collection], asyncapi
+                    )
+                    if item_props is None:
+                        problems.append(
+                            f"{event_name}: AsyncAPI payload field "
+                            f"'{collection}' is not an array of objects "
+                            f"(expected for aggregate child {child})."
+                        )
+                    else:
+                        for missing in _missing_from_payload(
+                            child_attrs, child, item_props
+                        ):
+                            problems.append(
+                                f"{event_name}: child field "
+                                f"'{child}.{missing}' missing from AsyncAPI "
+                                f"payload '{collection}[]' items."
+                            )
+
+            # datacontract side
+            if record_name is not None:
+                record_props = records[record_name]
+                if collection not in record_props:
+                    problems.append(
+                        f"{event_name}: aggregate child collection "
+                        f"'{collection}' missing from datacontract record "
+                        f"'{record_name}' (expected for {entity} → {child})."
+                    )
+                else:
+                    dc_item_props = datacontract_array_item_properties(
+                        record_props[collection]
+                    )
+                    if dc_item_props is None:
+                        problems.append(
+                            f"{event_name}: datacontract record "
+                            f"'{record_name}' field '{collection}' is not "
+                            f"an ODCS array-of-object (expected for "
+                            f"aggregate child {child})."
+                        )
+                    else:
+                        for missing in _missing_from_payload(
+                            child_attrs, child, dc_item_props
+                        ):
+                            problems.append(
+                                f"{event_name}: child field "
+                                f"'{child}.{missing}' missing from "
+                                f"datacontract '{record_name}.{collection}[]' "
+                                f"items."
+                            )
+
+            # asyncapi ↔ datacontract item symmetry
+            if (
+                payload is not None
+                and record_name is not None
+                and collection in payload
+                and collection in records[record_name]
+            ):
+                a_items = asyncapi_array_item_properties(
+                    payload[collection], asyncapi
+                )
+                d_items = datacontract_array_item_properties(
+                    records[record_name][collection]
+                )
+                if a_items is not None and d_items is not None:
+                    a_only = a_items - d_items
+                    d_only = d_items - a_items
+                    for f in sorted(a_only):
+                        problems.append(
+                            f"{event_name}: AsyncAPI '{collection}[]' has "
+                            f"'{f}' but datacontract "
+                            f"'{record_name}.{collection}[]' does not."
+                        )
+                    for f in sorted(d_only):
+                        problems.append(
+                            f"{event_name}: datacontract "
+                            f"'{record_name}.{collection}[]' has '{f}' but "
+                            f"AsyncAPI '{collection}[]' does not."
+                        )
 
     if not problems:
         return CheckResult.ok()
