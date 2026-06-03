@@ -542,6 +542,108 @@ def test_enum_values_consistent_catches_value_mismatch(tmp_path: pathlib.Path) -
     assert any("OpenAPI enum" in d and "wolfhound" in d for d in result.details)
 
 
+def test_enum_values_consistent_closed_perfect_match(tmp_path: pathlib.Path) -> None:
+    """Closed enum (no `(open)` marker): when the openapi enum equals
+    the model values exactly, the check passes (regression guard)."""
+    from shared.checks import enum_values_consistent
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text() + "\n\n## Enumerations\n\n### Status\n\n"
+        "| Value | Notes |\n|---|---|\n| `pending` | |\n| `active` | |\n",
+        encoding="utf-8",
+    )
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi.read_text())
+    doc.setdefault("components", {}).setdefault("schemas", {})["Status"] = {
+        "type": "string",
+        "enum": ["pending", "active"],
+    }
+    openapi.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = enum_values_consistent.run(target)
+    assert result.passed, result.details
+
+
+def test_enum_values_consistent_open_accepts_contract_superset(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Open enum (`### Name (open)`): the contract MAY exceed the
+    model's representative values without failing the check."""
+    from shared.checks import enum_values_consistent
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text() + "\n\n## Enumerations\n\n### Breed (open)\n\n"
+        "| Value | Notes |\n|---|---|\n| `labrador` | |\n| `poodle` | |\n",
+        encoding="utf-8",
+    )
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi.read_text())
+    doc.setdefault("components", {}).setdefault("schemas", {})["Breed"] = {
+        "type": "string",
+        "enum": ["labrador", "poodle", "bulldog", "dachshund", "mixed"],
+    }
+    openapi.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = enum_values_consistent.run(target)
+    assert result.passed, result.details
+
+
+def test_enum_values_consistent_open_rejects_model_extra(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Open enum: a model value missing from the contract is still a
+    failure — the model must be a subset of the contract, not a
+    superset (otherwise an event could carry a value the contract
+    refuses)."""
+    from shared.checks import enum_values_consistent
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text() + "\n\n## Enumerations\n\n### Breed (open)\n\n"
+        "| Value | Notes |\n|---|---|\n| `labrador` | |\n| `wolfhound` | |\n",
+        encoding="utf-8",
+    )
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi.read_text())
+    doc.setdefault("components", {}).setdefault("schemas", {})["Breed"] = {
+        "type": "string",
+        "enum": ["labrador", "poodle", "bulldog"],  # missing wolfhound
+    }
+    openapi.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    result = enum_values_consistent.run(target)
+    assert not result.passed
+    assert any("wolfhound" in d and "missing model values" in d for d in result.details), (
+        result.details
+    )
+
+
+def test_enum_values_consistent_open_marker_variants(tmp_path: pathlib.Path) -> None:
+    """The `(open)` marker is case-insensitive and tolerates the
+    bracket variant `[open]`."""
+    from shared.spec_parsers import domain_model_enums
+
+    model = tmp_path / "domain-model.md"
+    model.write_text(
+        "# Domain Model — Foo\n\n## Enumerations\n\n"
+        "### Closed\n\n| Value |\n|---|\n| `a` |\n\n"
+        "### LowerCase (open)\n\n| Value |\n|---|\n| `a` |\n\n"
+        "### MixedCase (Open)\n\n| Value |\n|---|\n| `a` |\n\n"
+        "### Bracketed [open]\n\n| Value |\n|---|\n| `a` |\n",
+        encoding="utf-8",
+    )
+    enums = domain_model_enums(model)
+    assert enums["Closed"]["open"] is False
+    assert enums["LowerCase"]["open"] is True
+    assert enums["MixedCase"]["open"] is True
+    assert enums["Bracketed"]["open"] is True
+
+
 # ── sign_off mechanical enforcement ──────────────────────────────
 
 

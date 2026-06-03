@@ -157,29 +157,43 @@ def domain_model_lifecycle_transitions(domain_model: pathlib.Path) -> list[tuple
     return transitions
 
 
-def domain_model_enums(domain_model: pathlib.Path) -> dict[str, list[str]]:
-    """Parse the `## Enumerations` section. Each `### Name` heading
-    declares one enum; the table beneath it has a `Value` column whose
-    backticked values are the enum members. Returns `{name: [values]}`.
+def domain_model_enums(domain_model: pathlib.Path) -> dict[str, dict]:
+    """Parse the `## Enumerations` section.
 
-    Empty dict if the section is absent (the convention is opt-in for
-    domains without named enums yet)."""
+    Each `### Name` heading declares one enum; the table beneath it
+    has a `Value` column whose backticked values are the enum
+    members.
+
+    The heading MAY carry an `(open)` (or `[open]`) suffix to mark
+    the enum as **expandable**: the model lists a representative
+    subset; the contract's enum schema may extend the list with
+    additional values. Without the marker, the enum is **closed**
+    (the default — `ENUM-VALUES-CONSISTENT` enforces strict
+    equality between model and contract values).
+
+    Returns `{name: {"values": [...], "open": bool}}`. Empty dict if
+    the section is absent (opt-in)."""
     text = domain_model.read_text(encoding="utf-8")
     section = _section(text, r"^##\s+Enumerations\s*$")
     if not section:
         return {}
-    out: dict[str, list[str]] = {}
+    out: dict[str, dict] = {}
     blocks = re.split(r"(?m)(?=^###\s+\S)", section)
     for block in blocks:
         heading = re.match(r"###\s+(\S[^\n]*)", block)
         if heading is None:
             continue
-        name = heading.group(1).strip()
+        raw_name = heading.group(1).strip()
+        # Detect (open) or [open] suffix; case-insensitive; tolerate
+        # surrounding whitespace.
+        is_open = bool(re.search(r"[\(\[]\s*open\s*[\)\]]\s*$", raw_name, re.IGNORECASE))
+        # Strip the marker (and any trailing whitespace) from the name.
+        name = re.sub(r"\s*[\(\[]\s*open\s*[\)\]]\s*$", "", raw_name, flags=re.IGNORECASE).strip()
         values: list[str] = []
         for row in re.finditer(r"^\|\s*`([^`]+)`\s*\|", block, re.MULTILINE):
             values.append(row.group(1))
         if values:
-            out[name] = values
+            out[name] = {"values": values, "open": is_open}
     return out
 
 

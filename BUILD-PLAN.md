@@ -1002,7 +1002,40 @@ SKILL.md.
 - ✅ `skills/domain-bootstrap/template_manifest.yaml` regenerated
   to include the three new scripts.
 
-### 6.16 v1.0.12 backlog — per-event opt-outs + type alignment
+### 6.16 v1.0.12 — expandable enums + enum audit — [x]
+
+`ENUM-VALUES-CONSISTENT` enforced strict equality between the
+model's enum table and every contract's enum schema. That
+worked for closed sets (Role, WalkStatus) but blocked any enum
+that's intentionally large or growable (dog breeds, currency
+codes, MIME types from a known authority).
+
+v1.0.12 introduces an **(open) marker** on the model heading so
+the check can support both modes:
+
+- Closed (default): strict equality (existing behaviour).
+- Open (`### Breed (open)`): model values ⊆ contract values.
+  The model lists a representative subset; the contract carries
+  the authoritative full list.
+
+Minimum-viable shape: no new files, no new build steps, no
+parser duplication. The marker is the only new syntax.
+
+- ✅ `shared/spec_parsers.py:domain_model_enums` — returns
+  `{name: {"values": [...], "open": bool}}`. Parses `(open)` or
+  `[open]` (case-insensitive) from the H3 heading.
+- ✅ `shared/checks/enum_values_consistent.py` — open enums use
+  subset check (model ⊆ contract); closed enums keep strict
+  equality.
+- ✅ `skills/domain-modeling/SKILL.md` — new "Closed vs open
+  enums" subsection under Enumerations.
+- ✅ `skills/domain-openapi/SKILL.md` — bullet on the open-enum
+  authority semantics.
+- ✅ `tests/test_contracts.py` — 4 new tests: closed-perfect,
+  closed-mismatch (regression), open-superset, open-model-extra,
+  plus marker-variant parser test.
+
+### 6.17 v1.0.13 backlog — per-event opt-outs + type alignment
 
 Two remaining follow-ups from the v1.0.7 deferral list, neither
 of which has a current driver:

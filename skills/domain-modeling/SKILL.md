@@ -123,6 +123,44 @@ The check is silent when no `## Enumerations` section exists — the
 convention is opt-in. The moment you add the section, every entry
 in it must match every contract that declares it.
 
+#### Closed vs open enums
+
+By default an enum is **closed**: the model's value table must
+exactly equal the contract's enum schema. Adding a value is a
+breaking change.
+
+For enums whose values are intentionally large or expected to
+grow (dog breeds, MIME types, currency codes, country codes —
+anything with a canonical authority list of dozens to hundreds of
+values), mark the heading **`(open)`**:
+
+```markdown
+### Breed (open)
+
+| Value | Notes |
+|---|---|
+| `labrador` | |
+| `poodle` | |
+| `mixed` | fallback when not in the closed set |
+```
+
+For open enums:
+
+- The model lists a **representative subset** (10-20 canonical
+  values + any fallbacks).
+- The contract carries the **authoritative full list** and MAY
+  exceed the model.
+- `ENUM-VALUES-CONSISTENT` verifies model values ⊆ contract
+  values (so the model can never drift to a value the contract
+  refuses).
+- Adding a value to the contract for an open enum is a
+  minor-version bump (per NFR-COMPAT-001 if you have one).
+
+The marker is case-insensitive and tolerates `[open]` instead of
+`(open)`. Use `(open)` when the canonical list is too big for
+the model to be useful as a complete reference; use closed
+(default) when the value set is genuinely fixed and small.
+
 ### Aggregates
 
 When an entity is an *aggregate root* — it owns a collection of

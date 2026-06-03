@@ -46,10 +46,17 @@ it (per SUITE-DESIGN §7 Hard Rule 3).
   `<Entity>Summary` projection, not the bare entity.
 - **Named enums** declared in `domain-model.md`'s
   `## Enumerations` section MUST also appear under
-  `components.schemas` as `<Name>: {type: string, enum: [...]}`
-  with values matching the model exactly.
-  `ENUM-VALUES-CONSISTENT` enforces this. The same schema name
-  in AsyncAPI + Datacontract must match too (if declared at all).
+  `components.schemas` as `<Name>: {type: string, enum: [...]}`.
+  - For **closed enums** (default), values must exactly equal
+    the model's value table.
+  - For **open enums** (`### Name (open)` in the model), the
+    openapi schema is the **authoritative full list**; it MUST
+    include every value the model lists and MAY include more.
+    Adding values to an open enum is a minor-version bump.
+  - `ENUM-VALUES-CONSISTENT` enforces both modes. The same
+    schema name in AsyncAPI + Datacontract must match too (if
+    declared at all) — open enums propagate the same
+    "contract ⊇ model" relationship across all three contracts.
 - **`components.responses`**: one entry per `4xx`/`5xx` code from
   `error-catalogue.md`, all bound to a generic `Error` shape
   (`{code, message}`) plus `ValidationError` for 400 (which
