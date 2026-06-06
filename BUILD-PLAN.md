@@ -1035,7 +1035,40 @@ parser duplication. The marker is the only new syntax.
   closed-mismatch (regression), open-superset, open-model-extra,
   plus marker-variant parser test.
 
-### 6.17 v1.0.13 backlog — per-event opt-outs + type alignment
+### 6.17 v1.0.13 — promote overview generator into the suite — [x]
+
+`generate_domain_overview.py` previously lived in each consumer
+spec repo (`spec-dog-walking/scripts/`). That meant a new
+consumer would have to copy the script — the single most concrete
+coupling between the suite and dog-walking's local tooling.
+
+v1.0.13 lifts the script into the suite as
+`scripts/generate_domain_overview.py`, with a `--repo PATH` arg
+matching the audit pattern. Consumer Taskfiles delegate
+`docs:generate` to the suite-side script via the same
+`{{.DOMAIN_SPEC_SUITE_ROOT | default "../domain-spec-suite"}}`
+resolution as `task audit`.
+
+- ✅ `scripts/generate_domain_overview.py` — lifted from
+  dog-walking, made `--repo`-driven. Includes a deterministic
+  fix for ERD relationship inference (length-desc candidate
+  ordering, so longer entity names like `Walker` beat shorter
+  prefixes like `Walk` on ambiguous foreign-key fields).
+- ✅ `shared/checks/generator_clean_output.py` — prereq changed
+  from `scripts/generate_domain_overview.py` to
+  `docs/specifications/contracts/openapi.yaml`; generator path
+  resolved relative to the check (suite root). Subprocess
+  passes `--repo <repo_root>`.
+- Gate version unchanged (no check semantics changed; only
+  the generator's location moved). `suite-version.yaml` not
+  touched — consistent with prior v1.0.x increments which did
+  not per-bump that field.
+- ✅ spec-dog-walking — local `scripts/generate_domain_overview.py`
+  deleted; `Taskfile.yml` `docs:generate` delegates to the
+  suite-side script with the same suite-resolution pattern as
+  `task audit`.
+
+### 6.18 Future backlog — per-event opt-outs + type alignment
 
 Two remaining follow-ups from the v1.0.7 deferral list, neither
 of which has a current driver:

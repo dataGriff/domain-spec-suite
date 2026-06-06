@@ -1,4 +1,4 @@
-"""Audit check: scripts/generate_domain_overview.py produces clean output.
+"""Audit check: the suite's domain-overview generator produces clean output.
 
 Per SUITE-DESIGN §8 Phase 7, "clean" means:
 1. The generator exits 0.
@@ -8,11 +8,11 @@ Per SUITE-DESIGN §8 Phase 7, "clean" means:
    overview.
 4. No stderr noise (Python tracebacks / warnings).
 
-Implementation: subprocess the generator with the target as cwd,
-redirecting its output to a tmp file via the DOMAIN_OVERVIEW_OUTPUT
-env var. We deliberately do NOT use `task docs:generate` (which would
-write to the canonical on-disk path) — that would churn the spec
-repo's domain-overview.html on every audit run.
+The generator lives in the suite at `scripts/generate_domain_overview.py`
+(promoted out of consumer repos in v1.0.13). The check subprocesses it
+with `--repo <repo_root>`, redirecting output to a tmp file via
+DOMAIN_OVERVIEW_OUTPUT so re-running the audit doesn't churn the spec
+repo's on-disk domain-overview.html.
 """
 
 from __future__ import annotations
@@ -32,13 +32,18 @@ metadata = {
     "phases": ["audit"],
     "severity_by_phase": {"audit": "error"},
     "prerequisites": [
-        {"file_exists": "scripts/generate_domain_overview.py"},
+        {"file_exists": "docs/specifications/contracts/openapi.yaml"},
         {"file_exists": "docs/specifications/domain-model.md"},
     ],
 }
 
 PLACEHOLDER = re.compile(r"\[Resource1\]|\[Domain\]|\{\{")
 ENTITY_HEADING = re.compile(r"^### (\S[^\n]*)$", re.MULTILINE)
+
+# Suite layout: this file is at shared/checks/<id>.py, so the suite root
+# is two parents up, and the generator lives at <suite>/scripts/.
+_SUITE_ROOT = pathlib.Path(__file__).resolve().parents[2]
+_GENERATOR = _SUITE_ROOT / "scripts" / "generate_domain_overview.py"
 
 
 def _domain_entities(domain_model: pathlib.Path) -> list[str]:
@@ -62,8 +67,6 @@ def _domain_entities(domain_model: pathlib.Path) -> list[str]:
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
-    generator = repo_root / "scripts" / "generate_domain_overview.py"
-
     # Render into a tmp file rather than the canonical on-disk path,
     # so re-running the audit (e.g. inside `task check`) doesn't churn
     # the repo's domain-overview.html on every run.
@@ -76,7 +79,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         env = os.environ.copy()
         env["DOMAIN_OVERVIEW_OUTPUT"] = str(tmp_output)
         proc = subprocess.run(
-            [sys.executable, str(generator)],
+            [sys.executable, str(_GENERATOR), "--repo", str(repo_root)],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -87,8 +90,9 @@ def run(repo_root: pathlib.Path) -> CheckResult:
             return CheckResult.fail(
                 "The domain-overview generator exited with a non-zero status. "
                 "What's the underlying error? Run "
-                "`python scripts/generate_domain_overview.py` from the repo "
-                "root to reproduce, then fix the offending spec or contract.",
+                "`task docs:generate` (or invoke the suite-side generator "
+                "directly with `--repo .`) to reproduce, then fix the "
+                "offending spec or contract.",
                 details=[
                     f"exit code: {proc.returncode}",
                     *[f"stderr: {line}" for line in proc.stderr.splitlines()],
