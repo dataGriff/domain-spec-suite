@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# ruff: noqa: E501
+# E501 globally disabled: this file is dominated by embedded HTML/CSS
+# inside Python f-strings; wrapping the lines would degrade the visual
+# correspondence with the rendered output.
 """
 generate_domain_overview.py
 
@@ -13,16 +17,17 @@ Run from the suite via:    python scripts/generate_domain_overview.py --repo <pa
 import argparse
 import os
 import sys
-import yaml
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+import yaml
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def load_yaml(path):
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         return yaml.safe_load(fh)
 
 
@@ -38,10 +43,10 @@ def h(text):
 
 
 METHOD_COLORS = {
-    "get":    "#61affe",
-    "post":   "#49cc90",
-    "patch":  "#fca130",
-    "put":    "#fca130",
+    "get": "#61affe",
+    "post": "#49cc90",
+    "patch": "#fca130",
+    "put": "#fca130",
     "delete": "#f93e3e",
 }
 
@@ -72,7 +77,7 @@ def method_badge(method):
     return (
         f'<span class="badge method-badge" '
         f'style="background:{color};color:#fff">'
-        f'{h(method.upper())}</span>'
+        f"{h(method.upper())}</span>"
     )
 
 
@@ -89,6 +94,7 @@ def tag_badge(tag):
 # ---------------------------------------------------------------------------
 # Section builders
 # ---------------------------------------------------------------------------
+
 
 def build_summary_section(openapi):
     info = openapi.get("info", {})
@@ -109,7 +115,7 @@ def build_summary_section(openapi):
 
     servers = openapi.get("servers", [])
     server_rows = "".join(
-        f"<tr><td>{h(s.get('url',''))}</td><td>{h(s.get('description',''))}</td></tr>"
+        f"<tr><td>{h(s.get('url', ''))}</td><td>{h(s.get('description', ''))}</td></tr>"
         for s in servers
     )
 
@@ -120,7 +126,7 @@ def build_summary_section(openapi):
         if cname or cemail:
             contact_html = (
                 f'<p class="contact">Contact: <strong>{h(cname)}</strong>'
-                + (f' &lt;{h(cemail)}&gt;' if cemail else "")
+                + (f" &lt;{h(cemail)}&gt;" if cemail else "")
                 + "</p>"
             )
 
@@ -151,14 +157,16 @@ def build_operations_section(openapi):
             op_tags = op.get("tags", ["Other"])
             requires_auth = bool(op.get("security"))
             for tag in op_tags:
-                by_tag.setdefault(tag, []).append({
-                    "method": method,
-                    "path": path,
-                    "summary": op.get("summary", ""),
-                    "description": op.get("description", ""),
-                    "auth": requires_auth,
-                    "operationId": op.get("operationId", ""),
-                })
+                by_tag.setdefault(tag, []).append(
+                    {
+                        "method": method,
+                        "path": path,
+                        "summary": op.get("summary", ""),
+                        "description": op.get("description", ""),
+                        "auth": requires_auth,
+                        "operationId": op.get("operationId", ""),
+                    }
+                )
 
     # Sort tags by declared order
     ordered_tags = [t for t in tags_order if t in by_tag] + [
@@ -218,7 +226,7 @@ def build_events_section(asyncapi):
     return f"""
 <section id="events" class="card">
   <h2>📡 Domain Events</h2>
-  <p>{h(info.get('description', '').splitlines()[0] if info.get('description') else '')}</p>
+  <p>{h(info.get("description", "").splitlines()[0] if info.get("description") else "")}</p>
   <table>
     <thead><tr><th>Channel</th><th>Event</th><th>Description</th></tr></thead>
     <tbody>{rows}</tbody>
@@ -238,8 +246,8 @@ def build_event_operation_correlation(openapi, asyncapi):
          items.item.removed → DELETE      /v1/items/{itemId}
     """
     channel_to_method = {
-        "added":   ("POST",   "Add"),
-        "edited":  ("PATCH",  "Edit"),
+        "added": ("POST", "Add"),
+        "edited": ("PATCH", "Edit"),
         "removed": ("DELETE", "Remove"),
     }
 
@@ -278,10 +286,11 @@ def build_event_operation_correlation(openapi, asyncapi):
             f"<td>"
             + (
                 f"{method_badge(method_info[0])} <code>{h(matched_path)}</code> — {h(matched_summary)}"
-                if method_info and matched_path else "—"
+                if method_info and matched_path
+                else "—"
             )
-            + f"</td>"
-            f"</tr>"
+            + "</td>"
+            "</tr>"
         )
 
     return f"""
@@ -310,10 +319,7 @@ def _schema_type(prop):
         # PyYAML parses that to None. Render as "null" rather than crashing on str.join.
         values = ["null" if v is None else str(v) for v in enum]
         return f"enum({', '.join(values)})"
-    if fmt:
-        display = f"{t}({fmt})"
-    else:
-        display = t
+    display = f"{t}({fmt})" if fmt else t
     if nullable:
         display += " | null"
     return display
@@ -336,9 +342,9 @@ def build_enumerations_section(openapi):
         if is_open:
             values_html = (
                 f'<details class="enum-values">'
-                f'<summary>Show all {len(values)} values</summary>'
+                f"<summary>Show all {len(values)} values</summary>"
                 f'<div class="enum-chips">{chips}</div>'
-                f'</details>'
+                f"</details>"
             )
         else:
             values_html = f'<div class="enum-chips">{chips}</div>'
@@ -347,11 +353,11 @@ def build_enumerations_section(openapi):
 
         blocks.append(
             f'<div class="enum-block">'
-            f'<h3><code>{h(name)}</code> '
+            f"<h3><code>{h(name)}</code> "
             f'<span class="badge {badge_class}">{badge_text}</span></h3>'
-            f'{desc_html}'
-            f'{values_html}'
-            f'</div>'
+            f"{desc_html}"
+            f"{values_html}"
+            f"</div>"
         )
 
     return f"""
@@ -371,9 +377,9 @@ def build_entities_section(openapi):
     # Show main domain entities only (skip request/response wrappers and
     # named enum schemas, which render in the Enumerations section).
     entity_names = [
-        name for name in schemas
-        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
-        and name not in enum_names
+        name
+        for name in schemas
+        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES) and name not in enum_names
     ]
 
     blocks = []
@@ -427,7 +433,7 @@ def build_data_contract_section(datacontract):
   </div>
   <p>{h(purpose.strip())}</p>
   <p>
-    The full data contract ({record_count} record{'s' if record_count != 1 else ''})
+    The full data contract ({record_count} record{"s" if record_count != 1 else ""})
     is rendered as a standalone interactive reference at
     <a href="datacontract-reference.html"><code>datacontract-reference.html</code></a>
     — generated via <code>datacontract export html</code>.
@@ -442,9 +448,9 @@ def build_erd_section(openapi):
     enum_names = set(_collect_named_enums(openapi).keys())
 
     entity_names = {
-        name for name in schemas
-        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES)
-        and name not in enum_names
+        name
+        for name in schemas
+        if not any(name.endswith(s) for s in _NON_ENTITY_SUFFIXES) and name not in enum_names
     }
 
     lines = ["erDiagram"]
@@ -464,15 +470,17 @@ def build_erd_section(openapi):
     for name in sorted(entity_names):
         schema = schemas[name]
         props = schema.get("properties", {})
-        for field, defn in props.items():
+        for field in props:
             if field.endswith("Id") and field != "id":
                 # Try to find a matching entity whose name appears in the field name
                 # e.g. contributorId → look for an entity whose name is in "contributorid".
                 # Sort candidates by length descending so longer names (e.g. "Walker")
                 # beat shorter prefixes (e.g. "Walk") on ambiguous fields like walkerId.
+                f_lower = field.lower()
                 for candidate in sorted(entity_names, key=lambda n: (-len(n), n)):
-                    if candidate.lower() in field.lower() or field.lower().startswith(candidate.lower()):
-                        lines.append(f"    {candidate} ||--o{{ {name} : \"owns\"")
+                    c_lower = candidate.lower()
+                    if c_lower in f_lower or f_lower.startswith(c_lower):
+                        lines.append(f'    {candidate} ||--o{{ {name} : "owns"')
                         break
 
     diagram = "\n".join(lines)
@@ -490,9 +498,10 @@ def build_erd_section(openapi):
 # Full page assembly
 # ---------------------------------------------------------------------------
 
+
 def build_page(openapi, asyncapi, datacontract):
     title = openapi.get("info", {}).get("title", "Domain")
-    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     summary = build_summary_section(openapi)
     operations = build_operations_section(openapi)
@@ -774,6 +783,7 @@ def build_page(openapi, asyncapi, datacontract):
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(
