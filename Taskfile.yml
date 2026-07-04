@@ -181,9 +181,10 @@ tasks:
   # ── Fixtures ─────────────────────────────────────────────────────
 
   fixtures:reset:
-    desc: Reset test fixtures to their canonical state (stub — populated in BUILD-PLAN Task 2.3)
+    desc: Reset tests/fixtures/ to the committed state (discards local edits and untracked files under it)
     cmds:
-      - echo "stub — fixtures will be wired up when tests/fixtures/items/ exists (BUILD-PLAN Task 2.3)"
+      - git checkout -- tests/fixtures/
+      - git clean -fdq tests/fixtures/
 
   fixtures:seed-signoffs:
     desc: Regenerate sha256s in every tests/fixtures/*/docs/specifications/_phase-*-passed.yaml against current file contents
@@ -216,11 +217,11 @@ tasks:
       - "{{.PYTHON}} scripts/regenerate_manifest.py"
 
   suite:upgrade-shell:
-    desc: Manifest-aware re-bootstrap that preserves spec content (stub — Task 2.2 follow-up)
+    desc: 'Manifest-aware re-bootstrap that preserves spec content. Overwrites only template_manifest.yaml-listed files; recovers the domain name from .spec-suite/bootstrap.yaml. Usage: task suite:upgrade-shell -- --repo /path'
     cmds:
-      - echo "stub — see BUILD-PLAN Task 2.2; will call scripts/upgrade_shell.py"
+      - "{{.PYTHON}} scripts/upgrade_shell.py {{.CLI_ARGS}}"
 
   suite:reset-phase:
-    desc: Delete a phase's sign-off file and outputs so the phase can be re-run from scratch (stub)
+    desc: 'Dev-only: delete a phase''s sign-off sidecar + signed outputs and mark it not-started. Dry-run by default; add --yes to apply. Usage: task suite:reset-phase -- <phase> --repo /path [--yes]'
     cmds:
-      - echo "stub — see SUITE-DESIGN §11; will call scripts/reset_phase.py"
+      - "{{.PYTHON}} scripts/reset_phase.py {{.CLI_ARGS}}"
