@@ -54,7 +54,7 @@ tasks:
       - echo "Git hooks installed from .githooks/"
 
   test:bootstrap:
-    desc: Tests for the bootstrap skill (stub — implemented in BUILD-PLAN Task 2.2)
+    desc: Tests for the bootstrap skill (pytest -m bootstrap)
     cmds:
       - pytest -m bootstrap
 
@@ -73,6 +73,36 @@ tasks:
     cmds:
       - pytest -m orchestrator
 
+  test:contracts:
+    desc: Tests for the contracts skill (pytest -m contracts)
+    cmds:
+      - pytest -m contracts
+
+  test:modeling:
+    desc: Tests for the modeling skill (pytest -m modeling)
+    cmds:
+      - pytest -m modeling
+
+  test:access-control:
+    desc: Tests for the access-control skill (pytest -m access_control)
+    cmds:
+      - pytest -m access_control
+
+  test:flows:
+    desc: Tests for the flows skill (pytest -m flows)
+    cmds:
+      - pytest -m flows
+
+  test:nfrs:
+    desc: Tests for the nfrs skill (pytest -m nfrs)
+    cmds:
+      - pytest -m nfrs
+
+  test:soft-gate:
+    desc: Tests for soft-gate enforcement in sign_off (pytest -m soft_gate)
+    cmds:
+      - pytest -m soft_gate
+
   audit:
     desc: 'Run the Phase 7 conformance audit against a target domain repo. Usage: task audit -- --repo /path/to/domain'
     cmds:
@@ -89,7 +119,7 @@ tasks:
       - "{{.PYTHON}} shared/run_phase.py discovery {{.CLI_ARGS}}"
 
   sign-off:discovery:
-    desc: 'Run the discovery gate and, if it passes, write _phase-1-passed.yaml. Usage: task sign-off:discovery -- --repo /path/to/domain'
+    desc: 'Run the discovery gate and, if it passes, write phase-1-passed.yaml. Usage: task sign-off:discovery -- --repo /path/to/domain'
     cmds:
       - "{{.PYTHON}} shared/sign_off.py discovery {{.CLI_ARGS}}"
 
@@ -164,7 +194,7 @@ tasks:
       - "{{.PYTHON}} shared/run_phase.py contracts {{.CLI_ARGS}}"
 
   sign-off:contracts:
-    desc: 'Run the contracts gate and, if it passes, write _phase-6-passed.yaml. Usage: task sign-off:contracts -- --repo /path/to/domain'
+    desc: 'Run the contracts gate and, if it passes, write phase-6-passed.yaml. Usage: task sign-off:contracts -- --repo /path/to/domain'
     cmds:
       - "{{.PYTHON}} shared/sign_off.py contracts {{.CLI_ARGS}}"
 
@@ -187,7 +217,7 @@ tasks:
       - git clean -fdq tests/fixtures/
 
   fixtures:seed-signoffs:
-    desc: Regenerate sha256s in every tests/fixtures/*/docs/specifications/_phase-*-passed.yaml against current file contents
+    desc: Regenerate sha256s in every tests/fixtures/*/.spec-suite/phases/phase-*-passed.yaml against current file contents
     cmds:
       - "{{.PYTHON}} scripts/seed_signoffs.py"
 
@@ -215,6 +245,11 @@ tasks:
     desc: Rebuild skills/domain-bootstrap/template_manifest.yaml from the current templates/ directory
     cmds:
       - "{{.PYTHON}} scripts/regenerate_manifest.py"
+
+  suite:migrate-state:
+    desc: 'One-time migration of a pre-v1.0.3 spec repo: moves _*.yaml state into .spec-suite/ and rewrites sidecar paths. Idempotent. Usage: task suite:migrate-state -- --repo /path'
+    cmds:
+      - "{{.PYTHON}} scripts/migrate_to_spec_suite_dir.py {{.CLI_ARGS}}"
 
   suite:upgrade-shell:
     desc: 'Manifest-aware re-bootstrap that preserves spec content. Overwrites only template_manifest.yaml-listed files; recovers the domain name from .spec-suite/bootstrap.yaml. Usage: task suite:upgrade-shell -- --repo /path'

@@ -1,10 +1,10 @@
-"""The only path that writes `_phase-N-passed.yaml`.
+"""The only path that writes `.spec-suite/phases/phase-N-passed.yaml`.
 
 Per SUITE-DESIGN §5.5, mechanical enforcement is non-negotiable:
 sign-off MUST run the phase's gate, and MUST refuse to write the
 sidecar if the gate exits non-zero. The single exception is
 `--force-advance`, which records the bypass loudly in
-`_progress.yaml` so the audit surfaces it until accepted.
+`.spec-suite/progress.yaml` so the audit surfaces it until accepted.
 
 Usage:
 

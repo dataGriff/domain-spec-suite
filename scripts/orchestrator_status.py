@@ -52,6 +52,9 @@ PHASE_NUMBER = {name: i for i, name in enumerate(PHASE_ORDER)}
 # Phases whose skills are implemented in the suite today. Phases not
 # in this set are reported as `not_implemented` so the orchestrator
 # can tell the user honestly rather than silently routing into a stub.
+# Currently exhaustive (all 8 phases shipped), so the not-implemented
+# routing below is unreachable — kept as the guard for any future
+# phase added to PHASE_ORDER before its skill lands.
 IMPLEMENTED_PHASES: set[str] = {
     "bootstrap",
     "discovery",
@@ -269,7 +272,7 @@ def build_report(repo: pathlib.Path) -> StatusReport:
                 "action": "bootstrap",
                 "phase": "bootstrap",
                 "summary": (
-                    "No _progress.yaml found — this looks like a fresh domain. "
+                    "No .spec-suite/progress.yaml found — this looks like a fresh domain. "
                     "Confirm with the user and route to the domain-bootstrap skill."
                 ),
             },
@@ -296,7 +299,7 @@ def render_text(report: StatusReport) -> str:
     lines: list[str] = []
     lines.append(f"=== orchestrator status — {report.repo} ===")
     if not report.bootstrapped:
-        lines.append("  bootstrapped: NO  (no _progress.yaml)")
+        lines.append("  bootstrapped: NO  (no .spec-suite/progress.yaml)")
         lines.append(f"  next: {report.next_action['summary']}")
         return "\n".join(lines)
 

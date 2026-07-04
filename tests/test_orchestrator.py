@@ -41,7 +41,7 @@ def _copy_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def test_fresh_repo_routes_to_bootstrap(tmp_path: pathlib.Path) -> None:
-    """A bare directory with no _progress.yaml → action 'bootstrap'."""
+    """A bare directory with no progress.yaml → action 'bootstrap'."""
     report = orchestrator_status.build_report(tmp_path)
     assert report.bootstrapped is False
     assert report.next_action["action"] == "bootstrap"

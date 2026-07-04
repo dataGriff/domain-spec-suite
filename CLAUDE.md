@@ -15,8 +15,9 @@
 - **Ruff** handles lint + format. **pytest** runs tests. Both configured
   in `pyproject.toml`.
 - **`tests/fixtures/items/`** is the canonical reference fixture — the
-  Items spec set. Copied from `../domain-api-template/` in M2.3 (see
-  BUILD-PLAN). Until then, `tests/fixtures/` is empty.
+  known-good Items spec set every audit/gate test runs against. Keep
+  its sign-off sha256s valid with `task fixtures:seed-signoffs` after
+  editing fixture content.
 
 ## Where check code and skill code live
 
@@ -26,7 +27,8 @@
 - **`skills/<phase>/checks/<id>.py`** — phase-local checks following
   the same module shape.
 - **`shared/sign_off.py`** — the only path that writes
-  `_phase-N-passed.yaml`. Mechanical enforcement, not instructional.
+  `.spec-suite/phases/phase-N-passed.yaml`. Mechanical enforcement,
+  not instructional.
 - **`scripts/`** — operator scripts invoked via Taskfile
   (`seed_signoffs.py`, `force_advance.py`, `accept_force.py`,
   `upgrade_shell.py`, `reset_phase.py`).
@@ -35,7 +37,7 @@
 
 - **Conventional commits with the BUILD-PLAN task id.** Examples:
   `feat(2.2): bootstrap copies templates`,
-  `fix(3.2): force-advance writes to _progress.yaml`,
+  `fix(3.2): force-advance writes to progress.yaml`,
   `docs(0): clarify rubric handling in §5.5`.
 - **One commit per task** (not per milestone). Commits are the
   vertical slice between two checkpoints in the build plan.

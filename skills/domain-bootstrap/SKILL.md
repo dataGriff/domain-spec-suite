@@ -5,15 +5,16 @@ description: |
   directory (or in-place on a non-empty directory with --force).
   Invoked at the start of any new domain spec set, or by the orchestrator
   when it detects an unbootstrapped target. Produces the Taskfile,
-  linting configs, mise tooling pins, hooks, CI workflows, agent
-  instruction files, blank `.spec-suite/templates/*` skeletons,
-  and the initial `.spec-suite/progress.yaml`, `.spec-suite/bootstrap.yaml`, and
-  `.spec-suite/template-manifest.yaml` state files. Phase 0 in the suite's eight-phase
-  model.
+  linting configs, mise tooling pins, hooks, CI workflows, skeleton
+  scripts, and the initial `.spec-suite/progress.yaml`,
+  `.spec-suite/bootstrap.yaml`, and `.spec-suite/template-manifest.yaml`
+  state files. Deliberately ships no agent guidance files; blank spec
+  templates stay in the suite and are served by `task init:<phase>`.
+  Phase 0 in the suite's eight-phase model.
 prerequisites:
   - Target directory exists.
   - Target directory is empty, OR `--force` is set (manifest-aware
-    overwrite — never touches spec content or `_*.yaml` state).
+    overwrite — never touches spec content or `.spec-suite/` state).
 trigger_phrases:
   - "set up a new domain spec repo"
   - "bootstrap a domain"
@@ -55,8 +56,6 @@ A populated repository shell containing:
 spec-set changes go through the suite's orchestrator and phase
 skills — those are the only sanctioned interface. A bootstrapped
 domain repo is intentionally a slate that the skills drive.
-- `.spec-suite/templates/*` (blank skeletons for every spec the
-  later phases will populate)
 - `.spec-suite/progress.yaml` (Phase 0 marked passed,
   `force_advances: []`)
 - `.spec-suite/bootstrap.yaml` (suite + gate version
@@ -101,7 +100,7 @@ by Phases 1–6 as the user walks through the rest of the suite.
 
    Add `--force` only if the user has explicitly confirmed they want
    to refresh a non-empty bootstrapped directory (e.g. for a shell
-   upgrade). `--force` never touches spec content or `_*.yaml` state
+   upgrade). `--force` never touches spec content or `.spec-suite/` state
    — it only overwrites files listed in `template_manifest.yaml`.
 
 4. **Report what the script printed.** The script prints one line per

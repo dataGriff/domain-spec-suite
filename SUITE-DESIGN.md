@@ -66,7 +66,8 @@ A populated repository containing:
 - `contracts/datacontract.yaml` — Data contract
 - `.spec-suite/ambiguities.md` — Resolved and deferred open questions
 - `.spec-suite/progress.yaml` — Phase state (suite-managed, not user-edited)
-- `.spec-suite/phases/phase-N-passed.yaml` × 7 — Phase sign-off sidecars
+- `.spec-suite/phases/phase-N-passed.yaml` × 8 (phases 0–7) — Phase
+  sign-off sidecars
 - Repository shell: `Taskfile.yml`, linting configs, `mkdocs.yml`, generator
   scripts, hooks, CI workflows, instruction files
 
@@ -1065,6 +1066,9 @@ Structural checks:
 
 Cross-reference checks:
 - Every entity mentioned in PRD user stories appears in the domain model
+  *(deferred in v1 — no reliable heuristic for extracting entity mentions
+  from story prose without false positives; documented as a known
+  limitation in the modeling SKILL.md and BUILD-PLAN 5.1)*
 - Every entity name appears in glossary
 
 ### Phase 3: Access Control — Soft+engagement
@@ -1118,7 +1122,9 @@ Cross-reference checks:
 
 ### Phase 7: Audit — Hard gate
 
-Runs all phases 1-6 cross-reference checks simultaneously. Additionally:
+Runs all phases 1-6 cross-reference checks simultaneously, and re-runs
+the Phase 6 tool lints (Spectral on OpenAPI/AsyncAPI, datacontract-cli;
+each skips where its CLI isn't installed). Additionally:
 - Verifies no unreplaced template placeholders (no `[Resource1]`, `[Domain]`,
   or `{{` strings remain in any spec file or rendered output)
 - Verifies `.spec-suite/ambiguities.md` has no items marked `required-by: audit` that
@@ -1140,8 +1146,8 @@ Runs all phases 1-6 cross-reference checks simultaneously. Additionally:
     overview (cross-reference)
   - no Python tracebacks or warnings on stderr
 
-On pass: writes `_audit-passed.yaml` with the full check manifest, timestamp,
-and gate-version. Declares spec set complete.
+On pass: writes `.spec-suite/phases/phase-7-passed.yaml` with the full
+check manifest, timestamp, and gate-version. Declares spec set complete.
 
 ---
 
@@ -1294,7 +1300,9 @@ in one entity" updates still trigger full phase re-runs. Acceptable for v1.
 1. **What if a phase skill itself has a bug and produces broken output?**
    The audit will catch it. But during the build, we need a way to manually
    reset a phase: `task suite:reset-phase modeling` or similar, in the
-   suite's own Taskfile. Worth building early for our own testing.
+   suite's own Taskfile. *(Resolved in v1.0.14: `scripts/reset_phase.py`
+   deletes the sidecar + signed outputs and marks the phase not-started;
+   dry-run by default, `--yes` to apply.)*
 
 (Previous items 1, 3, and 4 — standalone phase invocation, manual override
 of hard gates, and bootstrap re-run on a non-empty directory — have all

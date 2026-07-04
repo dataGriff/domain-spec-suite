@@ -62,7 +62,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         "Some NFRs have no measurable threshold. For each one below: "
         "what specific number, percentage, time, or pXX percentile "
         "defines 'meeting' this NFR? If the threshold genuinely can't "
-        "be set yet, move the entry to _ambiguities.md with a "
+        "be set yet, move the entry to .spec-suite/ambiguities.md with a "
         "required-by phase rather than leaving it here.",
         details=problems,
     )
