@@ -9,9 +9,10 @@ CLI:
 
     python shared/run_phase.py <phase> [--repo <path>]
 
-`<phase>` is one of: bootstrap, discovery, modeling, access-control,
-flows, nfrs, contracts, audit. `--repo` defaults to the current
-working directory.
+`<phase>` is one of: discovery, modeling, access-control, flows,
+nfrs, contracts, audit. `--repo` defaults to the current working
+directory. Bootstrap has no gate here — it is mechanical file
+copying, validated end-to-end by `scripts/bootstrap.py` itself.
 
 This is the single mechanical-enforcement path referenced from
 SUITE-DESIGN §5.5. Sign-off (`shared/sign_off.py`, future) calls into
@@ -41,8 +42,11 @@ from shared.check_result import CheckResult  # noqa: E402
 SHARED_CHECKS_DIR = SUITE_ROOT / "shared" / "checks"
 SKILLS_DIR = SUITE_ROOT / "skills"
 
+# Gate-bearing phases only. Bootstrap is deliberately absent: it has
+# no gate.yaml (mechanical file copying, validated by
+# scripts/bootstrap.py), so listing it would advertise a phase that
+# can only end in FileNotFoundError.
 PHASE_TO_SKILL = {
-    "bootstrap": "domain-bootstrap",
     "discovery": "domain-discovery",
     "modeling": "domain-modeling",
     "access-control": "domain-access-control",
