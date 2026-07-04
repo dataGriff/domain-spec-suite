@@ -42,7 +42,13 @@ A populated repository shell containing:
 - `.github/workflows/docs.yml` (deploys the MkDocs site + generated
   domain overview to GitHub Pages on every push to main, so the
   spec set is shareable as soon as it has merged)
-- `scripts/generate_domain_overview.py`
+- `scripts/` skeleton + lint helpers (`openapi_skeleton.py`,
+  `asyncapi_skeleton.py`, `datacontract_skeleton.py`,
+  `glossary_skeleton.py`, `lint_fix_descriptions.py`). The domain
+  overview generator is NOT copied — it lives in the suite
+  (`<suite>/scripts/generate_domain_overview.py`); the installed
+  `task docs:generate` delegates to it via `DOMAIN_SPEC_SUITE_ROOT`,
+  the same resolution `task audit` uses.
 
 **The bootstrap deliberately ships no agent guidance files** (no
 `CLAUDE.md`, no `AGENTS.md`, no `.github/instructions/*.md`). All

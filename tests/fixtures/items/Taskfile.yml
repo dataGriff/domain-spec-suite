@@ -54,9 +54,18 @@ tasks:
       - python3 scripts/datacontract_skeleton.py {{.CLI_ARGS}}
 
   docs:generate:
-    desc: Generate the domain overview HTML page from OpenAPI, AsyncAPI, and Data Contract specs
+    desc: 'Generate the domain overview HTML page from OpenAPI, AsyncAPI, and Data Contract specs. The generator lives in the suite (DOMAIN_SPEC_SUITE_ROOT or ../domain-spec-suite/), not in this repo — same resolution as task audit.'
+    vars:
+      SUITE: '{{.DOMAIN_SPEC_SUITE_ROOT | default "../domain-spec-suite"}}'
     cmds:
-      - python3 scripts/generate_domain_overview.py
+      - |
+        if [ ! -f "{{.SUITE}}/scripts/generate_domain_overview.py" ]; then
+          echo "docs:generate: suite not found at '{{.SUITE}}'." >&2
+          echo "               set DOMAIN_SPEC_SUITE_ROOT to its location, or clone the" >&2
+          echo "               domain-spec-suite as a sibling directory." >&2
+          exit 1
+        fi
+        mise exec -- python3 "{{.SUITE}}/scripts/generate_domain_overview.py" --repo .
 
   docs:serve:
     desc: Serve the MkDocs site locally
