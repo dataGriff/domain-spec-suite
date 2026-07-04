@@ -1,8 +1,8 @@
-"""Append a force-advance entry to a domain repo's _progress.yaml.
+"""Append a force-advance entry to a domain repo's .spec-suite/progress.yaml.
 
 Per SUITE-DESIGN §11 / Decision 5, this is the honesty mechanism for
 bypassing a failing hard gate: the bypass gets recorded in
-`_progress.yaml`'s `force_advances:` array with `accepted: false`,
+`.spec-suite/progress.yaml`'s `force_advances:` array with `accepted: false`,
 and the audit surfaces it until cleared by `task suite:accept-force`.
 
 Usage:
@@ -60,7 +60,9 @@ def force_advance(repo: pathlib.Path, phase: str, reason: str) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Record a force-advance entry in _progress.yaml.")
+    parser = argparse.ArgumentParser(
+        description="Record a force-advance entry in .spec-suite/progress.yaml."
+    )
     parser.add_argument("phase", help="Phase id being force-advanced.")
     parser.add_argument("--reason", required=True, help="Why the gate is being bypassed.")
     parser.add_argument("--repo", default=".", help="Target domain repo. Defaults to cwd.")

@@ -11,7 +11,8 @@ Active build — see [`BUILD-PLAN.md`](./BUILD-PLAN.md) for the operational
 checklist and [`SUITE-DESIGN.md`](./SUITE-DESIGN.md) for the
 architectural specification.
 
-The suite is at version `1.0.0-alpha`. Gate version is `1.0`.
+The suite is at version `1.0.14`. Gate version is `1.1` (see
+[`gate-changelog.md`](./gate-changelog.md)).
 
 ## What it produces
 
@@ -24,25 +25,32 @@ output is a populated domain repository containing:
   `acceptance-scenarios.md`
 - `contracts/openapi.yaml`, `contracts/asyncapi.yaml`,
   `contracts/datacontract.yaml`
-- Suite state files: `_progress.yaml`, `_bootstrap.yaml`,
-  `_ambiguities.md`, eight `_phase-N-passed.yaml` sidecars
+- Suite state under `.spec-suite/`: `progress.yaml`, `bootstrap.yaml`,
+  `ambiguities.md`, `template-manifest.yaml`, and eight
+  `phases/phase-N-passed.yaml` sidecars
 - Repository shell: `Taskfile.yml`, linting configs, `mkdocs.yml`,
-  generator scripts, hooks, CI workflows, agent instruction files
+  skeleton scripts, hooks, CI workflows. Deliberately **no** agent
+  guidance files (no `CLAUDE.md`/`AGENTS.md`) — the orchestrator and
+  phase skills are the only sanctioned interface (SUITE-DESIGN §2)
 
 Once the audit phase passes, the spec set is declared complete and
 ready to drive implementations.
 
 ## How it works
 
-- **`domain-orchestrator`** — entry-point skill. Reads `_progress.yaml`,
-  identifies the current phase, hands off to the phase skill.
+- **`domain-orchestrator`** — entry-point skill. Reads
+  `.spec-suite/progress.yaml`, identifies the current phase, hands off
+  to the phase skill.
 - **Eight phase skills** — each carries a `gate.yaml`, a `questions.md`
-  bank, prose templates, and (where the gate is mechanical) Python
-  check scripts.
+  bank, and (where the gate is mechanical) Python check scripts.
+  Phase 6 also has three authoring sub-skills (`domain-openapi`,
+  `domain-asyncapi`, `domain-datacontract`); `domain-review` is a
+  post-audit qualitative pass outside the phase progression.
 - **`shared/checks/`** — cross-phase Python check modules with
   per-phase severity metadata.
 - **`shared/sign_off.py`** — the only path that writes
-  `_phase-N-passed.yaml`. Refuses if `task gate:<phase>` exits non-zero.
+  `.spec-suite/phases/phase-N-passed.yaml`. Refuses if
+  `task gate:<phase>` exits non-zero.
 
 Sign-off enforcement is mechanical, not instructional: a skill can ask
 the agent to write things, but only the runner produces the signed
@@ -62,10 +70,13 @@ domain-spec-suite/
 │   ├── domain-orchestrator/
 │   ├── domain-bootstrap/
 │   ├── domain-{discovery,modeling,access-control,flows,nfrs,contracts}/
+│   ├── domain-{openapi,asyncapi,datacontract}/   ← Phase 6 authoring sub-skills
+│   ├── domain-review/                    ← post-audit qualitative review
 │   └── domain-conformance-audit/
 ├── shared/checks/                        ← cross-phase Python check modules
-├── scripts/                              ← operator scripts (seed_signoffs, force_advance, …)
-├── tests/fixtures/                       ← reference spec sets (Items copied here in M2.3)
+├── scripts/                              ← operator scripts (bootstrap, upgrade_shell, reset_phase, …)
+├── templates/                            ← blank spec templates served by task init:<phase>
+├── tests/fixtures/items/                 ← canonical known-good reference spec set
 └── docs/                                 ← suite documentation (not a domain's docs)
 ```
 

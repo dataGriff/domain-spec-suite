@@ -7,7 +7,7 @@ spec drifted since sign-off. It's WRONG when a check was legitimately
 n-a'd or deferred at its owning phase — re-firing it at audit error
 loses the engagement the user already did.
 
-This module reads every `_phase-N-passed.yaml` in the target repo,
+This module reads every `phase-N-passed.yaml` sidecar in the target repo,
 builds a map of `check_id → (response, phase)` for any check that was
 n-a'd or deferred, and downgrades matching audit outcomes from error
 to warning. For each downgraded outcome it synthesises a

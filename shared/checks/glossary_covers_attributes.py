@@ -44,6 +44,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         "Some attributes in domain-model.md aren't documented in "
         "glossary.md. Each attribute the model declares should have a "
         "`### <attribute>` heading under `## <Entity> attributes` in "
-        "the glossary.",
+        "the glossary. What does each attribute below mean in business "
+        "terms? (`task glossary:skeleton` can stub the entries.)",
         details=problems,
     )

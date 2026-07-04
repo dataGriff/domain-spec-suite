@@ -58,6 +58,12 @@ at repo root.
 
 ## Milestone 2: Repo Scaffolding, Bootstrap Skill, and Audit Skill
 
+> **Checkbox reconciliation (2026-07-04):** this milestone (and M3)
+> shipped during the v1.0.x build — the scaffold, bootstrap, audit,
+> and their tests all exist and are exercised by CI — but the boxes
+> were never ticked. Checked retroactively; the git history
+> (`feat(2.x)` / `feat(3.x)` commits) is the per-task record.
+
 **Goal:** Suite repo has its own working structure, a bootstrap skill that
 produces a valid domain repo shell, and an audit skill that catches
 inconsistencies in an existing spec set.
@@ -73,7 +79,7 @@ current `domain-api-template` is missing four spec docs, all the state
 files, the pre-push hook, and the audit workflow — without 2.0 the
 subsequent tasks have nothing valid to test against.
 
-### 2.0 Upgrade `domain-api-template` to v1.0 completeness — [ ]
+### 2.0 Upgrade `domain-api-template` to v1.0 completeness — [x]
 
 Author the missing artefacts so the Items fixture (used by Tasks 2.3 and
 onward) is a known-good, audit-passing spec set against the schemas defined
@@ -81,32 +87,32 @@ in `SUITE-DESIGN.md` §4 and §8.
 
 Sub-tasks:
 
-- [ ] Write `docs/specifications/glossary.md` covering every entity and
+- [x] Write `docs/specifications/glossary.md` covering every entity and
       attribute in the existing `domain-model.md`.
-- [ ] Write `docs/specifications/error-catalogue.md` with the error codes
+- [x] Write `docs/specifications/error-catalogue.md` with the error codes
       referenced in `contracts/openapi.yaml`.
-- [ ] Write `docs/specifications/nfr.md` with concrete measurable thresholds
+- [x] Write `docs/specifications/nfr.md` with concrete measurable thresholds
       (numbers, percentages, or time units — no aspirational language).
-- [ ] Write `docs/specifications/acceptance-scenarios.md` (Given/When/Then
+- [x] Write `docs/specifications/acceptance-scenarios.md` (Given/When/Then
       structure) mapping to PRD user stories.
-- [ ] Write `.spec-suite/progress.yaml` with all eight phases
+- [x] Write `.spec-suite/progress.yaml` with all eight phases
       marked passed, `force_advances: []`, and the session_log section.
-- [ ] Write `.spec-suite/phases/phase-{0..7}-passed.yaml` sidecars in the
+- [x] Write `.spec-suite/phases/phase-{0..7}-passed.yaml` sidecars in the
       schema defined in `SUITE-DESIGN.md` §4 (`checks_passed`,
       `warnings_responded`, `rubric_findings`, `files_signed`). sha256s are
       seeded by hand for this fixture; `task fixtures:seed-signoffs`
       (introduced in 2.1) will regenerate them whenever fixture content
       changes.
-- [ ] Write `.spec-suite/ambiguities.md` with an empty Resolved
+- [x] Write `.spec-suite/ambiguities.md` with an empty Resolved
       section (Items has no open ambiguities by design).
-- [ ] Write `.spec-suite/bootstrap.yaml` recording the suite and
+- [x] Write `.spec-suite/bootstrap.yaml` recording the suite and
       gate version that produced the shell.
-- [ ] Author `.githooks/pre-push` per `SUITE-DESIGN.md` §9 Tier 2 (Spectral
+- [x] Author `.githooks/pre-push` per `SUITE-DESIGN.md` §9 Tier 2 (Spectral
       on contracts, datacontract-cli, cross-file consistency, <15 s
       target).
-- [ ] Author `.github/workflows/audit.yml` per §9 Tier 3 (full audit on
+- [x] Author `.github/workflows/audit.yml` per §9 Tier 3 (full audit on
       PR, blocks merge).
-- [ ] Reconcile `.github/instructions/` against the bootstrap manifest. The
+- [x] Reconcile `.github/instructions/` against the bootstrap manifest. The
       directory currently contains four files
       (`api-implementation.instructions.md`,
       `domain-template.instructions.md`, `specs.instructions.md`,
@@ -126,7 +132,7 @@ that match current file contents, and `force_advances:` is empty.
 specs are realistic, the state files are coherent, and the hooks are
 sensible before proceeding to 2.1.
 
-### 2.1 Scaffold the suite repo itself — [ ]
+### 2.1 Scaffold the suite repo itself — [x]
 
 Create the directory structure for the suite repo:
 
@@ -205,19 +211,19 @@ produces no diff (sha256s already match).
 🛑 **Review checkpoint:** Confirm directory layout matches user's expectation
 before building skills.
 
-### 2.2 Build the bootstrap skill (Phase 0) — [ ]
+### 2.2 Build the bootstrap skill (Phase 0) — [x]
 
 This skill, when invoked, populates an empty target repo with all the files
 a domain spec repo needs.
 
 Sub-tasks:
 
-- [ ] Create `skills/domain-bootstrap/SKILL.md` with:
+- [x] Create `skills/domain-bootstrap/SKILL.md` with:
   - Description that triggers on "set up a new domain spec repo" or being
     invoked by the orchestrator on a fresh directory
   - Prerequisites: target directory exists and is empty (or `--force`)
   - Instructions for what to do
-- [ ] Create `skills/domain-bootstrap/templates/` containing every file
+- [x] Create `skills/domain-bootstrap/templates/` containing every file
   the bootstrap produces. Seed it once from `domain-api-template/` (the
   template is being absorbed into the suite per SUITE-DESIGN §1). From
   this point forward, all shell changes happen here.
@@ -232,7 +238,9 @@ Sub-tasks:
   - `.spec-suite/templates/*` (the blank spec templates,
     including glossary/error-catalogue/nfr/acceptance-scenarios
     skeletons added in M2.0)
-  - `scripts/generate_domain_overview.py`
+  - `scripts/generate_domain_overview.py` *(later moved into the suite
+    in v1.0.13/§6.17; since v1.0.14/§6.19 bootstrap installs no copy —
+    `task docs:generate` delegates to the suite-side script)*
   - `.githooks/pre-commit`
   - `.githooks/pre-push` (authored in 2.0)
   - `.github/workflows/audit.yml` (authored in 2.0)
@@ -243,22 +251,22 @@ Sub-tasks:
   This is the "strict skill-only" stance — the orchestrator and phase
   skills are the only sanctioned interface for spec-set changes. See
   SUITE-DESIGN §2 "Phase 0: Bootstrap specifics" for the rationale.
-- [ ] Author `skills/domain-bootstrap/template_manifest.yaml` listing
+- [x] Author `skills/domain-bootstrap/template_manifest.yaml` listing
   every file the bootstrap owns (path + expected sha256). The bootstrap's
   `--force` re-run consults this manifest to decide what may be
   overwritten; `task suite:upgrade-shell` consults the same manifest to
   compute its diff. The manifest is the *contract* between the suite and
   any domain repo it has bootstrapped.
-- [ ] Implement the bootstrap logic: walk templates dir, copy each file to
+- [x] Implement the bootstrap logic: walk templates dir, copy each file to
   the target, substitute placeholders where present, create empty
   `.spec-suite/progress.yaml` (with `force_advances: []`) with Phase 0 marked passed,
   create `.spec-suite/bootstrap.yaml` recording suite/gate versions, copy the
   manifest into the target as `.spec-suite/template-manifest.yaml`.
-- [ ] Implement non-empty-directory handling: refuse by default with a
+- [x] Implement non-empty-directory handling: refuse by default with a
   message pointing at `--force` or `task suite:upgrade-shell`; `--force`
   overwrites only files listed in the manifest, never spec content or
   `_*.yaml` state.
-- [ ] Write a test (`task test:bootstrap`) that runs bootstrap in a temp
+- [x] Write a test (`task test:bootstrap`) that runs bootstrap in a temp
   directory and diffs the output against an expected snapshot. Also test
   the non-empty-directory paths (refuse, `--force`, manifest-respecting).
 
@@ -266,14 +274,14 @@ Sub-tasks:
 produces a repo whose contents match the canonical shell. `task test:bootstrap`
 passes.
 
-### 2.3 Build the audit skill (Phase 7) — [ ]
+### 2.3 Build the audit skill (Phase 7) — [x]
 
 This is the second bookend gate. It's read-only and runs every
 cross-reference check defined across all phases.
 
 Sub-tasks:
 
-- [ ] **Populate `shared/checks/` first.** Per SUITE-DESIGN §5.5 and §8,
+- [x] **Populate `shared/checks/` first.** Per SUITE-DESIGN §5.5 and §8,
   every cross-phase check lives here once as a Python module with the
   standard `metadata` block (id, category, phases, severity_by_phase,
   prerequisites) and `run(repo_root)` function. The audit skill references
@@ -294,10 +302,10 @@ Sub-tasks:
     audit-required open items
   - `force_advances_all_accepted.py` — `.spec-suite/progress.yaml` `force_advances:`
     has no `accepted: false` entries
-- [ ] Create `skills/domain-conformance-audit/SKILL.md` referencing the
+- [x] Create `skills/domain-conformance-audit/SKILL.md` referencing the
   prompting style in §7 and the rubric handling in §5.5 (audit itself has
   no rubric checks — it's purely mechanical re-verification).
-- [ ] Create `skills/domain-conformance-audit/gate.yaml` listing the
+- [x] Create `skills/domain-conformance-audit/gate.yaml` listing the
   shared-check ids the audit runs, in order. Categories the audit covers:
   - Structural integrity (all expected files present, all parse)
   - Cross-reference (the shared modules above)
@@ -310,11 +318,11 @@ Sub-tasks:
     §8 Phase 7 definition (exit 0, no placeholders, every entity present,
     no stderr noise). Author this as a Python script that invokes the
     generator and verifies the four conditions.
-- [ ] The skill produces a structured report:
+- [x] The skill produces a structured report:
   - Pass/fail per check
   - Failure messages phrased as interview questions (not lint diagnostics)
   - Summary of total counts
-- [ ] Set up the test fixture: copy `domain-api-template/` (now in its
+- [x] Set up the test fixture: copy `domain-api-template/` (now in its
   v1.0-complete state from Task 2.0) into `tests/fixtures/items/`. This
   is the known-good reference spec set.
 
@@ -322,7 +330,7 @@ Sub-tasks:
 "audit passed" with all checks green. Every shared module has at least one
 unit test in the suite's own test suite.
 
-### 2.4 Validate audit catches breaks — [ ]
+### 2.4 Validate audit catches breaks — [x]
 
 Create a test that deliberately introduces breaks and confirms the audit
 catches each.
@@ -336,17 +344,17 @@ For each break below, the test:
 
 Breaks to test:
 
-- [ ] Rename a field in `domain-model.md` but not in `openapi.yaml`
-- [ ] Remove an AsyncAPI channel that corresponds to a write operation
-- [ ] Add a role to `auth-matrix.md` that isn't in the `RegisterRequest`
+- [x] Rename a field in `domain-model.md` but not in `openapi.yaml`
+- [x] Remove an AsyncAPI channel that corresponds to a write operation
+- [x] Add a role to `auth-matrix.md` that isn't in the `RegisterRequest`
   enum in `openapi.yaml`
-- [ ] Leave an unreplaced `[Resource1]` placeholder somewhere
-- [ ] Add a user story in `prd.md` that mentions a nonexistent persona
-- [ ] Modify `prd.md` without re-signing Phase 1 (staleness detection)
-- [ ] Remove an event from AsyncAPI but leave its entry in `datacontract.yaml`
-- [ ] Add an OpenAPI operation with no auth-matrix entry
-- [ ] Add an entity to `domain-model.md` with no glossary entry
-- [ ] Leave a deferred ambiguity marked `required-by: audit` unresolved
+- [x] Leave an unreplaced `[Resource1]` placeholder somewhere
+- [x] Add a user story in `prd.md` that mentions a nonexistent persona
+- [x] Modify `prd.md` without re-signing Phase 1 (staleness detection)
+- [x] Remove an event from AsyncAPI but leave its entry in `datacontract.yaml`
+- [x] Add an OpenAPI operation with no auth-matrix entry
+- [x] Add an entity to `domain-model.md` with no glossary entry
+- [x] Leave a deferred ambiguity marked `required-by: audit` unresolved
 
 **Exit criterion:** All breaks caught, all failure messages actionable. Tests
 run via `task test:audit` and all pass.
@@ -362,11 +370,11 @@ actionable before proceeding to Milestone 3.
 **Goal:** Hard-gated skill that orchestrates contract linting and cross-file
 consistency, refusing sign-off unless all checks pass.
 
-### 3.1 Build the contracts skill — [ ]
+### 3.1 Build the contracts skill — [x]
 
-- [ ] Create `skills/domain-contracts/SKILL.md`. No rubric checks for
+- [x] Create `skills/domain-contracts/SKILL.md`. No rubric checks for
   contracts (purely mechanical).
-- [ ] Create `skills/domain-contracts/gate.yaml` referencing shared-check
+- [x] Create `skills/domain-contracts/gate.yaml` referencing shared-check
   ids authored in 2.3. **Reuse only — do not duplicate.** The same
   `auth_matrix_openapi_match`, `entity_in_openapi_schema`, etc., modules
   that the audit consumes are the ones contracts consumes; their
@@ -377,23 +385,23 @@ consistency, refusing sign-off unless all checks pass.
     `spectral_openapi.py`, `spectral_asyncapi.py`, `datacontract_lint.py`
     — author them under `shared/checks/` here if they weren't already
     needed by the audit).
-- [ ] Implement: skill loads contracts (or copies templates if absent),
+- [x] Implement: skill loads contracts (or copies templates if absent),
   runs the §5 gate loop, and refuses sign-off via `shared/sign_off.py`
   while any check fails (the mechanical-enforcement path per §5.5).
-- [ ] Sign-off writes `.spec-suite/phases/phase-6-passed.yaml` with sha256s and timestamp.
+- [x] Sign-off writes `.spec-suite/phases/phase-6-passed.yaml` with sha256s and timestamp.
 
 **Exit criterion:** Skill against the Items fixture produces clean sign-off.
 Skill against deliberately malformed contracts produces actionable failures
 and refuses sign-off.
 
-### 3.2 Validate hard gate enforcement — [ ]
+### 3.2 Validate hard gate enforcement — [x]
 
-- [ ] Confirm the skill cannot produce a sign-off file while
+- [x] Confirm the skill cannot produce a sign-off file while
   `task gate:contracts` exits non-zero. The test should attempt every
   obvious bypass (asking the agent nicely, providing a hand-rolled
   sign-off file path) and confirm none of them works — only
   `shared/sign_off.py` writes the file, and it refuses on non-zero exit.
-- [ ] Confirm the only escape is `task suite:force-advance contracts
+- [x] Confirm the only escape is `task suite:force-advance contracts
   --reason '<text>'`. The test verifies:
   - A `force_advances:` entry is appended to `.spec-suite/progress.yaml` with
     `accepted: false`.
@@ -1084,6 +1092,48 @@ of which has a current driver:
    Plain-type alignment (e.g. the model says `string` but
    openapi says `integer`) is uncovered. Worth a
    `FIELD-TYPE-CONSISTENT` follow-up.
+
+### 6.19 v1.0.14 — suite-consistency release (gate 1.1) — [x]
+
+A full drift review of the suite against its own design contract.
+No new spec-authoring features; everything here closes gaps between
+what SUITE-DESIGN/BUILD-PLAN promised and what the repo did.
+
+- ✅ **Gate 1.1 (retroactive changelog).** The checks added in
+  v1.0.5–v1.0.12 shipped without the §10 gate bump.
+  `gate-version.yaml` → `1.1` with a full `gate-changelog.md`
+  entry; two new smoke tests make the policy mechanical (a bump
+  without a changelog heading fails CI, as does a stale
+  `template_manifest.yaml` version header). `suite-version.yaml`
+  unfrozen from `1.0.0-alpha` (now tracks the real release).
+- ✅ **Audit re-runs tool lints.** `SPECTRAL-OPENAPI`,
+  `SPECTRAL-ASYNCAPI`, `DATACONTRACT-LINT` added to the audit
+  gate per Task 2.3's original category list; they skip where the
+  CLIs aren't installed.
+- ✅ **Generator single-sourced.** Bootstrap no longer installs a
+  copy of `generate_domain_overview.py` (the template copy had
+  drifted and carried Items-specific role text); `task
+  docs:generate` delegates to the suite via
+  `DOMAIN_SPEC_SUITE_ROOT`, same as `task audit`.
+- ✅ **Operator stubs implemented.** `scripts/upgrade_shell.py`
+  (manifest-aware shell refresh, recovers domain name from state),
+  `scripts/reset_phase.py` (SUITE-DESIGN §11 open question 1;
+  dry-run by default), and a real `fixtures:reset`.
+- ✅ **run_phase.py** no longer advertises the ungated bootstrap
+  phase (was a guaranteed FileNotFoundError).
+- ✅ **Deliberate-break coverage** for the 8 previously-untested
+  audit checks (12 → 20 breaks); four checks' `on_fail` copy
+  rewritten interview-style per §7 Hard Rule 10.
+- ✅ **Docs reconciled.** README (layout, skill list, state-file
+  names, bogus "agent instruction files" claim), CLAUDE.md,
+  SUITE-DESIGN §1/§8 naming, M2/M3 checkbox back-fill, stale
+  `_*.yaml` naming in comments/descriptions, Items fixture
+  cleanup (`.spec-suite/templates/` leftover removed,
+  `template-manifest.yaml` added).
+
+**Still open after this release:** Task 4.3 (resumption demo —
+needs a live interactive session, can't be a pytest), and the 6.18
+backlog items.
 
 ---
 

@@ -26,6 +26,34 @@ def test_version_files_parse() -> None:
     assert gate["gate_version"]
 
 
+def test_gate_version_has_changelog_entry() -> None:
+    """SUITE-DESIGN §10: the suite refuses to release a new gate
+    version without a matching gate-changelog.md entry. This is the
+    mechanical refusal — bumping gate-version.yaml without writing the
+    changelog heading fails CI."""
+    gate = yaml.safe_load((REPO / "gate-version.yaml").read_text())
+    changelog = (REPO / "gate-changelog.md").read_text()
+    heading = f"## `{gate['gate_version']}`"
+    assert heading in changelog, (
+        f"gate-version.yaml says {gate['gate_version']!r} but gate-changelog.md "
+        f"has no {heading!r} heading — write the changelog entry before bumping "
+        "(SUITE-DESIGN §10)"
+    )
+
+
+def test_template_manifest_versions_match_live_version_files() -> None:
+    """The bootstrap manifest embeds the suite/gate versions it was
+    generated under. If they drift from the live version files, the
+    manifest needs regenerating (`python scripts/regenerate_manifest.py`)."""
+    manifest = yaml.safe_load(
+        (REPO / "skills" / "domain-bootstrap" / "template_manifest.yaml").read_text()
+    )
+    suite = yaml.safe_load((REPO / "suite-version.yaml").read_text())
+    gate = yaml.safe_load((REPO / "gate-version.yaml").read_text())
+    assert manifest["suite_version"] == suite["suite_version"]
+    assert manifest["gate_version"] == gate["gate_version"]
+
+
 def test_skills_directories_exist() -> None:
     expected = {
         "domain-orchestrator",
