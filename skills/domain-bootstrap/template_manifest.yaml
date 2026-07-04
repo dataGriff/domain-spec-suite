@@ -4,8 +4,8 @@
 # an existing target. Regenerate with `python scripts/regenerate_manifest.py`.
 
 manifest_version: "1.0"
-suite_version: "1.0.0-alpha"
-gate_version: "1.0"
+suite_version: "1.0.13"
+gate_version: "1.1"
 
 # Each file:
 #   path:     location relative to the bootstrap target root (the .template

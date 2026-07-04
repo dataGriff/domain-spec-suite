@@ -11,7 +11,8 @@ Active build — see [`BUILD-PLAN.md`](./BUILD-PLAN.md) for the operational
 checklist and [`SUITE-DESIGN.md`](./SUITE-DESIGN.md) for the
 architectural specification.
 
-The suite is at version `1.0.0-alpha`. Gate version is `1.0`.
+The suite is at version `1.0.13`. Gate version is `1.1` (see
+[`gate-changelog.md`](./gate-changelog.md)).
 
 ## What it produces
 
