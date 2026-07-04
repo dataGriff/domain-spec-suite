@@ -142,6 +142,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         "must declare the same values everywhere they're materialized. "
         "When the values drift, an event publisher could emit a value "
         "the API would reject — or vice versa. The model is the "
-        "authority; update whichever contract diverged.",
+        "authority; which side is right for each divergence below — "
+        "the model's list, or the contract's?",
         details=problems,
     )
