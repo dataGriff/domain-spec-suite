@@ -33,9 +33,18 @@ checks:
   - id: EVENT-IN-DATACONTRACT
   - id: EVENT-PAYLOAD-COVERS-ENTITY-STATE
 
+  # Historic-record closure (gate 1.1)
+  - id: EVENT-FK-RESOLVABLE
+  - id: DATACONTRACT-REFS-RESOLVE
+
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
   - id: ERROR-CODE-IN-CATALOGUE
+  - id: ERROR-CODE-REPRESENTABLE
+
+  # Scenario traceability (gate 1.1)
+  - id: OPERATION-HAS-SCENARIO
+  - id: SCENARIO-REFS-VALID
 
   # Safe-retry semantics
   - id: IDEMPOTENCY-KEY-ON-POST-OPS

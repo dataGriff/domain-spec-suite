@@ -32,7 +32,7 @@ files_signed:
   sha256: 989a0870016ba59a577e8dcb9aa2e4875a07a0acb23e63f920ff6fcdbfc505ed
   mtime: '2026-05-25T14:44:30Z'
 - path: docs/specifications/domain-model.md
-  sha256: 82e94d71b9cdba00a9563440b0269f4e26fabd44fb78df99aaa48c8821fd46eb
+  sha256: 1640b99b2baf787976016c99ef057165856614ac5b296931098970a18538ab2e
   mtime: '2026-05-25T15:19:00Z'
 - path: docs/specifications/glossary.md
   sha256: 967969172615b9bb99df5b9da61a89e7afbe06257787804627335c3eabe8ec2a
@@ -56,10 +56,10 @@ files_signed:
   sha256: 4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783
   mtime: '2026-05-25T16:24:00Z'
 - path: docs/specifications/contracts/asyncapi.yaml
-  sha256: 1c174ab84ecf6cc23528c0cd8a1ec01e08241924a15188a903e961309da79b9e
+  sha256: 3a75bdf220e1c68d70fd0f5e2af77839bd01af8cd9b6ff9dc371f556347d0823
   mtime: '2026-05-25T16:24:30Z'
 - path: docs/specifications/contracts/datacontract.yaml
-  sha256: 608a78af7456ebaf242f1db4efb8cd22bbf0635326964079d24b7c9ce9908b26
+  sha256: 09173ad432c7cb118c1de8805769bf00944db873bd4787099280c3296233e4c6
   mtime: '2026-05-25T16:24:45Z'
 - path: .spec-suite/ambiguities.md
   sha256: b2e714f3716767297fc136ff3daba701934e75ea2d4bdb9aa16a130089f815a3

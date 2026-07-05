@@ -234,3 +234,40 @@
   reflect_template: |
     Adding reverse relationship: '{{rhs}} → {{lhs}}' ({{kind}}).
     Sound right?
+
+- id: ENTITY-HAS-EVENT
+  binds_to_check: ENTITY-HAS-EVENT
+
+  lead_in: |
+    The entity '{{entity_name}}' never appears in the Domain Events
+    table — it comes into existence without the event stream hearing
+    about it, so downstream consumers can never resolve references to
+    it. What event marks a {{entity_name}}'s creation?
+
+  probes:
+    - trigger: "answer says the entity is created via an auth or registration flow"
+      ask: |
+        Registration is still a business event — a consumer replaying
+        the stream needs it to resolve ids. What would the
+        registered/created event for {{entity_name}} carry?
+    - trigger: "answer says downstream consumers don't need it"
+      ask: |
+        The data contract already carries {{entity_name}} ids on other
+        records. How does a consumer turn those ids into anything
+        without an event that publishes the entity?
+
+  good_example: |
+    "Add WalkerRegistered on POST /v1/auth/register → 201, channel
+     dogwalking.walker.registered, carrying the walker's published
+     attributes."
+
+  bad_example:
+    answer: "It's only created once, it doesn't need an event."
+    rebuttal: |
+      Frequency isn't the bar — resolvability is. One unresolvable id
+      in the historic record breaks every consumer that joins on it.
+      What does the creation event look like?
+
+  reflect_template: |
+    Adding '{{event_name}}' to the Domain Events table for
+    {{entity_name}}. Sound right?

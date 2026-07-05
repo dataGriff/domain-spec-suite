@@ -305,6 +305,23 @@ def error_catalogue_codes(error_catalogue: pathlib.Path) -> set[str]:
     return set(re.findall(r"###\s+`([A-Z][A-Z0-9_]+)`", text))
 
 
+def error_catalogue_code_statuses(error_catalogue: pathlib.Path) -> dict[str, int]:
+    """{code: http_status} from error-catalogue.md. Each `### \\`CODE\\``
+    heading is followed by an `**HTTP status:** NNN ...` line; the first
+    such line after the heading wins."""
+    text = error_catalogue.read_text(encoding="utf-8")
+    out: dict[str, int] = {}
+    blocks = re.split(r"(?m)(?=^###\s+`)", text)
+    for block in blocks:
+        heading = re.match(r"###\s+`([A-Z][A-Z0-9_]+)`", block)
+        if heading is None:
+            continue
+        status = re.search(r"\*\*HTTP status:\*\*\s*(\d{3})", block)
+        if status is not None:
+            out[heading.group(1)] = int(status.group(1))
+    return out
+
+
 def auth_matrix_error_codes(auth_matrix: pathlib.Path) -> set[str]:
     """Error codes referenced in the auth-matrix Error Responses table
     (e.g. AUTHENTICATION_REQUIRED, FORBIDDEN, ...)."""
@@ -354,6 +371,157 @@ def openapi_write_operations(openapi: dict) -> list[dict[str, str]]:
                     "summary": op.get("summary", ""),
                 }
             )
+    return out
+
+
+HTTP_METHODS = {"get", "post", "patch", "put", "delete"}
+
+
+def openapi_operations(openapi: dict) -> list[dict[str, str]]:
+    """List of {method, path, operationId} for every operation."""
+    out: list[dict[str, str]] = []
+    for path, item in (openapi.get("paths") or {}).items():
+        if not isinstance(item, dict):
+            continue
+        for method, op in item.items():
+            if method.lower() not in HTTP_METHODS or not isinstance(op, dict):
+                continue
+            out.append(
+                {
+                    "method": method.upper(),
+                    "path": path,
+                    "operationId": op.get("operationId", ""),
+                }
+            )
+    return out
+
+
+def endpoint_path_matches(mention: str, template: str) -> bool:
+    """True when a path mentioned in prose (possibly with concrete ids,
+    e.g. `/v1/items/123`) matches an OpenAPI path template
+    (`/v1/items/{itemId}`). Segment-wise: a `{param}` template segment
+    matches anything; other segments must match exactly. Query strings
+    on the mention are ignored."""
+    mention_segs = [s for s in mention.split("?", 1)[0].split("/") if s]
+    template_segs = [s for s in template.split("/") if s]
+    if len(mention_segs) != len(template_segs):
+        return False
+    for m_seg, t_seg in zip(mention_segs, template_segs, strict=True):
+        if t_seg.startswith("{") and t_seg.endswith("}"):
+            continue
+        # Prose often keeps the placeholder too ({itemId} vs {id}) —
+        # treat any braced mention segment as matching a braced template
+        # segment only (handled above) or failing against a literal.
+        if m_seg != t_seg:
+            return False
+    return True
+
+
+ENDPOINT_MENTION = re.compile(r"\b(GET|POST|PATCH|PUT|DELETE)\s+(/[A-Za-z0-9_\-/{}.]+)")
+
+
+def endpoint_mentions(text: str) -> list[tuple[str, str]]:
+    """Every `METHOD /path` mention in a prose/markdown string,
+    as (method, path) tuples. Query strings are stripped."""
+    return [(m.group(1), m.group(2).split("?", 1)[0]) for m in ENDPOINT_MENTION.finditer(text)]
+
+
+def acceptance_scenario_blocks(scenarios: pathlib.Path) -> list[dict[str, str]]:
+    """Per-scenario blocks from acceptance-scenarios.md. Each dict is
+    {heading, text} where text runs from the `### Scenario` heading to
+    the next `###`/`##` heading."""
+    text = scenarios.read_text(encoding="utf-8")
+    out: list[dict[str, str]] = []
+    blocks = re.split(r"(?m)(?=^###\s+Scenario\b)", text)
+    for block in blocks:
+        heading = re.match(r"###\s+(Scenario\s+\S[^\n]*)", block)
+        if heading is None:
+            continue
+        body = re.split(r"(?m)^##\s", block, maxsplit=1)[0]
+        out.append({"heading": heading.group(1).strip(), "text": body})
+    return out
+
+
+def _iter_operation_responses(openapi: dict):
+    """Yield (method, path, status_str, resolved_response_dict) for
+    every declared response on every operation, resolving
+    `$ref: '#/components/responses/...'` indirection."""
+    responses_components = (openapi.get("components") or {}).get("responses") or {}
+    for path, item in (openapi.get("paths") or {}).items():
+        if not isinstance(item, dict):
+            continue
+        for method, op in item.items():
+            if method.lower() not in HTTP_METHODS or not isinstance(op, dict):
+                continue
+            for status, response in (op.get("responses") or {}).items():
+                if not isinstance(response, dict):
+                    continue
+                ref = response.get("$ref")
+                if isinstance(ref, str):
+                    response = responses_components.get(ref.rsplit("/", 1)[-1], {})
+                yield method.upper(), path, str(status), response
+
+
+def _schema_code_enum(schema: dict, schemas: dict) -> list[str]:
+    """Extract the `code` property's enum from a response schema,
+    resolving one level of `$ref` and walking `allOf` branches."""
+    schema = _resolve_local_ref(schema, schemas)
+    if not isinstance(schema, dict):
+        return []
+    branches = [schema] + [_resolve_local_ref(b, schemas) for b in schema.get("allOf", [])]
+    for branch in branches:
+        if not isinstance(branch, dict):
+            continue
+        code = (branch.get("properties") or {}).get("code")
+        code = _resolve_local_ref(code, schemas) if isinstance(code, dict) else None
+        if isinstance(code, dict) and isinstance(code.get("enum"), list):
+            return [str(v) for v in code["enum"]]
+    return []
+
+
+def openapi_error_code_bindings(openapi: dict) -> tuple[set[int], dict[int, set[str]]]:
+    """(declared_error_statuses, {status: union of `code` enum values
+    admitted by response schemas bound at that status}). Statuses cover
+    every 4xx/5xx declared on any operation; the enum map only carries
+    entries where a response schema actually enumerates codes."""
+    schemas = (openapi.get("components") or {}).get("schemas") or {}
+    declared: set[int] = set()
+    enums_by_status: dict[int, set[str]] = {}
+    for _method, _path, status, response in _iter_operation_responses(openapi):
+        if not status.isdigit() or int(status) < 400:
+            continue
+        status_int = int(status)
+        declared.add(status_int)
+        content = (response.get("content") or {}).get("application/json") or {}
+        schema = content.get("schema")
+        if isinstance(schema, dict):
+            codes = _schema_code_enum(schema, schemas)
+            if codes:
+                enums_by_status.setdefault(status_int, set()).update(codes)
+    return declared, enums_by_status
+
+
+def openapi_enum_properties(openapi: dict) -> dict[str, set[str]]:
+    """{property_name: union of string enum values} across every
+    `components.schemas` object schema. A property maps its `$ref` to
+    a named enum schema when present. Used to validate literals quoted
+    in prose (acceptance scenarios) against the contract."""
+    schemas = (openapi.get("components") or {}).get("schemas") or {}
+    out: dict[str, set[str]] = {}
+    for defn in schemas.values():
+        if not isinstance(defn, dict):
+            continue
+        branches = [defn] + [_resolve_local_ref(b, schemas) for b in defn.get("allOf", [])]
+        for branch in branches:
+            if not isinstance(branch, dict):
+                continue
+            for prop_name, prop in (branch.get("properties") or {}).items():
+                prop = _resolve_local_ref(prop, schemas) if isinstance(prop, dict) else None
+                if not isinstance(prop, dict):
+                    continue
+                values = prop.get("enum")
+                if isinstance(values, list) and values:
+                    out.setdefault(prop_name, set()).update(str(v) for v in values)
     return out
 
 

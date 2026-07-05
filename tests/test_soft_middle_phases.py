@@ -33,6 +33,7 @@ PHASE_EXPECTATIONS = {
             "MODEL-ENTITY-BUSINESS-RULE",
             "MODEL-LIFECYCLE-DEFINED",
             "MODEL-RELATIONSHIP-BIDIRECTIONAL",
+            "ENTITY-HAS-EVENT",
         },
         "expected_warnings_for_items": {"MODEL-ENTITY-HAS-ID-TIMESTAMPS"},
     },

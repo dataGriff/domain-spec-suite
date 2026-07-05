@@ -41,6 +41,42 @@ servers:
         value: amqp://localhost:5672
 
 schema:
+  - name: user
+    description: >
+      User records published via the items.user.registered event channel.
+      Present so downstream consumers can resolve contributorId references
+      from the event stream alone. The stored password never appears here.
+    physicalType: topic
+    properties:
+      - name: id
+        description: Unique identifier for the user.
+        logicalType: string
+        physicalType: uuid
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: email
+        description: User's email address (unique).
+        logicalType: string
+        required: true
+      - name: firstName
+        description: Given name.
+        logicalType: string
+        required: true
+      - name: lastName
+        description: Family name.
+        logicalType: string
+        required: true
+      - name: role
+        description: Role assigned at registration — contributor or viewer.
+        logicalType: string
+        required: true
+      - name: createdAt
+        description: Registration timestamp.
+        logicalType: timestamp
+        required: true
+
   - name: items
     description: >
       Item records published via the items.item.added and items.item.edited

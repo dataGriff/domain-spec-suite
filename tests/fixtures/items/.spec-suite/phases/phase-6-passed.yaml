@@ -25,8 +25,8 @@ files_signed:
     sha256: "4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783"
     mtime: "2026-05-25T16:24:00Z"
   - path: docs/specifications/contracts/asyncapi.yaml
-    sha256: "1c174ab84ecf6cc23528c0cd8a1ec01e08241924a15188a903e961309da79b9e"
+    sha256: "3a75bdf220e1c68d70fd0f5e2af77839bd01af8cd9b6ff9dc371f556347d0823"
     mtime: "2026-05-25T16:24:30Z"
   - path: docs/specifications/contracts/datacontract.yaml
-    sha256: "608a78af7456ebaf242f1db4efb8cd22bbf0635326964079d24b7c9ce9908b26"
+    sha256: "09173ad432c7cb118c1de8805769bf00944db873bd4787099280c3296233e4c6"
     mtime: "2026-05-25T16:24:45Z"

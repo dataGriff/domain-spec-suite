@@ -20,7 +20,7 @@ Represents an authenticated user of the system.
 |-----------|------|----------|-------------|
 | `id` | UUID | Yes | Unique identifier |
 | `email` | string (email) | Yes | User's email address (unique) |
-| `password` | string (hashed) | Yes | Stored as a hash via an adaptive password-hashing algorithm (see `nfr.md` NFR-SEC-002); never returned in API responses |
+| `password` | string (hashed) | Yes | [secret] Stored as a hash via an adaptive password-hashing algorithm (see `nfr.md` NFR-SEC-002); never returned in API responses or published to events |
 | `firstName` | string | Yes | Given name |
 | `lastName` | string | Yes | Family name |
 | `role` | enum | Yes | `contributor` or `viewer` |
@@ -72,9 +72,14 @@ A user in the `viewer` role does not create items; they only read them.
 
 | Event | Trigger | Channel |
 |-------|---------|---------|
+| `UserRegistered` | POST /v1/auth/register → 201 | `items.user.registered` |
 | `ItemAdded` | POST /v1/items → 201 | `items.item.added` |
 | `ItemEdited` | PATCH /v1/items/{itemId} → 200 | `items.item.edited` |
 | `ItemRemoved` | DELETE /v1/items/{itemId} → 204 | `items.item.removed` |
+
+Registration is a business event even though it happens on an auth
+route — the historic record needs it so consumers can resolve
+`contributorId` references without re-querying the API.
 
 ---
 
