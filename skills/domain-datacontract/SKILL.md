@@ -45,6 +45,26 @@ must agree (`EVENT-PAYLOAD-COVERS-ENTITY-STATE` enforces it).
   `nfr.md` (NFR-AVAIL-002 and NFR-DATA-001 in the Items
   example).
 
+## Refs and enums
+
+- **Qualified refs only.** ODCS has no `components` section, so an
+  OpenAPI-style `ref: '#/components/schemas/X'` resolves to nothing
+  inside this document. When a field's vocabulary is defined by an
+  openapi schema, use the qualified form
+  `ref: 'openapi.yaml#/components/schemas/X'` — the target must
+  exist there (`DATACONTRACT-REFS-RESOLVE` enforces both).
+- **Don't pin `(open)` enums closed.** An enum the model marks
+  `(open)` may grow in openapi with a minor version bump; a
+  hard-coded value list here turns every such addition into a data
+  contract violation. Reference the authoritative openapi schema
+  (qualified ref) and type the field `logicalType: string` with a
+  description naming the list, rather than duplicating hundreds of
+  values that will drift.
+- **Every entity-named FK must be resolvable.** A field named
+  `<entity>Id` requires a record in this contract that publishes
+  that entity — otherwise consumers must re-query the live API,
+  which defeats the historic record (`EVENT-FK-RESOLVABLE`).
+
 ## Aggregate-child fields
 
 (Per SUITE-DESIGN §4.5 and the suite v1.0.8 convention.)
@@ -197,6 +217,9 @@ slaProperties:
 | Child item field set diverges between asyncapi item schema and datacontract `items.properties` | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate item symmetry) |
 | Using `logicalType: string` for a UUID field instead of `{logicalType: string, physicalType: uuid}` | `DATACONTRACT-LINT` (loose), but agent convention prefers explicit `physicalType` for clarity |
 | Forgetting to declare `slaProperties` | Soft — `DATACONTRACT-LINT` may pass but NFR-AVAIL/RETENTION values must surface somewhere |
+| Unqualified `#/components/schemas/...` ref (resolves to nothing in an ODCS document) | `DATACONTRACT-REFS-RESOLVE` |
+| FK to an entity no record publishes (`walkerId` with no walker record) | `EVENT-FK-RESOLVABLE` |
+| Hard-coding an `(open)` enum's full value list | No mechanical catch — see Refs and enums above |
 
 ## Authoring-time validation
 

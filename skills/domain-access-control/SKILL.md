@@ -60,6 +60,25 @@ Error catalogue entries are pulled from the user stories' acceptance
 criteria — every story that mentions a 4xx/5xx code by name needs a
 matching catalogue entry.
 
+Three matrix shapes that routinely get skipped — handle each
+explicitly rather than leaving the row pattern to imply it:
+
+- **Singleton resources** (`GET /v1/rate-card` — no id in the path).
+  The row-per-endpoint ownership pattern assumes a resource id to
+  gate on; a singleton's ownership rule must instead name the
+  *implicit* scope ("the authenticated caller's walker") and define
+  the empty state (what does a GET return before the first PUT —
+  404, or 200 with an empty shape?).
+- **Creates with body-referenced ids** (`POST /v1/walks` carrying
+  `dogId`). The ownership qualifier on the row must cover the
+  referenced entity ("🔒 own dog"), and the catalogue must say what
+  a nonexistent body id returns (404 vs 403 vs 400) — path-parameter
+  not-found rules don't cover it.
+- **Token-addressed public endpoints** (invite acceptance, password
+  reset). The matrix marks them 🌐, but the token *is* the
+  credential: they need a rate-limit note and a defined never-existed
+  response, or they're a brute-force surface.
+
 ## Soft-gate engagement loop
 
 Same shape as Modeling (see that skill's SKILL.md). The one warning
@@ -131,8 +150,13 @@ decisions:
   field on every resource. Which traversal path resolves "is this
   caller the owner of this resource?".
 - **FORBIDDEN vs NOT_FOUND policy.** Whether 403 and 404 are
-  distinguished (leaks resource existence) or both return
-  FORBIDDEN (defence in depth).
+  distinguished or collapsed. Distinguishing is an existence oracle:
+  cross-tenant 403 + nonexistent 404 lets an attacker probe ids to
+  learn "exists but not yours" vs "doesn't exist". Collapsing (404
+  for both) hides existence but complicates debugging. Either is
+  defensible — but it MUST be an explicit Decision Log entry; the
+  matrix's anti-leak rationale has to consider existence leakage,
+  not just role leakage.
 - **System roles.** Whether a non-user actor (scheduler, webhook
   receiver, background worker) gets a row in the matrix as a
   `system (...)` role or is left out of access control entirely.

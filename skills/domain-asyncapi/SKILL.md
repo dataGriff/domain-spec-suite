@@ -109,6 +109,26 @@ references them. If an asyncapi schema declares the enum
 inline, values must match openapi.yaml + datacontract.yaml.
 `ENUM-VALUES-CONSISTENT` enforces this.
 
+**No silent downgrades.** A payload field whose openapi type is a
+named enum must not become a bare `string` here — that makes the
+three contracts disagree on the field's type, and an illegal value
+would pass the event schema while failing the API. For a large or
+`(open)` enum, mirror the openapi representation (declare the enum
+schema once and `$ref` it) or, if deliberately loosening to string,
+record it as a Decision Log entry naming the authoritative list.
+
+**Envelope requires `data`.** The CloudEvents base marks the
+metadata fields required; each event's overlay must also mark `data`
+required (`required: [data]` on the allOf branch) — otherwise a
+payload-less event validates against its own schema.
+
+**Pin lifecycle status per channel.** A per-transition channel
+(`walk.requested`) should pin the payload's `status` with `const`
+(or a single-value enum) rather than referencing the full status
+enum — otherwise a `walk.requested` event may legally claim
+`status: completed`, and consumers that rely on `status` to
+distinguish lifecycle events can't trust it.
+
 ## Tools
 
 Bootstrap-installed tasks for AsyncAPI authoring:
@@ -214,6 +234,9 @@ RateCardUpdatedEnvelope:
 | Write op in openapi but no corresponding asyncapi channel | `WRITE-OP-HAS-ASYNCAPI-CHANNEL` |
 | `[secret]` field appearing in an event payload | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (the secret marker excludes it from the must-appear set, so adding it back creates asymmetry with datacontract — caught) |
 | asyncapi enum values diverge from openapi or datacontract | `ENUM-VALUES-CONSISTENT` |
+| Entity created via an auth route never gets a channel (invisible to the historic record) | `ENTITY-HAS-EVENT` (modeling) + `EVENT-FK-RESOLVABLE` (contracts) |
+| Enum-typed field silently downgraded to bare `string` | No mechanical catch — see Named enum alignment; record a Decision if deliberate |
+| Constraint (`minimum`, `maxLength`) dropped when hand-copying schemas from openapi | No mechanical catch yet (`FIELD-TYPE-CONSISTENT` backlog) — copy schemas via `$ref`/skeleton, not by hand |
 | Forgetting to rename `id` → `<entity>Id` in the payload | Soft: the check accepts both, but the convention is `<entity>Id` for top-level + `id` for nested aggregate items |
 | Child item schema misses one of the child's published attributes | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (asyncapi vs model edge) |
 
