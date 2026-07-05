@@ -6,13 +6,14 @@ See `SUITE-DESIGN.md` §10 for the policy.
 
 ---
 
-## `1.1` — closure checks (critique-driven hardening)
+## `1.2` — 2026-07-05 — closure checks (critique-driven hardening)
 
 Driven by the adversarial review of the dog-walking spec set
 (`spec-dog-walking/.spec-suite/reviews/2026-07-05T14-48-07Z.md`).
-The 1.0 gates validated *mirroring of what exists*; 1.1 adds
-*closure* — that what the spec promises is actually reachable,
-resolvable, and exercised.
+The gates through `1.1` validated *mirroring of what exists*
+(enum equality, channel-per-event); `1.2` adds *closure* — that
+what the spec promises is actually reachable, resolvable, and
+exercised.
 
 New checks:
 
@@ -46,9 +47,51 @@ The Items fixture was upgraded to the new bar (it failed
 catch): `UserRegistered` event + `items.user.registered` channel +
 `user` datacontract record, with `password` `[secret]`-marked. This
 is the intended outcome of the tightening, per SUITE-DESIGN §10 —
-existing spec sets signed under 1.0 remain valid; re-audit is opt-in
-and the dog-walking set is known to fail 1.1 until its critique
-findings are actioned.
+existing spec sets signed under earlier gate versions remain valid;
+re-audit is opt-in and the dog-walking set is known to fail 1.2
+until its critique findings are actioned.
+
+---
+
+## `1.1` — 2026-07-04
+
+Retroactive reconciliation plus one new addition. The checks below
+shipped during the v1.0.5–v1.0.13 suite releases and were wired into
+the Phase 6 and/or Phase 7 gates at error severity **without** the
+gate-version bump §10 requires. This entry records them so spec sets
+signed under gate `1.0` know exactly what a re-audit under `1.1` adds.
+
+New checks since gate `1.0`:
+
+- `ENUM-VALUES-CONSISTENT` (suite v1.0.5) — named enums in
+  `domain-model.md` `## Enumerations` must match OpenAPI (and
+  AsyncAPI/datacontract where declared). Opt-in: silent on domains
+  without an `## Enumerations` section.
+- `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (suite v1.0.6; aggregate-child
+  coverage added in v1.0.8) — events carry full published entity
+  state in both the AsyncAPI payload and the datacontract record.
+  Opt-in: silent without a `## Domain Events` table.
+- `IDEMPOTENCY-KEY-ON-POST-OPS` (suite v1.0.9) — every OpenAPI POST
+  declares a required `Idempotency-Key` header parameter.
+
+Changed semantics since gate `1.0`:
+
+- `ENUM-VALUES-CONSISTENT` (suite v1.0.12) — an `(open)` marker on an
+  enum heading relaxes strict equality to a subset check (model ⊆
+  contract). Closed enums keep strict equality.
+
+New in this bump:
+
+- The Phase 7 audit gate now re-runs the Phase 6 tool lints
+  (`SPECTRAL-OPENAPI`, `SPECTRAL-ASYNCAPI`, `DATACONTRACT-LINT`) as
+  BUILD-PLAN 2.3 always specified. Each skips where its CLI isn't
+  installed.
+
+Why tightening is right: all three additions catch real drift
+observed in the dog-walking reference build (thin events, enum
+divergence, unsafe retries). An Items-fixture audit under `1.1`
+passes; existing spec sets remain valid at `1.0` per §10's
+frozen-with-opt-in-re-audit policy.
 
 ---
 

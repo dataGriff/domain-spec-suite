@@ -11,7 +11,7 @@
     quantitative requirement that needs a number (resolve), a
     behavioural guarantee that's quantitative in a different sense
     (n-a with reason), or a placeholder that should move to
-    _ambiguities.md (defer with required_by)?
+    .spec-suite/ambiguities.md (defer with required_by)?
 
   probes:
     - trigger: "answer is 'fast', 'scalable', 'robust' — vague adjectives"
@@ -27,7 +27,7 @@
     - trigger: "answer says 'we don't know yet'"
       ask: |
         Then it shouldn't live in nfr.md. Move the entry to
-        _ambiguities.md with `required_by: <phase>` so the audit
+        .spec-suite/ambiguities.md with `required_by: <phase>` so the audit
         forces resolution before that phase.
 
   good_example: |

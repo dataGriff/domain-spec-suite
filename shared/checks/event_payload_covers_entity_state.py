@@ -291,7 +291,9 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         "Domain event payloads must carry the full state of their "
         "affected entity (minus [secret]-marked fields), and the "
         "datacontract record must match. The data contract is the "
-        "audit-grade historic record — thin events break it. See "
-        'SUITE-DESIGN §5 "Events carry full domain state".',
+        "audit-grade historic record — thin events break it (see "
+        'SUITE-DESIGN §4.5 "Events Carry Full Domain State"). For '
+        "each gap below: which side should change — the payload, the "
+        "record, or the model's attribute table?",
         details=problems,
     )

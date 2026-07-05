@@ -312,7 +312,7 @@ def run_phase_0_gate(target: pathlib.Path) -> list[str]:
         except yaml.YAMLError as exc:
             failures.append(f"BOOTSTRAP-FILES-PARSE: {path} fails to parse — {exc}")
 
-    # _progress.yaml has bootstrap.passed
+    # progress.yaml has bootstrap.passed
     if progress_path.is_file():
         progress = yaml.safe_load(progress_path.read_text())
         bootstrap_phase = progress.get("phases", {}).get("bootstrap", {})

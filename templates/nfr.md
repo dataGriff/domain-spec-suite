@@ -4,7 +4,7 @@
 > carries a measurable target (number, percentage, or time unit).
 > Aspirational language ("fast", "scalable", "robust") is not
 > permitted here — if a threshold cannot yet be set, it belongs in
-> `_ambiguities.md` as a deferral, not in this file.
+> `.spec-suite/ambiguities.md` as a deferral, not in this file.
 
 ---
 

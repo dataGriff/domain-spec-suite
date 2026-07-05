@@ -225,6 +225,101 @@ def _auth_matrix_error_code_missing(repo: pathlib.Path) -> None:
     )
 
 
+def _attribute_without_glossary_entry(repo: pathlib.Path) -> None:
+    p = repo / "docs/specifications/domain-model.md"
+    anchor = "| `updatedAt` | ISO 8601 | Yes | Last update timestamp |"
+    text = p.read_text()
+    assert anchor in text, "fixture: Item attribute table changed"
+    p.write_text(
+        text.replace(anchor, anchor + "\n| `sku` | string | Yes | Stock-keeping unit |", 1)
+    )
+
+
+def _enum_missing_from_openapi(repo: pathlib.Path) -> None:
+    """Declare a named enum in the model that no contract materializes.
+    The convention is opt-in — Items ships without an `## Enumerations`
+    section, so adding one activates ENUM-VALUES-CONSISTENT."""
+    p = repo / "docs/specifications/domain-model.md"
+    p.write_text(
+        p.read_text()
+        + "\n---\n\n## Enumerations\n\n### ItemStatus\n\n"
+        + "| Value | Notes |\n|-------|-------|\n"
+        + "| `active` | Default on creation |\n"
+        + "| `archived` | Reversible archival |\n"
+    )
+
+
+def _thin_event_payload(repo: pathlib.Path) -> None:
+    """Strip a published attribute from the shared ItemData payload so
+    ItemAdded/ItemEdited events no longer carry full entity state."""
+    p = repo / "docs/specifications/contracts/asyncapi.yaml"
+    asyncapi = yaml.safe_load(p.read_text())
+    item_data = asyncapi["components"]["schemas"]["ItemData"]
+    item_data["properties"].pop("description")
+    item_data["required"] = [f for f in item_data["required"] if f != "description"]
+    p.write_text(yaml.safe_dump(asyncapi, sort_keys=False))
+
+
+def _role_without_persona(repo: pathlib.Path) -> None:
+    p = repo / "docs/specifications/auth-matrix.md"
+    anchor = "| `viewer` | Read-only access to items | Operations Analyst (PRD §Target Users) |"
+    text = p.read_text()
+    assert anchor in text, "fixture: auth-matrix Roles table changed"
+    bogus = "| `auditor` | Reviews catalogue changes for compliance | Compliance Team |"
+    p.write_text(text.replace(anchor, anchor + "\n" + bogus, 1))
+
+
+def _post_without_idempotency_key(repo: pathlib.Path) -> None:
+    p = repo / "docs/specifications/contracts/openapi.yaml"
+    openapi = yaml.safe_load(p.read_text())
+    register = openapi["paths"]["/v1/auth/register"]["post"]
+    register["parameters"] = [
+        param
+        for param in register.get("parameters", [])
+        if param.get("$ref") != "#/components/parameters/IdempotencyKey"
+    ]
+    if not register["parameters"]:
+        del register["parameters"]
+    p.write_text(yaml.safe_dump(openapi, sort_keys=False))
+
+
+def _story_group_without_flow(repo: pathlib.Path) -> None:
+    """New story group with no matching flow title and no US-id
+    referenced by any flow body. Uses an existing persona so
+    PRD-STORY-PERSONA-LINK stays green."""
+    p = repo / "docs/specifications/prd.md"
+    text = p.read_text()
+    stories_idx = text.find("## User Stories")
+    assert stories_idx >= 0, "fixture: no '## User Stories' heading"
+    next_section = text.find("\n## ", stories_idx + len("## User Stories"))
+    assert next_section >= 0, "fixture: '## User Stories' is the last section"
+    new_group = (
+        "\n### Reporting\n\n"
+        "#### US-050: Export the catalogue\n\n"
+        "**As a** Operations Analyst,\n"
+        "**I want to** export the item list as CSV,\n"
+        "**So that** I can analyse it offline.\n\n"
+        "**Acceptance Criteria:**\n- [ ] Export completes for 10k items in < 5 s\n"
+    )
+    p.write_text(text[:next_section] + new_group + text[next_section:])
+
+
+def _lifecycle_state_not_in_flows(repo: pathlib.Path) -> None:
+    p = repo / "docs/specifications/domain-model.md"
+    anchor = '| `archived` | `active` | PATCH /v1/items/{itemId} with `status: "active"` |'
+    text = p.read_text()
+    assert anchor in text, "fixture: Item Status lifecycle table changed"
+    purge_row = "| `archived` | `purged` | DELETE /v1/items/{itemId} after 90 days archived |"
+    p.write_text(text.replace(anchor, anchor + "\n" + purge_row, 1))
+
+
+def _entity_missing_from_rendered_overview(repo: pathlib.Path) -> None:
+    """An entity the model declares but the generator can't render
+    (its source is the OpenAPI schemas). Reuses the Widget break and
+    patches the glossary so ENTITY-IN-GLOSSARY isn't the failure."""
+    _entity_without_openapi_schema(repo)
+
+
 # ── break manifest ───────────────────────────────────────────────
 
 
@@ -306,6 +401,54 @@ BREAKS = [
         _auth_matrix_error_code_missing,
         "ERROR-CODE-IN-CATALOGUE",
         "aren't defined",
+    ),
+    Break(
+        "attribute_without_glossary_entry",
+        _attribute_without_glossary_entry,
+        "GLOSSARY-COVERS-ATTRIBUTES",
+        "not in glossary",
+    ),
+    Break(
+        "enum_missing_from_openapi",
+        _enum_missing_from_openapi,
+        "ENUM-VALUES-CONSISTENT",
+        "missing from openapi components.schemas",
+    ),
+    Break(
+        "thin_event_payload",
+        _thin_event_payload,
+        "EVENT-PAYLOAD-COVERS-ENTITY-STATE",
+        "full state",
+    ),
+    Break(
+        "role_without_persona",
+        _role_without_persona,
+        "AUTH-ROLE-TRACES-TO-PERSONA",
+        "doesn't match any prd persona",
+    ),
+    Break(
+        "post_without_idempotency_key",
+        _post_without_idempotency_key,
+        "IDEMPOTENCY-KEY-ON-POST-OPS",
+        "idempotency-key",
+    ),
+    Break(
+        "story_group_without_flow",
+        _story_group_without_flow,
+        "STORY-HAS-FLOW",
+        "no matching flow",
+    ),
+    Break(
+        "lifecycle_state_not_in_flows",
+        _lifecycle_state_not_in_flows,
+        "LIFECYCLE-IN-FLOWS",
+        "purged",
+    ),
+    Break(
+        "entity_missing_from_rendered_overview",
+        _entity_missing_from_rendered_overview,
+        "GENERATOR-CLEAN-OUTPUT",
+        "missing entities",
     ),
 ]
 

@@ -5,7 +5,7 @@ Covers the M3.1 + M3.2 exit criteria:
 - Contracts gate passes cleanly against the Items fixture.
 - sign_off REFUSES to write the sidecar when the gate fails.
 - sign_off WITH --force-advance writes the sidecar AND records an
-  unaccepted entry in _progress.yaml.
+  unaccepted entry in .spec-suite/progress.yaml.
 - accept_force flips the entry to accepted: true.
 - After a force-advance, the audit's FORCE-ADVANCES-ALL-ACCEPTED
   check fails until accept_force runs.
@@ -691,7 +691,7 @@ def test_sign_off_refuses_when_gate_fails(tmp_path: pathlib.Path) -> None:
 def test_sign_off_force_advance_writes_sidecar_and_records_bypass(tmp_path: pathlib.Path) -> None:
     """`sign_off --force-advance --reason 'X'` MUST write the sidecar
     even when the gate is failing, but MUST also append an entry to
-    `_progress.yaml`'s force_advances[] with accepted: false."""
+    `.spec-suite/progress.yaml`'s force_advances[] with accepted: false."""
     target = _copy_fixture(tmp_path)
     sidecar = _sidecar_path(target)
     sidecar.unlink()
@@ -1058,7 +1058,7 @@ def test_force_advance_round_trip_through_audit(tmp_path: pathlib.Path) -> None:
     assert exit_code == 0
 
 
-# ── gate 1.1 closure checks (BUILD-PLAN 6.19) ────────────────────
+# ── gate 1.2 closure checks (BUILD-PLAN 6.20) ────────────────────
 
 
 def test_error_code_representable_catches_undeclared_status(tmp_path: pathlib.Path) -> None:

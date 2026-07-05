@@ -10,7 +10,7 @@ prerequisites:
   - phase: bootstrap
     must_be: passed
 
-# Files whose sha256 sign_off.py records in _phase-1-passed.yaml on a
+# Files whose sha256 sign_off.py records in phase-1-passed.yaml on a
 # successful gate run. The audit's SIGNOFF-SHA256-MATCHES check
 # verifies these haven't drifted.
 signs_files:

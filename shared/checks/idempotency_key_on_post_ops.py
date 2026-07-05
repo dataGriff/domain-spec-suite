@@ -95,8 +95,9 @@ def run(repo_root: pathlib.Path) -> CheckResult:
     return CheckResult.fail(
         "Every POST operation must declare a required `Idempotency-Key` "
         "header parameter so mobile / agentic / chat clients can retry "
-        "safely. Declare a reusable parameter under "
+        "safely (SUITE-DESIGN §4.6). Add a reusable parameter under "
         "`components.parameters.IdempotencyKey` and `$ref` it from each "
-        'POST operation. See SUITE-DESIGN §4 "Idempotent mutating ops".',
+        "operation below — or is one of these POSTs not actually a "
+        "create?",
         details=problems,
     )

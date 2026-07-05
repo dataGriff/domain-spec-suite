@@ -1,4 +1,4 @@
-"""Audit check: every file recorded in a _phase-N-passed.yaml sidecar
+"""Audit check: every file recorded in a phase-N-passed.yaml sidecar
 still hashes to the recorded sha256.
 
 If a sidecar's recorded hash differs from the current file content, the

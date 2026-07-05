@@ -6,7 +6,7 @@ description: |
   model, auth matrix, error catalogue). No warnings, no rubric checks
   — every check is mechanical and must pass for sign-off.
 
-# Files whose sha256 sign_off.py records in _phase-6-passed.yaml on a
+# Files whose sha256 sign_off.py records in phase-6-passed.yaml on a
 # successful gate run. Touched (or hand-edited) files trip
 # SIGNOFF-SHA256-MATCHES at audit time, marking the phase stale.
 signs_files:
@@ -33,7 +33,7 @@ checks:
   - id: EVENT-IN-DATACONTRACT
   - id: EVENT-PAYLOAD-COVERS-ENTITY-STATE
 
-  # Historic-record closure (gate 1.1)
+  # Historic-record closure (gate 1.2)
   - id: EVENT-FK-RESOLVABLE
   - id: DATACONTRACT-REFS-RESOLVE
 
@@ -42,7 +42,7 @@ checks:
   - id: ERROR-CODE-IN-CATALOGUE
   - id: ERROR-CODE-REPRESENTABLE
 
-  # Scenario traceability (gate 1.1)
+  # Scenario traceability (gate 1.2)
   - id: OPERATION-HAS-SCENARIO
   - id: SCENARIO-REFS-VALID
 

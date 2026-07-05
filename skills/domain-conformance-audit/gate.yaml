@@ -15,6 +15,13 @@ checks:
   - id: FORCE-ADVANCES-ALL-ACCEPTED
   - id: AMBIGUITIES-NO-AUDIT-REQUIRED
 
+  # Tool lints (re-run from Phase 6 — defense in depth per BUILD-PLAN
+  # 2.3). Each skips when its CLI isn't installed; a properly
+  # bootstrapped domain repo pins them via .mise.toml.
+  - id: SPECTRAL-OPENAPI
+  - id: SPECTRAL-ASYNCAPI
+  - id: DATACONTRACT-LINT
+
   # Entity / glossary / contract alignment
   - id: ENTITY-IN-GLOSSARY
   - id: GLOSSARY-COVERS-ATTRIBUTES
@@ -27,7 +34,7 @@ checks:
   - id: EVENT-IN-DATACONTRACT
   - id: EVENT-PAYLOAD-COVERS-ENTITY-STATE
 
-  # Historic-record closure (gate 1.1)
+  # Historic-record closure (gate 1.2)
   - id: ENTITY-HAS-EVENT
   - id: EVENT-FK-RESOLVABLE
   - id: DATACONTRACT-REFS-RESOLVE

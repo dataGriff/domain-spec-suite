@@ -50,6 +50,9 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "SIGNOFF-SHA256-MATCHES",
         "FORCE-ADVANCES-ALL-ACCEPTED",
         "AMBIGUITIES-NO-AUDIT-REQUIRED",
+        "SPECTRAL-OPENAPI",
+        "SPECTRAL-ASYNCAPI",
+        "DATACONTRACT-LINT",
         "ENTITY-IN-GLOSSARY",
         "GLOSSARY-COVERS-ATTRIBUTES",
         "ENTITY-IN-OPENAPI-SCHEMA",
@@ -136,6 +139,36 @@ def test_check_metadata_shape(module_name: str) -> None:
 
 
 # ── runner behaviour ──────────────────────────────────────────────
+
+
+def test_audit_runs_tool_lints_with_prerequisite_skip() -> None:
+    """The audit gate re-runs the Phase 6 tool lints (BUILD-PLAN 2.3
+    defense in depth). Each must appear in the outcomes — executed
+    when its CLI is installed, cleanly skipped (not failed) when it
+    isn't — so environments without spectral/datacontract-cli stay
+    green while properly-provisioned repos get re-linted."""
+    import shutil
+
+    _exit_code, outcomes = run_phase.run_phase("audit", ITEMS_FIXTURE)
+    by_id = {o.id: o for o in outcomes}
+    for check_id, binary in [
+        ("SPECTRAL-OPENAPI", "spectral"),
+        ("SPECTRAL-ASYNCAPI", "spectral"),
+        ("DATACONTRACT-LINT", "datacontract"),
+    ]:
+        assert check_id in by_id, f"{check_id} missing from audit outcomes"
+        outcome = by_id[check_id]
+        if shutil.which(binary) is None:
+            assert outcome.skipped, f"{check_id} should skip when {binary!r} is absent"
+        else:
+            assert not outcome.skipped
+
+
+def test_bootstrap_is_not_a_runnable_phase() -> None:
+    """Bootstrap has no gate.yaml — it must be rejected up front with
+    a clear error, not crash with FileNotFoundError mid-run."""
+    with pytest.raises(ValueError, match="unknown phase"):
+        run_phase.run_phase("bootstrap", ITEMS_FIXTURE)
 
 
 def test_runner_reports_missing_check_module() -> None:
