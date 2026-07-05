@@ -1087,7 +1087,7 @@ of which has a current driver:
 
 ---
 
-### 6.19 v1.0.14 / gate 1.1 — critique-driven gate hardening — [ ]
+### 6.19 v1.0.14 / gate 1.1 — critique-driven gate hardening — [x]
 
 An adversarial four-pass review of the dog-walking spec set
 (`spec-dog-walking/.spec-suite/reviews/2026-07-05T14-48-07Z.md`)
@@ -1101,65 +1101,69 @@ those classes. First gate-version bump: `1.0 → 1.1`.
 New shared checks (each: module + gate.yaml wiring + regression
 tests; questions.md entries where the owning phase has one):
 
-- [ ] `ERROR-CODE-REPRESENTABLE` (`shared/checks/error_code_representable.py`)
+- ✅ `ERROR-CODE-REPRESENTABLE` (`shared/checks/error_code_representable.py`)
   — catalogue→openapi direction. Every catalogue code's HTTP status is
   declared by ≥1 operation; where openapi response schemas enumerate
   `code` values, every catalogue code appears in ≥1 enum bound at its
   documented status. Catches unreturnable codes (3× 400s,
   IDEMPOTENCY_KEY_CONFLICT, missing 429).
-- [ ] `OPERATION-HAS-SCENARIO` (`shared/checks/operation_has_scenario.py`)
+- ✅ `OPERATION-HAS-SCENARIO` (`shared/checks/operation_has_scenario.py`)
   — reverse traceability: every openapi operation is referenced by ≥1
   acceptance scenario (operationId or `METHOD /path`). Catches
   contract-time inventions with no test surface (registerWalker,
   listClients, listDogs).
-- [ ] `SCENARIO-REFS-VALID` (`shared/checks/scenario_refs_valid.py`)
+- ✅ `SCENARIO-REFS-VALID` (`shared/checks/scenario_refs_valid.py`)
   — scenario literals validated against contracts: error codes exist
   in the catalogue, `METHOD /path` mentions exist in openapi,
   enum-typed field literals are legal members (catches
   `"Border Collie"` vs `border-collie`).
-- [ ] `EVENT-FK-RESOLVABLE` (`shared/checks/event_fk_resolvable.py`)
+- ✅ `EVENT-FK-RESOLVABLE` (`shared/checks/event_fk_resolvable.py`)
   — every `<entity>Id` field in a datacontract record, where
   `<entity>` is a domain-model entity, resolves to a datacontract
   record for that entity. Catches the invisible-Walker/User class
   (dangling FKs in the historic record).
-- [ ] `DATACONTRACT-REFS-RESOLVE` (`shared/checks/datacontract_refs_resolve.py`)
+- ✅ `DATACONTRACT-REFS-RESOLVE` (`shared/checks/datacontract_refs_resolve.py`)
   — every `ref`/`$ref` in datacontract properties resolves locally or
   to `openapi.yaml#/components/schemas/<X>` (unqualified
   `#/components/…` treated as the openapi shorthand; target must
   exist). Catches dangling pointers and renamed-schema drift.
-- [ ] `ENTITY-HAS-EVENT` (`shared/checks/entity_has_event.py`)
+- ✅ `ENTITY-HAS-EVENT` (`shared/checks/entity_has_event.py`)
   — modeling-phase warning, audit error: every entity (except
   aggregate children) appears in ≥1 Domain Events row. Catches
   entities born via auth flows escaping the historic record.
 
 Check + template + skill amendments:
 
-- [ ] `NO-TEMPLATE-PLACEHOLDERS` also flags `TODO`/`TBD`/`FIXME` in
+- ✅ `NO-TEMPLATE-PLACEHOLDERS` also flags `TODO`/`TBD`/`FIXME` in
   spec files (the dog-walking PRD shipped `Constraints: 1. TODO`).
-- [ ] `templates/nfr.md`: Privacy & data rights category (retention
+- ✅ `templates/nfr.md`: Privacy & data rights category (retention
   ceilings, data-subject rights, PII inventory) + rate-limiting slot
   that names its catalogue code.
-- [ ] `templates/error-catalogue.md`: 429 section stub; trigger
+- ✅ `templates/error-catalogue.md`: 429 section stub; trigger
   guidance for invalid-signature 401s and never-existed tokens.
-- [ ] `templates/acceptance-scenarios.md`: conventions block — every
+- ✅ `templates/acceptance-scenarios.md`: conventions block — every
   scenario's Given names actor + resource state; assertions use
   schema property paths; POST scenarios carry `Idempotency-Key`.
-- [ ] `skills/domain-access-control/SKILL.md`: Decision Log prompts
+- ✅ `skills/domain-access-control/SKILL.md`: Decision Log prompts
   for 403-vs-404 existence leakage; singleton-resource ownership
   pattern; FK-bearing-create ownership consistency.
-- [ ] `skills/domain-asyncapi/SKILL.md`: open-enum representation must
+- ✅ `skills/domain-asyncapi/SKILL.md`: open-enum representation must
   match openapi (no silent string downgrade); envelope requires
   `data`; per-channel lifecycle-status `const` narrowing.
-- [ ] `skills/domain-datacontract/SKILL.md`: qualified-ref convention;
+- ✅ `skills/domain-datacontract/SKILL.md`: qualified-ref convention;
   open enums must not be pinned closed.
-- [ ] `skills/domain-modeling/SKILL.md`: every entity needs an origin
+- ✅ `skills/domain-modeling/SKILL.md`: every entity needs an origin
   event; temporal invariants must name the attribute that persists
   them.
-- [ ] `skills/domain-review/SKILL.md`: new prompts — NFR↔asyncapi
+- ✅ `skills/domain-review/SKILL.md`: new prompts — NFR↔asyncapi
   delivery-semantics consistency; dead contract surface; unobservable
   Then clauses.
-- [ ] `gate-version.yaml` → 1.1 + `gate-changelog.md` entry;
-  `suite-version.yaml` → 1.0.14.
+- ✅ `gate-version.yaml` → 1.1 + `gate-changelog.md` entry
+  (suite-version.yaml stays 1.0.0-alpha per current release
+  practice — the v1.0.14 label is the milestone name).
+- ✅ Incidental fix: `seed_signoffs.py` still globbed the pre-v1.0.3
+  sidecar location and required quoted sha256 values — reseeding had
+  been a silent no-op.
 
 ---
 
