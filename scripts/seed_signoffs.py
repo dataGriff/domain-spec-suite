@@ -1,5 +1,5 @@
-"""Regenerate sha256 values inside every fixture's _phase-N-passed.yaml
-sidecar against the current file contents.
+"""Regenerate sha256 values inside every fixture's
+`.spec-suite/phases/phase-N-passed.yaml` sidecar against the current file contents.
 
 Idempotent: if every recorded sha256 already matches the file, no
 sidecar is rewritten. Used whenever a fixture's spec files change, so
@@ -26,9 +26,9 @@ FIXTURES = pathlib.Path("tests/fixtures")
 # to varying formatting.
 SIGNOFF_LINE = re.compile(
     r"(?P<prefix>(?:^|\n)\s*-\s*path:\s*)(?P<path>\S+)"
-    r'(?P<between>\s*\n\s*sha256:\s*")'
+    r'(?P<between>\s*\n\s*sha256:\s*"?)'
     r"(?P<sha>[0-9a-f]+)"
-    r'(?P<suffix>")',
+    r'(?P<suffix>"?)',
     re.MULTILINE,
 )
 
@@ -69,14 +69,15 @@ def main() -> int:
         print(f"{FIXTURES} does not exist yet — nothing to seed.")
         return 0
 
-    sidecars = sorted(FIXTURES.glob("*/docs/specifications/_phase-*-passed.yaml"))
+    sidecars = sorted(FIXTURES.glob("*/.spec-suite/phases/phase-*-passed.yaml"))
     if not sidecars:
-        print(f"no _phase-*-passed.yaml sidecars under {FIXTURES} — nothing to seed.")
+        print(f"no phase-*-passed.yaml sidecars under {FIXTURES} — nothing to seed.")
         return 0
 
     total_changed = 0
     for sidecar in sidecars:
         # Repo root for sha256 path resolution: tests/fixtures/<domain>/
+        # (sidecar sits at <repo>/.spec-suite/phases/phase-N-passed.yaml)
         repo_root = sidecar.parents[2]
         changed = regenerate(sidecar, repo_root)
         if changed:
