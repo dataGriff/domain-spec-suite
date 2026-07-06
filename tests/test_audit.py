@@ -54,7 +54,7 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "SPECTRAL-ASYNCAPI",
         "DATACONTRACT-LINT",
         "ENTITY-IN-GLOSSARY",
-        "GLOSSARY-COVERS-ATTRIBUTES",
+        "GLOSSARY-COVERS-DOMAIN-TERMS",
         "ENTITY-IN-OPENAPI-SCHEMA",
         "FIELD-MATCH-DOMAIN-OPENAPI",
         "ENUM-VALUES-CONSISTENT",
@@ -92,7 +92,7 @@ CHECK_MODULES = [
     "force_advances_all_accepted",
     "ambiguities_no_audit_required",
     "entity_in_glossary",
-    "glossary_covers_attributes",
+    "glossary_covers_domain_terms",
     "entity_in_openapi_schema",
     "field_match_domain_openapi",
     "enum_values_consistent",
@@ -187,6 +187,37 @@ def test_runner_render_includes_summary_counts() -> None:
     output = run_phase.render("audit", ITEMS_FIXTURE, outcomes)
     assert "summary:" in output
     assert "passed" in output
+
+
+def test_glossary_covers_domain_terms_catches_missing_enum(tmp_path: pathlib.Path) -> None:
+    """The event branch is covered by the deliberate-break suite; this
+    covers the enum branch: a `## Enumerations` name with no glossary
+    entry fails, and adding the entry clears it."""
+    import shutil
+
+    from shared.checks import glossary_covers_domain_terms
+
+    target = tmp_path / "items"
+    shutil.copytree(ITEMS_FIXTURE, target)
+
+    model = target / "docs/specifications/domain-model.md"
+    model.write_text(
+        model.read_text()
+        + "\n## Enumerations\n\n### ItemStatus\n\n"
+        + "| Value | Notes |\n|-------|-------|\n| `active` | Live |\n| `archived` | Hidden |\n"
+    )
+
+    result = glossary_covers_domain_terms.run(target)
+    assert not result.passed
+    assert any("ItemStatus" in d for d in result.details)
+
+    glossary = target / "docs/specifications/glossary.md"
+    glossary.write_text(
+        glossary.read_text()
+        + "\n## Enumerations\n\n### ItemStatus\n\n"
+        + "Classifies an item as `active` or `archived`. Closed.\n"
+    )
+    assert glossary_covers_domain_terms.run(target).passed
 
 
 def test_signoff_sha256_matches_handles_bare_and_quoted(tmp_path: pathlib.Path) -> None:

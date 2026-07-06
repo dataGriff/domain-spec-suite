@@ -238,17 +238,14 @@ def glossary_entities(glossary: pathlib.Path) -> list[str]:
     return _h3_names(_section(text, r"^##\s+Entities\s*$"))
 
 
-def glossary_attributes(glossary: pathlib.Path) -> dict[str, list[str]]:
-    """{entity_name: [attribute_name, ...]} parsed from glossary's
-    `## X attributes` sections."""
+def glossary_term_names(glossary: pathlib.Path) -> set[str]:
+    """Every `### Name` heading anywhere in glossary.md, cleaned of
+    trailing ' — qualifier' suffixes. The glossary is a lexicon —
+    entities, roles, domain events, enumerations, other terms — and
+    this returns the full set of defined terms regardless of which
+    section they sit under."""
     text = glossary.read_text(encoding="utf-8")
-    out: dict[str, list[str]] = {}
-    for match in re.finditer(r"(?m)^##\s+(?P<ent>\S+)\s+attributes\s*$", text):
-        entity = match.group("ent")
-        section_text = _section(text, re.escape(match.group(0)))
-        attrs = _h3_names(section_text)
-        out[entity] = attrs
-    return out
+    return set(_h3_names(text))
 
 
 # ── PRD ──────────────────────────────────────────────────────────

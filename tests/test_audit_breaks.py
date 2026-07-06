@@ -225,13 +225,19 @@ def _auth_matrix_error_code_missing(repo: pathlib.Path) -> None:
     )
 
 
-def _attribute_without_glossary_entry(repo: pathlib.Path) -> None:
+def _event_without_glossary_entry(repo: pathlib.Path) -> None:
+    """Add a Domain Events row whose event name has no glossary entry."""
     p = repo / "docs/specifications/domain-model.md"
-    anchor = "| `updatedAt` | ISO 8601 | Yes | Last update timestamp |"
+    anchor = "| `ItemRemoved` | DELETE /v1/items/{itemId} → 204 | `items.item.removed` |"
     text = p.read_text()
-    assert anchor in text, "fixture: Item attribute table changed"
+    assert anchor in text, "fixture: Domain Events table changed"
     p.write_text(
-        text.replace(anchor, anchor + "\n| `sku` | string | Yes | Stock-keeping unit |", 1)
+        text.replace(
+            anchor,
+            anchor
+            + "\n| `ItemArchived` | PATCH /v1/items/{itemId} → 200 | `items.item.archived` |",
+            1,
+        )
     )
 
 
@@ -403,9 +409,9 @@ BREAKS = [
         "aren't defined",
     ),
     Break(
-        "attribute_without_glossary_entry",
-        _attribute_without_glossary_entry,
-        "GLOSSARY-COVERS-ATTRIBUTES",
+        "event_without_glossary_entry",
+        _event_without_glossary_entry,
+        "GLOSSARY-COVERS-DOMAIN-TERMS",
         "not in glossary",
     ),
     Break(

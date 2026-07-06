@@ -24,7 +24,7 @@ checks:
 
   # Entity / glossary / contract alignment
   - id: ENTITY-IN-GLOSSARY
-  - id: GLOSSARY-COVERS-ATTRIBUTES
+  - id: GLOSSARY-COVERS-DOMAIN-TERMS
   - id: ENTITY-IN-OPENAPI-SCHEMA
   - id: FIELD-MATCH-DOMAIN-OPENAPI
   - id: ENUM-VALUES-CONSISTENT

@@ -1,9 +1,10 @@
 # Glossary — Items
 
-> The ubiquitous language for the Items domain. Every entity name and every
-> attribute name used in `domain-model.md`, `contracts/openapi.yaml`,
-> `contracts/asyncapi.yaml`, and `contracts/datacontract.yaml` appears here
-> exactly as it is used. Code, docs, and conversation must use these terms.
+> The ubiquitous language for the Items domain — a lexicon, not a
+> reference manual. Every entity, role, domain event, and key term used
+> in `domain-model.md` and the contracts has a one- or two-sentence
+> entry here. Attribute-level detail lives in `domain-model.md`'s
+> entity tables. Code, docs, and conversation must use these terms.
 
 ---
 
@@ -23,82 +24,6 @@ cannot be changed via the API.
 
 ---
 
-## Item attributes
-
-### id
-
-UUID. Unique identifier of an item. Immutable.
-
-### name
-
-String, minimum length 1. The display name of an item. Required at creation
-and editable by the owning contributor.
-
-### description
-
-String or `null`. Optional longer description of an item. May be cleared
-back to `null` via edit.
-
-### status
-
-Enum: `active` or `archived`. Defaults to `active` at creation. The owning
-contributor may toggle freely between the two values.
-
-### contributorId
-
-UUID. References the `id` of the `User` who added this item. Immutable
-after creation — items cannot be transferred between contributors.
-
-### createdAt
-
-ISO 8601 timestamp. The moment the item was added to the catalogue.
-Immutable.
-
-### updatedAt
-
-ISO 8601 timestamp. The moment the item was last edited. Updated by every
-successful PATCH operation, including status toggles.
-
----
-
-## User attributes
-
-### id
-
-UUID. Unique identifier of a user. Immutable.
-
-### email
-
-String, email format. The user's email address. Unique across all users
-and used as the login credential.
-
-### password
-
-String, stored as a hash via an adaptive password-hashing algorithm
-(see `nfr.md` NFR-SEC-002). Never returned in any API response. Set at
-registration and updated through dedicated password flows (not in
-scope for v1).
-
-### firstName
-
-String, minimum length 1. The user's given name.
-
-### lastName
-
-String, minimum length 1. The user's family name.
-
-### role
-
-Enum: `contributor` or `viewer`. Determines which operations the user may
-perform — see `auth-matrix.md`. Set at registration and immutable
-thereafter.
-
-### createdAt
-
-ISO 8601 timestamp. The moment the user registered. Immutable.
-
----
-
 ## Roles
 
 ### contributor
@@ -115,6 +40,13 @@ items. Cannot add, edit, or remove items.
 ---
 
 ## Domain events
+
+### UserRegistered
+
+Published on the `items.user.registered` channel whenever a new user
+registers (POST /v1/auth/register → 201). Registration is a business
+event even though it happens on an auth route — consumers need it to
+resolve `contributorId` references without re-querying the API.
 
 ### ItemAdded
 

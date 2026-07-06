@@ -219,14 +219,18 @@ If a child entity also emits its own events (e.g. a hypothetical
 `RateCardEntryRemoved`), it's no longer just an aggregate
 member — model it as a first-class entity instead.
 
-Glossary entries are mechanical: every entity gets a `### <Entity>`
-heading under `## Entities`, every attribute gets a `### <attribute>`
-heading under `## <Entity> attributes`. Don't type them by hand —
-run `task glossary:skeleton` (bootstrap-installed) to generate the
-skeleton from `domain-model.md` with TODO placeholders, then walk
-the entries and fill in real prose. On a domain with 10+ entities
-this saves a meaningful amount of typing tedium and avoids missed
-attributes.
+The glossary is a **lexicon, not a reference manual** (gate 1.4).
+It carries one- or two-sentence entries for the domain's vocabulary:
+every entity (`### <Entity>` under `## Entities`), every role, every
+domain event, every enumeration, and any other term a newcomer would
+need defined. It does **not** repeat attributes — the domain model's
+entity tables are the single attribute authority, so any detail that
+matters about an attribute (uniqueness, immutability, case-folding,
+defaults) belongs in the model's table row, not in a glossary
+paraphrase. Run `task glossary:skeleton` (bootstrap-installed) to
+generate lexicon stubs (entities, events, enumerations) from
+`domain-model.md`, then fill in real prose and add roles/other terms
+by hand.
 
 After every entity, run `task gate:modeling -- --repo <target>` to
 surface failures and warnings early. Iterate until the gate is clean
@@ -288,7 +292,9 @@ Listed in `gate.yaml`.
 
 - `MODEL-ENTITY-NAME-UNIQUE` — no duplicate entity names
 - `ENTITY-IN-GLOSSARY` — every entity in the model is in the glossary
-- `GLOSSARY-COVERS-ATTRIBUTES` — every attribute is glossed too
+- `GLOSSARY-COVERS-DOMAIN-TERMS` — every domain event and enumeration
+  the model names is glossed too (attributes are deliberately NOT
+  glossed — the model's tables own them)
 
 `ENUM-VALUES-CONSISTENT` runs at Phase 6 (contracts) and again at
 Phase 7 (audit), not here at modeling — there's no contract to
