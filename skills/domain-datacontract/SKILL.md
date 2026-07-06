@@ -41,9 +41,20 @@ must agree (`EVENT-PAYLOAD-COVERS-ENTITY-STATE` enforces it).
   - asyncapi `string, format: date-time` → `logicalType:
     timestamp`
   - asyncapi `integer` → `logicalType: integer`
-- **`slaProperties`**: `availability` and `retention` come from
-  `nfr.md` (NFR-AVAIL-002 and NFR-DATA-001 in the Items
-  example).
+- **`slaProperties`**: three properties are required
+  (`DATACONTRACT-SLA-COMPLETE`): `availability` and `retention`
+  come from `nfr.md` (NFR-AVAIL-002 and NFR-DATA-001 in the Items
+  example), and `latency` states the freshness guarantee — how
+  long after a domain transition commits its event is readable by
+  consumers (derive from the delivery-semantics NFR, e.g. a
+  transactional-outbox drain interval). Declare `frequency`
+  (expected volume) too when consumers need to capacity-plan.
+- **`schema[*].quality`**: state each record's quality
+  expectations as `type: text` entries — PK uniqueness per event
+  id, required-field completeness, enum fields carrying only
+  legal members. `text` is documentation-grade (no runtime engine
+  implied); switch to `sql`/`library` rules only when an actual
+  quality runner exists downstream.
 
 ## Refs and enums
 
@@ -205,6 +216,29 @@ slaProperties:
     value: 30
     unit: d
     description: Events are retained for 30 days for replay (NFR-DATA-001).
+  - property: latency
+    value: 60
+    unit: s
+    description: >
+      Freshness — an event is readable within 60 seconds of its
+      domain transition committing (transactional-outbox drain,
+      NFR-AVAIL-002 delivery semantics).
+```
+
+### Record-level quality expectations
+
+```yaml
+schema:
+  - name: walk
+    physicalType: topic
+    quality:
+      - type: text
+        description: >
+          walkId is unique per event id; every required field is
+          present on every record; status only carries legal
+          WalkStatus members.
+    properties:
+      - ...
 ```
 
 ## Common pitfalls
@@ -216,7 +250,7 @@ slaProperties:
 | Aggregate root record missing its declared child collection | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate block, datacontract side) |
 | Child item field set diverges between asyncapi item schema and datacontract `items.properties` | `EVENT-PAYLOAD-COVERS-ENTITY-STATE` (aggregate item symmetry) |
 | Using `logicalType: string` for a UUID field instead of `{logicalType: string, physicalType: uuid}` | `DATACONTRACT-LINT` (loose), but agent convention prefers explicit `physicalType` for clarity |
-| Forgetting to declare `slaProperties` | Soft — `DATACONTRACT-LINT` may pass but NFR-AVAIL/RETENTION values must surface somewhere |
+| Missing `availability` / `retention` / `latency` slaProperty | `DATACONTRACT-SLA-COMPLETE` |
 | Unqualified `#/components/schemas/...` ref (resolves to nothing in an ODCS document) | `DATACONTRACT-REFS-RESOLVE` |
 | FK to an entity no record publishes (`walkerId` with no walker record) | `EVENT-FK-RESOLVABLE` |
 | Hard-coding an `(open)` enum's full value list | No mechanical catch — see Refs and enums above |
@@ -245,3 +279,37 @@ the Decision Log when the user makes them:
   Tied to NFR-DATA but recorded here.
 - **Availability target.** Same — tied to NFR-AVAIL but
   recorded here.
+- **Freshness/latency target.** The `latency` SLA value and the
+  delivery mechanism that backs it (outbox drain interval,
+  broker replication lag).
+
+## Derived data products (designed — build when a domain needs one)
+
+The event contract answers *what happened* (operational awareness,
+audit, replay). It deliberately does not answer summarised or
+per-perspective questions — "walker earnings by month",
+"walk history for a dog" — those are **derived data products**:
+read models computed from the event stream.
+
+When a domain's consumers need one, author it as an additional ODCS
+contract at `contracts/data-products/<name>.yaml` (one file per
+product), with:
+
+- **`description.purpose`** naming the question the product answers
+  and its consumers;
+- **`customProperties`** (or description prose) declaring its
+  **source events** — the channels it is derived from — so lineage
+  back to the event contract is explicit;
+- **its own `slaProperties`** — refresh cadence/`latency` (derived
+  products are usually staler than the stream), `retention`,
+  `availability`;
+- **`schema`** describing the product's records (aggregates,
+  snapshots), NOT mirrors of event payloads;
+- **`quality`** expectations for the derivation (e.g. sums
+  reconcile with the underlying events over the retention window).
+
+No gate checks bind `data-products/` yet — the first real product
+(expected in the dog-rescue domain) drives what gets mechanised
+(see BUILD-PLAN Post-v1 Backlog). Do NOT invent data products a
+domain hasn't asked for; the event contract alone is a complete
+Phase 6 output.

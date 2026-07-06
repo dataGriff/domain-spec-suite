@@ -73,6 +73,7 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "ENTITY-HAS-EVENT",
         "EVENT-FK-RESOLVABLE",
         "DATACONTRACT-REFS-RESOLVE",
+        "DATACONTRACT-SLA-COMPLETE",
         "ERROR-CODE-REPRESENTABLE",
         "OPERATION-HAS-SCENARIO",
         "SCENARIO-REFS-VALID",
@@ -107,6 +108,7 @@ CHECK_MODULES = [
     "story_has_flow",
     "lifecycle_in_flows",
     "us_has_scenario",
+    "datacontract_sla_complete",
     "generator_clean_output",
 ]
 

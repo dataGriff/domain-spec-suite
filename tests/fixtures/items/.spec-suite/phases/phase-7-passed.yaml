@@ -59,7 +59,7 @@ files_signed:
   sha256: 3a75bdf220e1c68d70fd0f5e2af77839bd01af8cd9b6ff9dc371f556347d0823
   mtime: '2026-05-25T16:24:30Z'
 - path: docs/specifications/contracts/datacontract.yaml
-  sha256: 09173ad432c7cb118c1de8805769bf00944db873bd4787099280c3296233e4c6
+  sha256: 096956702b755ba99c5cf6c46c1d5e7ba00740e91ab4f2619fff8bc51572d02d
   mtime: '2026-05-25T16:24:45Z'
 - path: .spec-suite/ambiguities.md
   sha256: b2e714f3716767297fc136ff3daba701934e75ea2d4bdb9aa16a130089f815a3

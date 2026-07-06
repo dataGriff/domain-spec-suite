@@ -68,6 +68,30 @@ def test_contracts_gate_passes_against_items_fixture() -> None:
     assert failures == []
 
 
+def test_datacontract_sla_complete_passes_and_catches_missing_latency(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Fixture declares availability + retention + latency → pass.
+    Dropping latency fails with the missing property named."""
+    import yaml as yaml_mod
+
+    from shared.checks import datacontract_sla_complete
+
+    assert datacontract_sla_complete.run(ITEMS_FIXTURE).passed
+
+    target = _copy_fixture(tmp_path)
+    dc_path = target / "docs/specifications/contracts/datacontract.yaml"
+    doc = yaml_mod.safe_load(dc_path.read_text(encoding="utf-8"))
+    doc["slaProperties"] = [
+        e for e in doc["slaProperties"] if e.get("property") != "latency"
+    ]
+    dc_path.write_text(yaml_mod.safe_dump(doc, sort_keys=False, allow_unicode=True))
+
+    result = datacontract_sla_complete.run(target)
+    assert not result.passed
+    assert any("latency" in d for d in result.details)
+
+
 def test_enum_values_consistent_catches_openapi_drift(tmp_path: pathlib.Path) -> None:
     """Adding a `## Enumerations` section to the model without a
     matching OpenAPI schema must fail ENUM-VALUES-CONSISTENT."""

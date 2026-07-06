@@ -151,3 +151,9 @@ slaProperties:
     value: 30
     unit: d
     description: Events are retained for 30 days for replay and historical access.
+  - property: latency
+    value: 60
+    unit: s
+    description: >
+      Freshness — an event is readable by consumers within 60 seconds
+      of its domain transition committing.

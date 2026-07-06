@@ -39,6 +39,9 @@ checks:
   - id: EVENT-FK-RESOLVABLE
   - id: DATACONTRACT-REFS-RESOLVE
 
+  # Consumer-facing SLAs (gate 1.4)
+  - id: DATACONTRACT-SLA-COMPLETE
+
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
   - id: AUTH-ROLE-TRACES-TO-PERSONA

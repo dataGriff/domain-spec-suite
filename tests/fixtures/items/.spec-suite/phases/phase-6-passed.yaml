@@ -1,32 +1,26 @@
-# Phase 6 Contracts sign-off. Hard gate — all tool checks and all
-# cross-reference checks passed. Schema per SUITE-DESIGN.md §4.
-
 phase: contracts
-signed_off_at: "2026-05-25T16:25:00Z"
-gate_version: "1.0.0"
-
+signed_off_at: '2026-05-25T16:25:00Z'
+gate_version: 1.0.0
 checks_passed:
-  - SPECTRAL-OPENAPI
-  - SPECTRAL-ASYNCAPI
-  - DATACONTRACT-LINT
-  - ENTITY-IN-OPENAPI-SCHEMA
-  - FIELD-MATCH-DOMAIN-OPENAPI
-  - WRITE-OP-HAS-ASYNCAPI-CHANNEL
-  - EVENT-IN-DATACONTRACT
-  - EVENT-FIELD-MATCH-DATACONTRACT
-  - AUTH-MATRIX-OPENAPI-MATCH
-  - ERROR-CODE-IN-CATALOGUE
-
+- SPECTRAL-OPENAPI
+- SPECTRAL-ASYNCAPI
+- DATACONTRACT-LINT
+- ENTITY-IN-OPENAPI-SCHEMA
+- FIELD-MATCH-DOMAIN-OPENAPI
+- WRITE-OP-HAS-ASYNCAPI-CHANNEL
+- EVENT-IN-DATACONTRACT
+- EVENT-FIELD-MATCH-DATACONTRACT
+- AUTH-MATRIX-OPENAPI-MATCH
+- ERROR-CODE-IN-CATALOGUE
 warnings_responded: []
 rubric_findings: []
-
 files_signed:
-  - path: docs/specifications/contracts/openapi.yaml
-    sha256: "4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783"
-    mtime: "2026-05-25T16:24:00Z"
-  - path: docs/specifications/contracts/asyncapi.yaml
-    sha256: "3a75bdf220e1c68d70fd0f5e2af77839bd01af8cd9b6ff9dc371f556347d0823"
-    mtime: "2026-05-25T16:24:30Z"
-  - path: docs/specifications/contracts/datacontract.yaml
-    sha256: "09173ad432c7cb118c1de8805769bf00944db873bd4787099280c3296233e4c6"
-    mtime: "2026-05-25T16:24:45Z"
+- path: docs/specifications/contracts/openapi.yaml
+  sha256: 4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783
+  mtime: '2026-05-25T16:24:00Z'
+- path: docs/specifications/contracts/asyncapi.yaml
+  sha256: 3a75bdf220e1c68d70fd0f5e2af77839bd01af8cd9b6ff9dc371f556347d0823
+  mtime: '2026-05-25T16:24:30Z'
+- path: docs/specifications/contracts/datacontract.yaml
+  sha256: 096956702b755ba99c5cf6c46c1d5e7ba00740e91ab4f2619fff8bc51572d02d
+  mtime: '2026-05-25T16:24:45Z'

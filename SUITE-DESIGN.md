@@ -502,6 +502,35 @@ table, etc.) is a runtime concern outside the contract.
 
 ---
 
+## 4.7. Data Contract SLAs and Derived Data Products
+
+The data contract claims to serve "reporting, analytics, downstream
+sync" — so it must carry the SLAs a consumer plans against. Three
+`slaProperties` are mandatory (`DATACONTRACT-SLA-COMPLETE`, gate 1.4):
+
+- **availability** — delivery guarantee (from the NFRs);
+- **retention** — replay horizon (from the NFRs);
+- **latency** — freshness: how long after a domain transition
+  commits is its event readable. This is the property operational
+  dashboards and near-real-time consumers actually size against.
+
+Record-level `quality:` expectations (PK uniqueness, required-field
+completeness, legal enum members) are stated as ODCS `type: text`
+entries — documentation-grade until a real quality runner exists.
+
+**Derived data products** are the designed-but-not-yet-mechanised
+second layer: summarised/read-model perspectives (per-entity
+histories, per-period aggregates) computed *from* the event stream,
+each authored as its own ODCS contract under
+`contracts/data-products/<name>.yaml` with explicit source-event
+lineage and its own (usually staler) SLAs. The convention is
+specified in `skills/domain-datacontract/SKILL.md`; gate checks for
+it arrive with the first real product (see BUILD-PLAN Post-v1
+Backlog). The event contract alone remains a complete Phase 6
+output — products are opt-in, consumer-driven artifacts.
+
+---
+
 ## 5. The Phase Skill Pattern
 
 Every phase skill follows the same structure. This is what makes the suite

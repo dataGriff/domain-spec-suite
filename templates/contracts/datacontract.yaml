@@ -52,7 +52,15 @@ schema:
         primaryKey: true
         primaryKeyPosition: 1
       # TODO: Add further properties matching your domain model and AsyncAPI schema
+    quality:
+      - type: text
+        description: >
+          TODO: state the record-level quality expectations — e.g.
+          primary-key uniqueness per event id, required fields always
+          present, enum fields only carrying legal members.
 
+# All three of availability, retention, and latency are required
+# (DATACONTRACT-SLA-COMPLETE). Values come from nfr.md.
 slaProperties:
   - property: availability
     value: "99.9"
@@ -62,3 +70,15 @@ slaProperties:
     value: 30
     unit: d
     description: Events are retained for 30 days for replay and historical access.
+  - property: latency
+    value: 60
+    unit: s
+    description: >
+      Freshness — an event is readable by consumers within 60 seconds
+      of its domain transition committing.
+  # Optional: declare expected volume/frequency when consumers need to
+  # capacity-plan, e.g.
+  # - property: frequency
+  #   value: 1000
+  #   unit: events/day
+  #   description: Expected steady-state volume across all channels.
