@@ -1238,6 +1238,27 @@ prevent.
 - ✅ `gate-version.yaml` → 1.3 + `gate-changelog.md` entry. Pure
   loosening: every spec set green under 1.2 stays green under 1.3.
 
+### 6.22 v1.0.17 — bootstrap CI templates clone the suite — [x]
+
+Found when spec-dog-walking's Audit workflow turned out to have been
+red since 2026-06-06: `docs:generate` (and later `task audit`) were
+delegated to suite-side scripts, but the bootstrap-installed CI
+workflows never cloned `domain-spec-suite`, so every bootstrapped
+repo's CI died at "suite not found" and fell back to nothing. No gate
+change — templates only.
+
+- ✅ `skills/domain-bootstrap/templates/.github/workflows/audit.yml` +
+  `docs.yml`: check out the domain repo and the suite as sibling
+  paths (matching the local layout the Taskfile assumes), install the
+  toolchain via `mise install` from `.mise.toml`, and run everything
+  through the same Taskfile targets hooks and agents use
+  (`mise exec -- task lint / audit / docs:generate / docs:build`) —
+  no CI-only command paths. The audit fallback to `task domain:check`
+  is gone (`task audit` has existed since M2.3).
+- ✅ `template_manifest.yaml` regenerated.
+- ✅ Fix proven on spec-dog-walking PR #2: first green Audit run since
+  2026-06-06.
+
 ---
 
 ## Post-v1 Backlog
