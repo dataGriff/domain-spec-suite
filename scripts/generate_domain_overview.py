@@ -16,10 +16,21 @@ Run from the suite via:    python scripts/generate_domain_overview.py --repo <pa
 
 import argparse
 import os
+import pathlib
+import re
 import sys
 from datetime import UTC, datetime
 
 import yaml
+
+_SUITE_ROOT = pathlib.Path(__file__).resolve().parent.parent
+if str(_SUITE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SUITE_ROOT))
+
+from shared.spec_parsers import (  # noqa: E402
+    domain_model_aggregates,
+    domain_model_events,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -238,18 +249,27 @@ def build_events_section(asyncapi):
 """
 
 
-def build_event_operation_correlation(openapi, asyncapi):
+_TRIGGER_RE = re.compile(r"\b(GET|POST|PUT|PATCH|DELETE)\s+(/\S+)")
+
+
+def build_event_operation_correlation(openapi, asyncapi, model_events=None):
     """
-    Derive event↔operation mappings from channel name conventions.
-    e.g. items.item.added  → POST (add)   /v1/items
-         items.item.edited → PATCH (edit) /v1/items/{itemId}
-         items.item.removed → DELETE      /v1/items/{itemId}
+    Map each event channel to the operation that triggers it.
+
+    Authoritative source (gate 1.4): the domain model's `## Domain
+    Events` table — its Trigger column names the exact operation
+    (`PATCH /v1/walks/{walkId}/decision → 200`), so lifecycle channels
+    like `walk.requested` correlate correctly.
+
+    Fallback (domains without the table): the original channel-suffix
+    heuristic (`added`→POST, `edited`→PATCH, `removed`→DELETE).
     """
     channel_to_method = {
         "added": ("POST", "Add"),
         "edited": ("PATCH", "Edit"),
         "removed": ("DELETE", "Remove"),
     }
+    trigger_by_channel = {e["channel"]: e["trigger"] for e in (model_events or [])}
 
     channels = asyncapi.get("channels", {})
     messages = asyncapi.get("components", {}).get("messages", {})
@@ -257,21 +277,30 @@ def build_event_operation_correlation(openapi, asyncapi):
 
     rows = ""
     for channel_name, channel in channels.items():
-        # e.g. items.item.added → action = "added"
-        action = channel_name.split(".")[-1] if "." in channel_name else channel_name
-        method_info = channel_to_method.get(action)
-
-        # Find matching OpenAPI operation
+        matched_method = ""
         matched_path = ""
         matched_summary = ""
-        if method_info:
-            http_method, verb = method_info
-            for path, path_item in paths.items():
-                op = path_item.get(http_method.lower(), {})
-                if op and verb.lower() in op.get("summary", "").lower():
-                    matched_path = path
-                    matched_summary = op.get("summary", "")
-                    break
+
+        # Preferred: the model's declared trigger for this channel.
+        trigger = trigger_by_channel.get(channel_name, "")
+        trigger_match = _TRIGGER_RE.search(trigger) if trigger else None
+        if trigger_match:
+            matched_method, matched_path = trigger_match.group(1), trigger_match.group(2)
+            op = paths.get(matched_path, {}).get(matched_method.lower(), {})
+            matched_summary = op.get("summary", "") if op else ""
+        else:
+            # Heuristic fallback: channel-suffix convention.
+            action = channel_name.split(".")[-1] if "." in channel_name else channel_name
+            method_info = channel_to_method.get(action)
+            if method_info:
+                http_method, verb = method_info
+                for path, path_item in paths.items():
+                    op = path_item.get(http_method.lower(), {})
+                    if op and verb.lower() in op.get("summary", "").lower():
+                        matched_method = http_method
+                        matched_path = path
+                        matched_summary = op.get("summary", "")
+                        break
 
         pub = channel.get("publish", {})
         msg_ref = pub.get("message", {}).get("$ref", "")
@@ -279,17 +308,18 @@ def build_event_operation_correlation(openapi, asyncapi):
         msg = messages.get(msg_name, {})
         event_title = msg.get("title", msg_name)
 
+        if matched_method and matched_path:
+            triggered_by = f"{method_badge(matched_method)} <code>{h(matched_path)}</code>"
+            if matched_summary:
+                triggered_by += f" — {h(matched_summary)}"
+        else:
+            triggered_by = "—"
+
         rows += (
             f"<tr>"
             f"<td><strong>{h(event_title)}</strong></td>"
             f"<td><code>{h(channel_name)}</code></td>"
-            f"<td>"
-            + (
-                f"{method_badge(method_info[0])} <code>{h(matched_path)}</code> — {h(matched_summary)}"
-                if method_info and matched_path
-                else "—"
-            )
-            + "</td>"
+            f"<td>{triggered_by}</td>"
             "</tr>"
         )
 
@@ -442,8 +472,14 @@ def build_data_contract_section(datacontract):
 """
 
 
-def build_erd_section(openapi):
-    """Generate a Mermaid ER diagram from OpenAPI component schemas."""
+def build_erd_section(openapi, aggregates=None):
+    """Generate a Mermaid ER diagram from OpenAPI component schemas.
+
+    Edges come from two sources (gate 1.4): declared aggregates in the
+    domain model's `## Aggregates` table (root contains child —
+    authoritative), then the original `<entity>Id` field-name heuristic
+    for everything else. The domain model's `## Relationships` section
+    is freeform ASCII and deliberately not parsed."""
     schemas = openapi.get("components", {}).get("schemas", {})
     enum_names = set(_collect_named_enums(openapi).keys())
 
@@ -466,7 +502,17 @@ def build_erd_section(openapi):
             lines.append(f"        {ftype} {field}")
         lines.append("    }")
 
-    # Infer relationships: if a field ends with "Id" and the referenced entity exists
+    edges = set()
+
+    # Declared aggregate containment first — authoritative.
+    for root, children in (aggregates or {}).items():
+        for child in children:
+            child_name = child.get("child")
+            if root in entity_names and child_name in entity_names:
+                edges.add((root, child_name))
+                lines.append(f'    {root} ||--o{{ {child_name} : "contains"')
+
+    # Infer remaining relationships: if a field ends with "Id" and the referenced entity exists
     for name in sorted(entity_names):
         schema = schemas[name]
         props = schema.get("properties", {})
@@ -480,7 +526,9 @@ def build_erd_section(openapi):
                 for candidate in sorted(entity_names, key=lambda n: (-len(n), n)):
                     c_lower = candidate.lower()
                     if c_lower in f_lower or f_lower.startswith(c_lower):
-                        lines.append(f'    {candidate} ||--o{{ {name} : "owns"')
+                        if (candidate, name) not in edges:
+                            edges.add((candidate, name))
+                            lines.append(f'    {candidate} ||--o{{ {name} : "owns"')
                         break
 
     diagram = "\n".join(lines)
@@ -499,18 +547,18 @@ def build_erd_section(openapi):
 # ---------------------------------------------------------------------------
 
 
-def build_page(openapi, asyncapi, datacontract):
+def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=None):
     title = openapi.get("info", {}).get("title", "Domain")
     generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     summary = build_summary_section(openapi)
     operations = build_operations_section(openapi)
     events = build_events_section(asyncapi)
-    correlation = build_event_operation_correlation(openapi, asyncapi)
+    correlation = build_event_operation_correlation(openapi, asyncapi, model_events)
     enumerations = build_enumerations_section(openapi)
     entities = build_entities_section(openapi)
     contract = build_data_contract_section(datacontract)
-    erd = build_erd_section(openapi)
+    erd = build_erd_section(openapi, aggregates)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -820,8 +868,17 @@ def main():
     asyncapi = load_yaml(asyncapi_path)
     datacontract = load_yaml(datacontract_path)
 
+    # Domain model is optional input: its Domain Events + Aggregates
+    # tables sharpen the correlation table and ER diagram when present.
+    model_events = None
+    aggregates = None
+    domain_model_path = pathlib.Path(specs_dir) / "domain-model.md"
+    if domain_model_path.is_file():
+        model_events = domain_model_events(domain_model_path)
+        aggregates = domain_model_aggregates(domain_model_path)
+
     print("Generating domain overview…")
-    html = build_page(openapi, asyncapi, datacontract)
+    html = build_page(openapi, asyncapi, datacontract, model_events, aggregates)
 
     with open(output_file, "w", encoding="utf-8") as fh:
         fh.write(html)
