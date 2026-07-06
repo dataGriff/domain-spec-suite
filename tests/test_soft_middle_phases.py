@@ -61,6 +61,7 @@ PHASE_EXPECTATIONS = {
         "expected_ids": {
             "NFR-THRESHOLD-MEASURABLE",
             "ACCEPTANCE-SCENARIO-GWT",
+            "US-HAS-SCENARIO",
         },
         "expected_warnings_for_items": {"NFR-THRESHOLD-MEASURABLE"},
     },

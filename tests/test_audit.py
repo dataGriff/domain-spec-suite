@@ -67,6 +67,7 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "PRD-STORY-PERSONA-LINK",
         "STORY-HAS-FLOW",
         "LIFECYCLE-IN-FLOWS",
+        "US-HAS-SCENARIO",
         "GENERATOR-CLEAN-OUTPUT",
         "IDEMPOTENCY-KEY-ON-POST-OPS",
         "ENTITY-HAS-EVENT",
@@ -105,6 +106,7 @@ CHECK_MODULES = [
     "prd_story_persona_link",
     "story_has_flow",
     "lifecycle_in_flows",
+    "us_has_scenario",
     "generator_clean_output",
 ]
 

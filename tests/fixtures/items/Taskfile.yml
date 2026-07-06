@@ -53,8 +53,13 @@ tasks:
     cmds:
       - python3 scripts/datacontract_skeleton.py {{.CLI_ARGS}}
 
+  docs:render-datacontract:
+    desc: Render the data contract as a standalone HTML reference page via datacontract-cli
+    cmds:
+      - datacontract export html docs/specifications/contracts/datacontract.yaml --output docs/specifications/datacontract-reference.html
+
   docs:generate:
-    desc: 'Generate the domain overview HTML page from OpenAPI, AsyncAPI, and Data Contract specs. The generator lives in the suite (DOMAIN_SPEC_SUITE_ROOT or ../domain-spec-suite/), not in this repo — same resolution as task audit.'
+    desc: 'Generate the domain overview + traceability HTML pages and the data contract HTML reference. Generators live in the suite (DOMAIN_SPEC_SUITE_ROOT or ../domain-spec-suite/), not in this repo — same resolution as task audit.'
     vars:
       SUITE: '{{.DOMAIN_SPEC_SUITE_ROOT | default "../domain-spec-suite"}}'
     cmds:
@@ -66,6 +71,8 @@ tasks:
           exit 1
         fi
         mise exec -- python3 "{{.SUITE}}/scripts/generate_domain_overview.py" --repo .
+      - mise exec -- python3 "{{.SUITE}}/scripts/generate_traceability.py" --repo .
+      - task: docs:render-datacontract
 
   docs:serve:
     desc: Serve the MkDocs site locally

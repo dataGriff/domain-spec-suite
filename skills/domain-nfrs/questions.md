@@ -74,3 +74,38 @@
     Adding {{missing}} step to '{{scenario_id}}':
     {{summary}}
     Sound right?
+
+- id: US-HAS-SCENARIO
+  binds_to_check: US-HAS-SCENARIO
+
+  lead_in: |
+    Story '{{story_id}}' has acceptance criteria in the PRD but no
+    `## {{story_id}}` section in acceptance-scenarios.md — there's no
+    testable definition of done for it. What's the happy-path
+    scenario: as which actor, doing what, expecting what response?
+
+  probes:
+    - trigger: "answer describes intent rather than an observable exchange"
+      ask: |
+        I need the exchange itself: which endpoint is called, with
+        what body, and what status + response fields prove it worked?
+    - trigger: "answer covers only the happy path for a story whose ACs name failure cases"
+      ask: |
+        The PRD's acceptance criteria for this story also name
+        failure cases. Which of those should get scenarios too?
+
+  good_example: |
+    "As the owning contributor, PATCH /v1/items/{itemId} with
+     {status: 'archived'} → 200, body.status == 'archived', and
+     items.item.edited is published."
+
+  bad_example:
+    answer: "The story is simple, scenarios feel redundant."
+    rebuttal: |
+      Scenarios are the testable surface downstream implementations
+      run against — a story without one is unverifiable. One
+      happy-path scenario is the minimum.
+
+  reflect_template: |
+    Adding scenario section '## {{story_id}}' with: {{summary}}.
+    Sound right?

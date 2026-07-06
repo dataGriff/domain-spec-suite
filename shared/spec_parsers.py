@@ -272,6 +272,17 @@ def prd_user_story_blocks(prd: pathlib.Path) -> list[str]:
     return [b for b in blocks if b.strip().startswith("#### US-")]
 
 
+def prd_user_story_ids(prd: pathlib.Path) -> list[str]:
+    """Story ids (`US-001`, `US-002`, …) from the `#### US-xxx` headings
+    under `## User Stories`, in source order."""
+    ids: list[str] = []
+    for block in prd_user_story_blocks(prd):
+        match = re.match(r"####\s+(US-\d+)", block.strip())
+        if match:
+            ids.append(match.group(1))
+    return ids
+
+
 # ── auth matrix ─────────────────────────────────────────────────
 
 
@@ -437,6 +448,13 @@ def acceptance_scenario_blocks(scenarios: pathlib.Path) -> list[dict[str, str]]:
         body = re.split(r"(?m)^##\s", block, maxsplit=1)[0]
         out.append({"heading": heading.group(1).strip(), "text": body})
     return out
+
+
+def scenario_story_sections(scenarios: pathlib.Path) -> list[str]:
+    """Story ids that have a `## US-xxx` section heading in
+    acceptance-scenarios.md, in source order."""
+    text = scenarios.read_text(encoding="utf-8")
+    return re.findall(r"(?m)^##\s+(US-\d+)\b", text)
 
 
 def _iter_operation_responses(openapi: dict):
