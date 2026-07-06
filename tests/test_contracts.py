@@ -1208,3 +1208,43 @@ def test_entity_has_event_catches_silent_entity(tmp_path: pathlib.Path) -> None:
     result = entity_has_event.run(target)
     assert not result.passed
     assert "User" in result.details
+
+
+# ── gate 1.3: FIELD-MATCH skips [secret] attributes (BUILD-PLAN 6.21) ─
+
+
+def test_field_match_skips_secret_attributes(tmp_path: pathlib.Path) -> None:
+    """A [secret]-marked model attribute absent from the entity's
+    OpenAPI schema must NOT fail FIELD-MATCH — the marker means
+    'excluded from every published surface'. A non-secret absent
+    attribute must still fail."""
+    from shared.checks import field_match_domain_openapi
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+
+    # Give the fixture a bare Item-mirroring schema situation: add a
+    # secret attribute + a plain attribute to the Item entity table,
+    # neither present in the OpenAPI Item schema.
+    text = model.read_text()
+    text = text.replace(
+        "| `description` |",
+        "| `apiToken` | string | Yes | [secret] Opaque token; never returned in API responses |\n"
+        "| `description` |",
+        1,
+    )
+    model.write_text(text, encoding="utf-8")
+
+    result = field_match_domain_openapi.run(target)
+    assert result.passed, f"[secret] attribute wrongly required in OpenAPI: {result.details}"
+
+    text = model.read_text().replace(
+        "| `description` |",
+        "| `plainField` | string | Yes | Not secret at all |\n| `description` |",
+        1,
+    )
+    model.write_text(text, encoding="utf-8")
+
+    result = field_match_domain_openapi.run(target)
+    assert not result.passed
+    assert any("Item.plainField" in d for d in result.details), result.details

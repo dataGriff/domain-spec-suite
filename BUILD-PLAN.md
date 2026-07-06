@@ -1215,6 +1215,29 @@ Check + template + skill amendments:
 - ✅ ~~Incidental fix: `seed_signoffs.py` stale glob~~ — superseded by
   6.19's YAML-based rewrite, which fixed the same bug on main.
 
+### 6.21 v1.0.16 / gate 1.3 — FIELD-MATCH skips [secret] attributes — [x]
+
+Found while actioning the dog-walking critique's L5 under gate 1.2.
+`FIELD-MATCH-DOMAIN-OPENAPI` used the raw attribute parser, so a
+`[secret]`-marked model attribute (`User.passwordHash`,
+`Invite.token`) was *required* to appear in the entity's OpenAPI
+schema — forcing spec sets to advertise response-schema properties
+the API must never return, precisely what the marker exists to
+prevent.
+
+- ✅ `shared/checks/field_match_domain_openapi.py` uses
+  `domain_model_published_attributes` (the `[secret]`-stripping
+  parser already used by `EVENT-PAYLOAD-COVERS-ENTITY-STATE`).
+  Request schemas may still take secret inputs — the check only
+  inspects entity schemas.
+- ✅ Regression test (`tests/test_contracts.py`): a `[secret]`
+  attribute absent from the OpenAPI schema passes; a non-secret
+  absent attribute still fails.
+- ✅ Items fixture unaffected — its `User` is represented by
+  `UserSummary`, which FIELD-MATCH never keyed on.
+- ✅ `gate-version.yaml` → 1.3 + `gate-changelog.md` entry. Pure
+  loosening: every spec set green under 1.2 stays green under 1.3.
+
 ---
 
 ## Post-v1 Backlog

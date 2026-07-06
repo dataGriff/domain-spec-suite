@@ -6,6 +6,30 @@ See `SUITE-DESIGN.md` §10 for the policy.
 
 ---
 
+## `1.3` — 2026-07-06 — FIELD-MATCH skips `[secret]` attributes
+
+Found while actioning the dog-walking critique's L5 under gate 1.2.
+`FIELD-MATCH-DOMAIN-OPENAPI` used the raw attribute parser, so a
+`[secret]`-marked model attribute (a password hash, an opaque token)
+was *required* to appear as a property of the entity's OpenAPI
+schema — forcing contracts to advertise fields the API must never
+return, precisely what the marker exists to prevent.
+
+Changed semantics:
+
+- `FIELD-MATCH-DOMAIN-OPENAPI` now uses
+  `domain_model_published_attributes` (the `[secret]`-stripping
+  parser `EVENT-PAYLOAD-COVERS-ENTITY-STATE` already uses), so
+  `[secret]` attributes are exempt from the model→OpenAPI direction.
+  Request schemas may still take secret inputs (e.g. `password` on a
+  register request) — this check only inspects entity schemas.
+
+Pure loosening: every spec set green under `1.2` stays green under
+`1.3`. The Items fixture is unaffected (its `User` is represented by
+`UserSummary`, which FIELD-MATCH never keyed on).
+
+---
+
 ## `1.2` — 2026-07-05 — closure checks (critique-driven hardening)
 
 Driven by the adversarial review of the dog-walking spec set

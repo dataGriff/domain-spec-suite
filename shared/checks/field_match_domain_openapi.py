@@ -2,10 +2,16 @@
 and the corresponding OpenAPI entity schemas.
 
 For each entity that appears in both, ensures every attribute listed in
-the domain model exists as a property in the OpenAPI schema. The
-reverse direction is intentionally not checked — OpenAPI schemas may
-legitimately carry presentation-layer fields (e.g. denormalised
-display names) that aren't first-class domain attributes.
+the domain model exists as a property in the OpenAPI schema. Two
+deliberate asymmetries:
+
+- The reverse direction is not checked — OpenAPI schemas may
+  legitimately carry presentation-layer fields (e.g. denormalised
+  display names) that aren't first-class domain attributes.
+- `[secret]`-marked attributes are exempt (gate 1.3): the marker
+  means "excluded from every published surface", so requiring a
+  password hash or opaque token as a response-schema property would
+  force the contract to advertise a field the API must never return.
 """
 
 from __future__ import annotations
@@ -14,7 +20,7 @@ import pathlib
 
 from shared.check_result import CheckResult
 from shared.spec_parsers import (
-    domain_model_attributes,
+    domain_model_published_attributes,
     load_yaml,
     openapi_entity_schemas,
 )
@@ -35,7 +41,7 @@ def run(repo_root: pathlib.Path) -> CheckResult:
     domain_model = repo_root / "docs" / "specifications" / "domain-model.md"
     openapi = load_yaml(repo_root / "docs" / "specifications" / "contracts" / "openapi.yaml")
 
-    attrs_by_entity = domain_model_attributes(domain_model)
+    attrs_by_entity = domain_model_published_attributes(domain_model)
     openapi_schemas = openapi_entity_schemas(openapi)
 
     problems: list[str] = []
