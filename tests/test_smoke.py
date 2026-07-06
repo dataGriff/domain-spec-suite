@@ -68,6 +68,7 @@ def test_skills_directories_exist() -> None:
         "domain-asyncapi",
         "domain-datacontract",
         "domain-conformance-audit",
+        "domain-implement",
     }
     found = {p.name for p in (REPO / "skills").iterdir() if p.is_dir()}
     assert expected <= found, f"missing skill directories: {expected - found}"

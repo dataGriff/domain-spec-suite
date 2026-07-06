@@ -246,11 +246,13 @@ Sub-tasks:
   - `.github/workflows/audit.yml` (authored in 2.0)
   - `.github/workflows/docs.yml` (GitHub Pages deploy)
   - `.github/CODEOWNERS`
-- **Deliberate omissions: no agent guidance files.** The bootstrap does
-  *not* install `CLAUDE.md`, `AGENTS.md`, or `.github/instructions/*.md`.
-  This is the "strict skill-only" stance — the orchestrator and phase
-  skills are the only sanctioned interface for spec-set changes. See
-  SUITE-DESIGN §2 "Phase 0: Bootstrap specifics" for the rationale.
+- **Deliberate omissions: no spec-authoring agent guidance.** The
+  bootstrap does *not* install `CLAUDE.md` or anything instructing an
+  agent to edit specs — the orchestrator and phase skills are the only
+  sanctioned interface for spec-set changes. *(Amended in v1.0.18 +
+  v1.0.19 / §6.23–6.24: consumption guidance IS shipped —
+  `docs/implementation-guide.md` canonical, with `AGENTS.md` +
+  `.github/instructions/` as discovery pointers. See SUITE-DESIGN §2.)*
 - [x] Author `skills/domain-bootstrap/template_manifest.yaml` listing
   every file the bootstrap owns (path + expected sha256). The bootstrap's
   `--force` re-run consults this manifest to decide what may be

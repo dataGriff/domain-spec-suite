@@ -168,8 +168,9 @@ Bootstrap produces:
 - `.github/workflows/audit.yml` (Section 9, PR-time conformance audit)
 - `.github/workflows/docs.yml` (Section 9, GitHub Pages deploy on push to main)
 - `.github/CODEOWNERS`
-- `.github/instructions/api-implementation.instructions.md` (the
-  technology-agnostic implementation-consumption guide — see below)
+- Consumption guidance: `docs/implementation-guide.md` (canonical),
+  `AGENTS.md`, and `.github/instructions/api-implementation.instructions.md`
+  (pointers — see below)
 - Empty `.spec-suite/progress.yaml` with Phase 0 marked complete and Phase 1 ready
 - `.spec-suite/bootstrap.yaml` recording the suite and gate versions that produced
   the shell
@@ -178,22 +179,36 @@ Bootstrap produces:
   be overwritten)
 
 Bootstrap **deliberately ships no spec-authoring agent guidance** — no
-`CLAUDE.md`, no `AGENTS.md`. The suite's orchestrator and phase skills
-are the only sanctioned interface for spec-set changes. A bootstrapped
-domain repo is intentionally a slate that the skills drive; authoring
-guidance lives in the suite's `skills/*/SKILL.md` files, not in the
-target repo.
+`CLAUDE.md`, and nothing that instructs an agent how to write or edit
+the specs. The suite's orchestrator and phase skills are the only
+sanctioned interface for spec-set changes. A bootstrapped domain repo
+is intentionally a slate that the skills drive; authoring guidance
+lives in the suite's `skills/*/SKILL.md` files, not in the target
+repo. (The shipped `AGENTS.md` is not authoring guidance — see below —
+its first job is telling agents *not* to edit the specs directly.)
 
-The one instruction file bootstrap *does* ship —
-`.github/instructions/api-implementation.instructions.md` — is aimed
-at the opposite direction of travel: it guides engineers and AI coding
-agents **consuming** the finished spec set to build an implementation
-(reading order, authority hierarchy, build workflow, verification
-loop). It never authorises spec edits; it explicitly routes spec
-changes back through the orchestrator. (Amended in gate 1.4 /
-v1.0.18 — earlier revisions banned `.github/instructions/*.md`
-outright, while the generated docs index had referenced this file
-since M2.0.)
+What bootstrap *does* ship is **consumption guidance** — aimed at the
+opposite direction of travel: engineers and AI coding agents building
+an implementation *from* the finished spec set. It is agent-agnostic
+by design (v1.0.19): the content lives once, and each agent ecosystem
+finds it through its native discovery mechanism.
+
+- `docs/implementation-guide.md` — the **canonical** playbook
+  (reading order, authority map, build workflow, verification loop),
+  published on the docs site so humans and agents read the same page.
+- `AGENTS.md` (repo root) — the cross-agent instructions standard;
+  a thin pointer: repo is spec-authoritative, changes only via the
+  orchestrator, implementers follow the guide.
+- `.github/instructions/api-implementation.instructions.md` — the
+  GitHub Copilot discovery pointer at the same guide.
+- `skills/domain-implement` (suite-side, not bootstrap-installed) —
+  the interactive walk-through of the guide for Claude-family agents.
+
+None of these authorise spec edits; all route spec changes back
+through the orchestrator. (History: gate 1.4 / v1.0.18 first allowed
+the `.github/instructions` guide after earlier revisions banned all
+instruction files while the docs index referenced one; v1.0.19
+restructured to canonical-guide + pointers.)
 
 After Bootstrap, the orchestrator immediately prompts to start Phase 1.
 

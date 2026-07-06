@@ -69,15 +69,17 @@ The output is a populated domain repository containing:
 - Generated views: domain overview, interactive API/AsyncAPI/data
   contract references, and a story→scenario→operation→event
   traceability matrix
-- `.github/instructions/api-implementation.instructions.md` — the
-  technology-agnostic guide an engineer (or AI coding agent) follows
-  to implement the spec set
+- Agent-agnostic consumption guidance:
+  `docs/implementation-guide.md` (the canonical build playbook) plus
+  thin discovery pointers — `AGENTS.md` (cross-agent standard) and
+  `.github/instructions/api-implementation.instructions.md` (Copilot)
 - Suite state under `.spec-suite/`: `progress.yaml`, `bootstrap.yaml`,
   `ambiguities.md`, `template-manifest.yaml`, and eight
   `phases/phase-N-passed.yaml` sidecars
 - Repository shell: `Taskfile.yml`, linting configs, `mkdocs.yml`,
   skeleton scripts, hooks, CI workflows. Deliberately **no**
-  spec-authoring agent guidance (no `CLAUDE.md`/`AGENTS.md`) — the
+  spec-authoring agent guidance (no `CLAUDE.md`; the shipped
+  `AGENTS.md` exists to say "don't edit specs directly") — the
   orchestrator and phase skills are the only sanctioned interface for
   changing the spec set (SUITE-DESIGN §2)
 
@@ -92,8 +94,10 @@ ready to drive implementations.
 - **Eight phase skills** — each carries a `gate.yaml`, a `questions.md`
   bank, and (where the gate is mechanical) Python check scripts.
   Phase 6 also has three authoring sub-skills (`domain-openapi`,
-  `domain-asyncapi`, `domain-datacontract`); `domain-review` is a
-  post-audit qualitative pass outside the phase progression.
+  `domain-asyncapi`, `domain-datacontract`). Outside the phase
+  progression sit two post-audit skills: `domain-review` (qualitative
+  pass over the spec set) and `domain-implement` (drives building a
+  service from the finished specs, in a separate implementation repo).
 - **`shared/checks/`** — cross-phase Python check modules with
   per-phase severity metadata.
 - **`shared/sign_off.py`** — the only path that writes
@@ -120,6 +124,7 @@ domain-spec-suite/
 │   ├── domain-{discovery,modeling,access-control,flows,nfrs,contracts}/
 │   ├── domain-{openapi,asyncapi,datacontract}/   ← Phase 6 authoring sub-skills
 │   ├── domain-review/                    ← post-audit qualitative review
+│   ├── domain-implement/                 ← post-audit implementation driver
 │   └── domain-conformance-audit/
 ├── shared/checks/                        ← cross-phase Python check modules
 ├── scripts/                              ← operator scripts (bootstrap, upgrade_shell, reset_phase, …)
