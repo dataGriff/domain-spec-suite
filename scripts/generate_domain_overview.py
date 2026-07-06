@@ -371,10 +371,7 @@ def build_enumerations_section(openapi, model_enums=None):
         values = schema.get("enum", [])
         description = (schema.get("description") or "").strip()
         declared = model_enums.get(name)
-        if declared is not None:
-            is_open = declared["open"]
-        else:
-            is_open = len(values) > _ENUM_OPEN_THRESHOLD
+        is_open = declared["open"] if declared is not None else len(values) > _ENUM_OPEN_THRESHOLD
         badge_class = "enum-open" if is_open else "enum-closed"
         badge_text = "open" if is_open else "closed"
 
