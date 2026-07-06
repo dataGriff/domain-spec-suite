@@ -4,7 +4,7 @@
 # an existing target. Regenerate with `python scripts/regenerate_manifest.py`.
 
 manifest_version: "1.0"
-suite_version: "1.0.18"
+suite_version: "1.0.19"
 gate_version: "1.4"
 
 # Each file:

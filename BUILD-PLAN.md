@@ -1377,7 +1377,7 @@ spec-dog-walking.
 - [x] `template_manifest.yaml` regenerated; pytest + ruff +
       questions-coverage green; Items fixture passes gate 1.4.
 
-### 6.24 v1.0.19 — consumption round 2: homepage dedupe, authority map, agent-agnostic implementation guidance — [ ]
+### 6.24 v1.0.19 — consumption round 2: homepage dedupe, authority map, agent-agnostic implementation guidance — [x]
 
 Richard's second consumption pass on the gate-1.4 output (2026-07-06):
 the docs homepage duplicated itself (Start-here list + Specifications
@@ -1395,54 +1395,54 @@ suite → v1.0.19.
 
 **A. Homepage** (`index.md.template`, `mkdocs.yml.template`)
 
-- [ ] One numbered "Read in this order" table (Document / What it
+- [x] One numbered "Read in this order" table (Document / What it
       answers / Authoritative for) replaces both the Start-here list
       and the Specifications table; contracts row links the three
       interactive references (raw YAML footnote); implementation
       guide closes the order.
-- [ ] Separate "Generated views" table framed derived-never-
+- [x] Separate "Generated views" table framed derived-never-
       authoritative.
-- [ ] Key Principles 3–7 replaced by an **Authority Map** table,
+- [x] Key Principles 3–7 replaced by an **Authority Map** table,
       including the open-enum row (contract authoritative for open-
       enum full value lists; model holds a representative subset).
-- [ ] mkdocs nav gains the Implementation Guide page; Tasks section
+- [x] mkdocs nav gains the Implementation Guide page; Tasks section
       docs:generate description updated.
 
 **B. Domain overview** (`scripts/generate_domain_overview.py`)
 
-- [ ] Purpose banner (generated orientation; derived, never
+- [x] Purpose banner (generated orientation; derived, never
       authoritative).
-- [ ] Nav: back link `./index.html` → `../`; add traceability +
+- [x] Nav: back link `./index.html` → `../`; add traceability +
       datacontract-reference links.
-- [ ] Enumerations: open enums note "full list here authoritative;
+- [x] Enumerations: open enums note "full list here authoritative;
       model lists a representative subset"; closed enums "matches
       the domain model exactly".
-- [ ] `tests/test_overview_generator.py` extended.
+- [x] `tests/test_overview_generator.py` extended.
 
 **C. Traceability** (`scripts/generate_traceability.py`)
 
-- [ ] Coverage-dashboard purpose banner.
-- [ ] Reverse-coverage section: operations no scenario exercises,
+- [x] Coverage-dashboard purpose banner.
+- [x] Reverse-coverage section: operations no scenario exercises,
       channels no scenario asserts (informational).
-- [ ] Same top-nav as the overview (`../` back link).
-- [ ] `tests/test_traceability.py` extended.
+- [x] Same top-nav as the overview (`../` back link).
+- [x] `tests/test_traceability.py` extended.
 
 **D. Agent-agnostic implementation guidance**
 
-- [ ] Canonical guide → new bootstrap template
+- [x] Canonical guide → new bootstrap template
       `docs/implementation-guide.md` (content from the gate-1.4
       guide + authority-map alignment + "scaffold an AGENTS.md in
       the implementation repo" closing section); published in the
       site nav.
-- [ ] New bootstrap template `AGENTS.md` (spec-repo root, thin):
+- [x] New bootstrap template `AGENTS.md` (spec-repo root, thin):
       spec-authoritative repo, changes via orchestrator only, to
       implement see docs/implementation-guide.md. SUITE-DESIGN §2
       amended (authoring guidance still banned; consumption pointers
       are shell); 2.2's "no AGENTS.md" note annotated.
-- [ ] `.github/instructions/api-implementation.instructions.md`
+- [x] `.github/instructions/api-implementation.instructions.md`
       slims to a frontmattered Copilot pointer at the canonical
       guide.
-- [ ] New skill `skills/domain-implement/SKILL.md` — post-audit,
+- [x] New skill `skills/domain-implement/SKILL.md` — post-audit,
       outside phase progression (like domain-review): audit-green
       pre-flight, stack interview, implementation-repo scaffold
       (incl. its AGENTS.md binding), build loop in the canonical
@@ -1452,7 +1452,7 @@ suite → v1.0.19.
 
 **E. Release mechanics**
 
-- [ ] `suite-version.yaml` → 1.0.19 (no gate bump);
+- [x] `suite-version.yaml` → 1.0.19 (no gate bump);
       `template_manifest.yaml` regenerated; pytest + ruff +
       questions-coverage green.
 
