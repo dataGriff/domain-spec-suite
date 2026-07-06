@@ -1259,7 +1259,7 @@ change — templates only.
 - ✅ Fix proven on spec-dog-walking PR #2: first green Audit run since
   2026-06-06.
 
-### 6.23 v1.0.18 / gate 1.4 — consumption & layout overhaul — [ ]
+### 6.23 v1.0.18 / gate 1.4 — consumption & layout overhaul — [x]
 
 A consumption review of the merged dog-walking set and the suite repo
 (2026-07-06) surfaced that the output is optimised for the *authoring*
@@ -1276,16 +1276,16 @@ spec-dog-walking.
 
 **A. Onboarding & consumption**
 
-- [ ] Suite `README.md`: user-facing quickstart at the top (how to
+- [x] Suite `README.md`: user-facing quickstart at the top (how to
       start a new domain via `domain-orchestrator`), brief
       gates/sign-off/force-advance explainer, link to the Items
       fixture as the worked example; version strings corrected to
       point at `gate-version.yaml`/`gate-changelog.md` instead of
       hardcoding stale values.
-- [ ] `skills/domain-bootstrap/templates/README.md.template`: stale
+- [x] `skills/domain-bootstrap/templates/README.md.template`: stale
       paths fixed (`.spec-suite/progress.yaml`,
       `.spec-suite/reviews/`).
-- [ ] New bootstrap template
+- [x] New bootstrap template
       `.github/instructions/api-implementation.instructions.md` — the
       technology-agnostic implementation-consumption guide the
       generated `index.md` (principle 10) has referenced since M2.0
@@ -1294,63 +1294,63 @@ spec-dog-walking.
       agent guidance stays banned (skills are the only authoring
       interface); a downstream *consumption* guide for implementers is
       part of the shell.
-- [ ] `docs/index.md.template`: "Start here" section — audience
+- [x] `docs/index.md.template`: "Start here" section — audience
       statement (AI coding agents + humans), reading order, link to
       the implementation guide; stale `_progress.yaml` path fixed.
-- [ ] `mkdocs.yml.template` nav: generated views (domain overview,
+- [x] `mkdocs.yml.template` nav: generated views (domain overview,
       API reference, AsyncAPI reference, datacontract reference,
       traceability) discoverable from the sidebar.
 
 **B. Lexicon glossary**
 
-- [ ] `templates/glossary.md`: drop per-entity attribute sections;
+- [x] `templates/glossary.md`: drop per-entity attribute sections;
       glossary = ubiquitous-language lexicon (entities, roles, domain
       events, enumerations, other terms — one-liners). Attribute
       documentation lives only in `domain-model.md` tables.
-- [ ] Retire `GLOSSARY-COVERS-ATTRIBUTES` (module, gate wiring,
+- [x] Retire `GLOSSARY-COVERS-ATTRIBUTES` (module, gate wiring,
       questions entry). Keep `ENTITY-IN-GLOSSARY`.
-- [ ] New shared check `GLOSSARY-COVERS-DOMAIN-TERMS`: every Domain
+- [x] New shared check `GLOSSARY-COVERS-DOMAIN-TERMS`: every Domain
       Events row's event name and every `## Enumerations` name has a
       glossary `###` entry. Silent when the model lacks those
       sections. Modeling error + audit error.
-- [ ] `skills/domain-modeling/SKILL.md` + `questions.md`: lexicon
+- [x] `skills/domain-modeling/SKILL.md` + `questions.md`: lexicon
       framing; migration note (detail that only existed in a glossary
       attribute line moves into the model's table row).
-- [ ] `skills/domain-bootstrap/templates/scripts/glossary_skeleton.py`:
+- [x] `skills/domain-bootstrap/templates/scripts/glossary_skeleton.py`:
       emits lexicon stubs (entities, events, enums) instead of
       attribute stubs.
-- [ ] Items fixture glossary upgraded to lexicon shape; sign-offs
+- [x] Items fixture glossary upgraded to lexicon shape; sign-offs
       reseeded; tests updated.
 
 **C. Traceability**
 
-- [ ] New suite script `scripts/generate_traceability.py` (reuses
+- [x] New suite script `scripts/generate_traceability.py` (reuses
       `shared/spec_parsers.py`): emits
       `docs/specifications/traceability.html` — per user story: PRD
       link → scenarios → operations → events → error codes; flags
       story ACs asserting status/error codes no scenario exercises
       (informational). Wired into the bootstrap Taskfile
       `docs:generate` alongside the overview generator.
-- [ ] New shared check `US-HAS-SCENARIO`: every `US-xxx` id in
+- [x] New shared check `US-HAS-SCENARIO`: every `US-xxx` id in
       `prd.md` has a `## US-xxx` section in
       `acceptance-scenarios.md`. NFRs-phase warning + audit error.
       questions.md entry in `domain-nfrs`.
-- [ ] PRD + scenarios templates and `domain-discovery`/`domain-nfrs`
+- [x] PRD + scenarios templates and `domain-discovery`/`domain-nfrs`
       SKILL.md: per-story cross-links both ways
       (`[Scenarios](acceptance-scenarios.md#us-xxx)` and back).
 
 **D. Data contract enrichment + derived products (design)**
 
-- [ ] `templates/contracts/datacontract.yaml` +
+- [x] `templates/contracts/datacontract.yaml` +
       `skills/domain-datacontract/SKILL.md`: `slaProperties` must
       declare freshness/latency (event lag), retention, and
       availability; `quality:` checks (PK uniqueness, required-field
       completeness) prescribed; optional volume expectations.
-- [ ] New shared check `DATACONTRACT-SLA-COMPLETE`: slaProperties
+- [x] New shared check `DATACONTRACT-SLA-COMPLETE`: slaProperties
       contains at least latency/freshness, retention, availability.
       Contracts error + audit error. questions.md entry via
       `domain-contracts`.
-- [ ] Derived data products designed (not built):
+- [x] Derived data products designed (not built):
       `skills/domain-datacontract/SKILL.md` section + SUITE-DESIGN
       note defining optional `contracts/data-products/<name>.yaml`
       ODCS contracts for summary/read-model perspectives (source
@@ -1359,18 +1359,20 @@ spec-dog-walking.
 
 **E. Domain overview fidelity**
 
-- [ ] `scripts/generate_domain_overview.py`: ER diagram edges and
-      operation→event correlation derive from `domain-model.md`
-      (Relationships/Aggregates/Domain Events tables) when present,
-      falling back to the existing name heuristics when not.
+- [x] `scripts/generate_domain_overview.py`: operation→event
+      correlation derives from the Domain Events table's Trigger
+      column and ER edges from declared `## Aggregates` when present,
+      falling back to the existing name heuristics when not. (The
+      `## Relationships` section is freeform ASCII and deliberately
+      not parsed.)
 
 **F. Release mechanics**
 
-- [ ] `gate-version.yaml` → 1.4 + `gate-changelog.md` entry (adds
+- [x] `gate-version.yaml` → 1.4 + `gate-changelog.md` entry (adds
       `GLOSSARY-COVERS-DOMAIN-TERMS`, `US-HAS-SCENARIO`,
       `DATACONTRACT-SLA-COMPLETE`; retires
       `GLOSSARY-COVERS-ATTRIBUTES`).
-- [ ] `template_manifest.yaml` regenerated; pytest + ruff +
+- [x] `template_manifest.yaml` regenerated; pytest + ruff +
       questions-coverage green; Items fixture passes gate 1.4.
 
 ---

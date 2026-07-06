@@ -82,9 +82,7 @@ def test_datacontract_sla_complete_passes_and_catches_missing_latency(
     target = _copy_fixture(tmp_path)
     dc_path = target / "docs/specifications/contracts/datacontract.yaml"
     doc = yaml_mod.safe_load(dc_path.read_text(encoding="utf-8"))
-    doc["slaProperties"] = [
-        e for e in doc["slaProperties"] if e.get("property") != "latency"
-    ]
+    doc["slaProperties"] = [e for e in doc["slaProperties"] if e.get("property") != "latency"]
     dc_path.write_text(yaml_mod.safe_dump(doc, sort_keys=False, allow_unicode=True))
 
     result = datacontract_sla_complete.run(target)

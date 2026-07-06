@@ -6,6 +6,46 @@ See `SUITE-DESIGN.md` §10 for the policy.
 
 ---
 
+## `1.4` — 2026-07-06 — consumption & layout overhaul
+
+Driven by a consumption review of the merged dog-walking spec set
+(BUILD-PLAN §6.23): the output was optimised for the authoring loop,
+not for the humans and AI agents consuming it afterwards.
+
+New checks:
+
+- `GLOSSARY-COVERS-DOMAIN-TERMS` (modeling, audit — error): every
+  Domain Events row's event name and every `## Enumerations` name
+  has a glossary `###` entry. Silent when the model declares
+  neither section.
+- `US-HAS-SCENARIO` (nfrs — warning; audit — error): every PRD
+  `US-xxx` story id has a `## US-xxx` section in
+  acceptance-scenarios.md.
+- `DATACONTRACT-SLA-COMPLETE` (contracts, audit — error): the data
+  contract's `slaProperties` declare availability, retention, AND
+  latency (freshness).
+
+Retired checks:
+
+- `GLOSSARY-COVERS-ATTRIBUTES` — the glossary is now a lexicon
+  (entities, roles, events, enumerations, terms); attributes are
+  documented once, in `domain-model.md`'s entity tables. The
+  ~130-entry duplication the old check forced is deliberately gone.
+
+Migration for spec sets green under `1.3`:
+
+- Remove glossary `## <Entity> attributes` sections (folding any
+  glossary-only detail into the model's table rows) and add entries
+  for events/enumerations the model names.
+- Add a `latency` slaProperty to the data contract.
+- Ensure every PRD story has a scenario section (dog-walking already
+  did; the check makes it mechanical).
+
+The Items fixture was upgraded, not exempted: lexicon glossary (plus
+a `UserRegistered` event entry), `latency` SLA added.
+
+---
+
 ## `1.3` — 2026-07-06 — FIELD-MATCH skips `[secret]` attributes
 
 Found while actioning the dog-walking critique's L5 under gate 1.2.

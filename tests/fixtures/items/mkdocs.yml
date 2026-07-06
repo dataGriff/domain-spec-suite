@@ -1,4 +1,4 @@
-site_name: Domain API Docs
+site_name: Items Domain Docs
 site_url: https://datagriff.github.io/domain-api-template/
 docs_dir: docs
 repo_url: https://github.com/dataGriff/domain-api-template
@@ -31,9 +31,20 @@ nav:
     - Sequence Diagrams: specifications/sequence-diagrams.md
     - Non-Functional Requirements: specifications/nfr.md
     - Acceptance Scenarios: specifications/acceptance-scenarios.md
+  # Generated HTML views live in docs/specifications/ but aren't MkDocs
+  # pages, so they're linked absolutely (via site_url) to stay valid
+  # from any page depth. Regenerate with `task docs:generate`.
+  - Generated Views:
+    - Domain Overview: https://datagriff.github.io/domain-api-template//specifications/domain-overview.html
+    - Traceability Matrix: https://datagriff.github.io/domain-api-template//specifications/traceability.html
+    - API Reference: https://datagriff.github.io/domain-api-template//specifications/api-reference.html
+    - AsyncAPI Reference: https://datagriff.github.io/domain-api-template//specifications/asyncapi-reference.html
+    - Data Contract Reference: https://datagriff.github.io/domain-api-template//specifications/datacontract-reference.html
 
-# Suite-internal state lives in .spec-suite/ (outside docs/) so
-# nothing under docs/ needs excluding.
+# Suite bookkeeping now lives in `.spec-suite/` (outside `docs/`), so
+# nothing in `docs/specifications/` needs to be hidden from the site.
+# This list is intentionally empty; kept here so future spec-set
+# authors know where to add per-domain exclusions if they need them.
 exclude_docs: |
 
 markdown_extensions:

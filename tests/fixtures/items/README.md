@@ -1,17 +1,64 @@
-# domain-api-template
+# Items
 
-A **design-and-contracts-only** repository for long-lived domain requirements, rules, and API/event/data contracts.
+A **design-and-contracts-only** repository for the Items domain.
+Holds long-lived business requirements, rules, and API/event/data
+contracts. No runnable implementation lives here — implementations
+consume these specs from their own repositories.
 
-> **Full documentation:** [`docs/index.md`](docs/index.md) (also published as a [MkDocs site](https://datagriff.github.io/domain-api-template/)).
+> **Full documentation:** [`docs/index.md`](docs/index.md) (rendered via
+> [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)).
 
 ---
 
 ## Quick Start
 
 ```bash
-task domain:init
-task domain:check
+mise trust          # one-time per clone — trusts this repo's .mise.toml
+mise install        # installs Python 3.11, Node 20, Spectral,
+                    # datacontract-cli, mkdocs-material via pipx
+task setup          # installs pyyaml and wires git hooks
+task                # list every available task
+task domain:check   # lint contracts + regenerate the domain overview
+task docs:serve     # browse the docs site locally
+task audit          # full Phase 7 conformance audit (requires the suite)
+task review         # qualitative independent review (catches what audit misses)
 ```
+
+### Running the audit
+
+`task audit` and `task audit:cross-file` invoke the
+[`domain-spec-suite`](https://github.com/dataGriff/domain-spec-suite)
+from your local checkout. Resolution order:
+
+1. `DOMAIN_SPEC_SUITE_ROOT` env var (preferred — works anywhere)
+2. Sibling directory `../domain-spec-suite/` (the convention when both
+   live under the same parent)
+
+If neither resolves, the task fails with a one-line setup hint pointing
+at `git clone https://github.com/dataGriff/domain-spec-suite ../domain-spec-suite`.
+
+Future: the suite will be packaged as a `pipx`-installable CLI (`dss
+audit`) so spec repos no longer need a sibling checkout — see the
+suite repo's roadmap.
+
+### Running an independent review
+
+`task review` runs the qualitative review skill against this spec
+set. It catches inconsistencies the mechanical audit can't —
+contradictions between docs, orphan operations, semantic drift in
+prose, decision-log entries that don't match the implementation.
+
+Run it:
+
+- Before a major release
+- After a large update-mode change
+- Periodically as hygiene
+- On demand when something feels off
+
+Output lands at `.spec-suite/reviews/<timestamp>.md` (each
+run is a new file; old reviews stay for reference). The review is
+read-only: the user reads findings and decides what to action via
+the normal update-mode flow.
 
 ---
 
@@ -20,24 +67,34 @@ task domain:check
 | Area | Location |
 |------|----------|
 | Product + domain requirements | `docs/specifications/*.md` |
-| API/event/data contracts | `docs/specifications/contracts/*.yaml` |
-| Implementation conformance guidance | `.github/instructions/api-implementation.instructions.md` |
+| API / event / data contracts | `docs/specifications/contracts/*.yaml` |
+| Implementation guide (for engineers + AI agents) | `.github/instructions/api-implementation.instructions.md` |
 | Suite bookkeeping (progress, sidecars, ambiguities, reviews) | `.spec-suite/` |
 | Contract linting + docs tasks | `Taskfile.yml` |
 | Published docs config | `mkdocs.yml`, `docs/`, `.github/workflows/docs.yml` |
+| PR-time conformance audit | `.github/workflows/audit.yml` |
 
 ---
 
-## Goal
+## How this repo was created
 
-This repository intentionally contains no runnable API implementation. It is the reusable source of truth for:
+This repository was bootstrapped by the
+[`domain-spec-suite`](https://github.com/dataGriff/domain-spec-suite),
+which drives a user through an eight-phase walk (Bootstrap → Discovery
+→ Modeling → Access Control → Flows → NFRs → Contracts → Audit) and
+produces a complete, internally-consistent spec set. The suite's
+audit phase is the source of truth for whether a spec set is
+"complete".
 
-- business requirements
-- rules and permissions
-- REST contracts
-- event contracts
-- data contracts
+To continue or update this spec set, invoke the
+`domain-orchestrator` skill from the suite — it reads
+`.spec-suite/progress.yaml` and routes you to the right
+phase.
 
-Implementations should live in separate repositories that consume this template.
-When instantiated, these specs and instructions become the source of truth for that repository's implementation.
-Use `.github/instructions/api-implementation.instructions.md` to keep implementation conformance consistent while remaining technology-agnostic.
+## Implementing from this spec set
+
+Engineers and AI coding agents building a service from these specs
+should start at
+[`.github/instructions/api-implementation.instructions.md`](.github/instructions/api-implementation.instructions.md)
+— the technology-agnostic guide covering reading order, authority
+hierarchy, build workflow, and the verification loop.

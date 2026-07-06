@@ -138,8 +138,14 @@ def build_rows(repo):
         if not story_scenarios:
             flags.append("no scenarios")
         else:
-            flags.extend(f"AC mentions {s} — no scenario asserts it" for s in sorted(ac_statuses - covered_statuses))
-            flags.extend(f"AC mentions {c} — no scenario asserts it" for c in sorted(ac_codes - covered_codes))
+            flags.extend(
+                f"AC mentions {s} — no scenario asserts it"
+                for s in sorted(ac_statuses - covered_statuses)
+            )
+            flags.extend(
+                f"AC mentions {c} — no scenario asserts it"
+                for c in sorted(ac_codes - covered_codes)
+            )
 
         rows.append(
             {
@@ -258,7 +264,12 @@ def main(argv=None):
 
     repo = pathlib.Path(args.repo).resolve()
     specs = repo / "docs" / "specifications"
-    for required in ("prd.md", "acceptance-scenarios.md", "contracts/openapi.yaml", "error-catalogue.md"):
+    for required in (
+        "prd.md",
+        "acceptance-scenarios.md",
+        "contracts/openapi.yaml",
+        "error-catalogue.md",
+    ):
         if not (specs / required).is_file():
             print(f"generate_traceability: {specs / required} not found", file=sys.stderr)
             return 1
