@@ -38,6 +38,7 @@ from shared.spec_parsers import (  # noqa: E402
     acceptance_scenario_blocks,
     asyncapi_channels,
     endpoint_mentions,
+    endpoint_path_matches,
     error_catalogue_codes,
     load_yaml,
     openapi_operations,
@@ -159,14 +160,31 @@ def build_rows(repo):
             }
         )
     cross = grouped.get("(cross-cutting)", [])
-    return rows, cross
+
+    # Reverse coverage: contract surface no scenario anywhere exercises.
+    # Path templates match segment-wise (endpoint_path_matches), same as
+    # OPERATION-HAS-SCENARIO, so concrete ids in scenario prose count.
+    all_text = "\n".join(text for group in grouped.values() for _, text in group)
+    all_mentions = endpoint_mentions(all_text)
+    unexercised_ops = []
+    for op in operations:
+        op_id = op.get("operationId")
+        if op_id and op_id in all_text:
+            continue
+        if any(m == op["method"] and endpoint_path_matches(p, op["path"]) for m, p in all_mentions):
+            continue
+        unexercised_ops.append(f"{op['method']} {op['path']} (operationId={op_id or '—'})")
+    unasserted_channels = [c for c in channels if c not in all_text]
+
+    return rows, cross, unexercised_ops, unasserted_channels
 
 
-def render(rows, cross, domain_title):
+def render(rows, cross, unexercised_ops, unasserted_channels, domain_title):
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     total = len(rows)
     with_scenarios = sum(1 for r in rows if r["scenarios"])
     flag_count = sum(len(r["flags"]) for r in rows)
+    reverse_count = len(unexercised_ops) + len(unasserted_channels)
 
     def cell_list(items, formatter=None):
         if not items:
@@ -200,6 +218,23 @@ def render(rows, cross, domain_title):
             f"<ul class='cross'>{items}</ul>"
         )
 
+    if reverse_count:
+        op_items = "".join(f"<li>{h(o)}</li>" for o in unexercised_ops)
+        ch_items = "".join(f"<li>{h(c)}</li>" for c in unasserted_channels)
+        reverse_html = (
+            "<h2>Reverse coverage</h2>"
+            "<p>Contract surface no scenario anywhere exercises — each entry "
+            "is either a missing scenario or dead contract surface:</p>"
+            + (f"<h3>Operations</h3><ul class='flags'>{op_items}</ul>" if op_items else "")
+            + (f"<h3>Event channels</h3><ul class='flags'>{ch_items}</ul>" if ch_items else "")
+        )
+    else:
+        reverse_html = (
+            "<h2>Reverse coverage</h2>"
+            "<p><span class='ok'>✓</span> Every operation and event channel "
+            "in the contracts is exercised by at least one scenario.</p>"
+        )
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -209,6 +244,10 @@ def render(rows, cross, domain_title):
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
          background: #0f1419; color: #d6dbe1; margin: 0; padding: 2rem; }}
   h1 {{ color: #fff; margin-top: 0; }}
+  .docs-nav {{ margin-bottom: 1.2rem; font-size: .85rem; }}
+  .docs-nav a {{ color: #58a6ff; text-decoration: none; }}
+  .docs-nav a:hover {{ text-decoration: underline; }}
+  .docs-nav .sep {{ color: #2b333c; padding: 0 .4rem; }}
   .meta {{ color: #7a8794; margin-bottom: 1.5rem; }}
   .summary {{ display: flex; gap: 2rem; margin-bottom: 1.5rem; }}
   .summary div {{ background: #1a2027; border: 1px solid #2b333c; border-radius: 8px;
@@ -231,14 +270,29 @@ def render(rows, cross, domain_title):
 </style>
 </head>
 <body>
+<nav class="docs-nav">
+  <a href="../">&larr; Back to Docs</a>
+  <span class="sep">|</span>
+  <a href="./domain-overview.html">Domain Overview</a>
+  <span class="sep">|</span>
+  <a href="./api-reference.html">API Reference</a>
+  <span class="sep">|</span>
+  <a href="./asyncapi-reference.html">AsyncAPI Events</a>
+  <span class="sep">|</span>
+  <a href="./datacontract-reference.html">Data Contract</a>
+</nav>
 <h1>Traceability Matrix — {h(domain_title)}</h1>
-<p class="meta">Generated {generated} · story → scenarios → operations → events → error codes.
-Flags are informational: they mark status/error codes a story's PRD acceptance criteria
-mention that none of its scenarios asserts.</p>
+<p class="meta">The <strong>coverage dashboard</strong> — does every story have a testable
+definition of done, and does every failure mode its acceptance criteria name have a
+scenario? Flags are gaps to close before implementation. Generated {generated} from the
+specs (regenerate with <code>task docs:generate</code>); derived, never authoritative.
+It complements the mechanical checks (<code>US-HAS-SCENARIO</code>,
+<code>OPERATION-HAS-SCENARIO</code>) with the at-a-glance view.</p>
 <div class="summary">
   <div><span class="n">{total}</span> user stories</div>
   <div><span class="n">{with_scenarios}</span> with scenarios</div>
   <div><span class="n">{flag_count}</span> coverage flags</div>
+  <div><span class="n">{reverse_count}</span> unexercised surfaces</div>
 </div>
 <table>
 <thead><tr><th>Story</th><th>Scenarios</th><th>Operations</th><th>Events</th><th>Error codes</th><th>Coverage flags</th></tr></thead>
@@ -246,6 +300,7 @@ mention that none of its scenarios asserts.</p>
 {"".join(body_rows)}
 </tbody>
 </table>
+{reverse_html}
 {cross_html}
 </body>
 </html>
@@ -274,7 +329,7 @@ def main(argv=None):
             print(f"generate_traceability: {specs / required} not found", file=sys.stderr)
             return 1
 
-    rows, cross = build_rows(repo)
+    rows, cross, unexercised_ops, unasserted_channels = build_rows(repo)
     if not rows:
         print("generate_traceability: no user stories found in prd.md", file=sys.stderr)
         return 1
@@ -283,9 +338,16 @@ def main(argv=None):
     domain_title = (openapi.get("info") or {}).get("title") or repo.name
 
     out_path = pathlib.Path(args.output) if args.output else specs / "traceability.html"
-    out_path.write_text(render(rows, cross, domain_title), encoding="utf-8")
+    out_path.write_text(
+        render(rows, cross, unexercised_ops, unasserted_channels, domain_title),
+        encoding="utf-8",
+    )
     flag_count = sum(len(r["flags"]) for r in rows)
-    print(f"Wrote {out_path}: {len(rows)} stories, {flag_count} coverage flag(s).")
+    reverse_count = len(unexercised_ops) + len(unasserted_channels)
+    print(
+        f"Wrote {out_path}: {len(rows)} stories, {flag_count} coverage flag(s), "
+        f"{reverse_count} unexercised surface(s)."
+    )
     return 0
 
 

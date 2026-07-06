@@ -22,11 +22,48 @@ def test_items_fixture_renders_fully_covered(tmp_path: pathlib.Path) -> None:
     html = out.read_text(encoding="utf-8")
     for sid in ("US-001", "US-002", "US-003", "US-004", "US-005", "US-006", "US-007"):
         assert sid in html, f"story {sid} missing from matrix"
-    # Items is fully covered — no flags.
+    # Items is fully covered — no flags, nothing unexercised.
     assert "0</span> coverage flags" in html
+    assert "0</span> unexercised surfaces" in html
+    assert "Every operation and event channel" in html
     # Operations and events made it into the matrix.
     assert "POST /v1/items" in html
     assert "items.item.added" in html
+    # Purpose banner + nav.
+    assert "coverage dashboard" in html
+    assert '<a href="../">&larr; Back to Docs</a>' in html
+
+
+def test_reverse_coverage_flags_unexercised_surface(tmp_path: pathlib.Path) -> None:
+    """An operation and a channel no scenario mentions land in the
+    reverse-coverage section (informational — exit stays 0)."""
+    import yaml
+
+    target = tmp_path / "items"
+    shutil.copytree(ITEMS_FIXTURE, target)
+
+    openapi_path = target / "docs/specifications/contracts/openapi.yaml"
+    doc = yaml.safe_load(openapi_path.read_text(encoding="utf-8"))
+    doc["paths"]["/v1/items/export"] = {
+        "get": {
+            "operationId": "exportItems",
+            "summary": "Export items",
+            "responses": {"200": {"description": "ok"}},
+        }
+    }
+    openapi_path.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    asyncapi_path = target / "docs/specifications/contracts/asyncapi.yaml"
+    adoc = yaml.safe_load(asyncapi_path.read_text(encoding="utf-8"))
+    adoc["channels"]["items.item.exported"] = {"publish": {"message": {}}}
+    asyncapi_path.write_text(yaml.safe_dump(adoc, sort_keys=False))
+
+    out = tmp_path / "traceability.html"
+    assert generate_traceability.main(["--repo", str(target), "--output", str(out)]) == 0
+    html = out.read_text(encoding="utf-8")
+    assert "GET /v1/items/export" in html
+    assert "items.item.exported" in html
+    assert "2</span> unexercised surfaces" in html
 
 
 def test_uncovered_ac_status_is_flagged(tmp_path: pathlib.Path) -> None:
