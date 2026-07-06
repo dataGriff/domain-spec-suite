@@ -26,6 +26,7 @@ And the response body contains a non-empty accessToken
 And the response body contains a non-empty refreshToken
 And user.role equals "contributor"
 And no field named "password" appears anywhere in the response
+And a UserRegistered event is published on channel items.user.registered
 ```
 
 ### Scenario US-001-B: Successful viewer registration

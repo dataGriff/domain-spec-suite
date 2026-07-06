@@ -246,11 +246,13 @@ Sub-tasks:
   - `.github/workflows/audit.yml` (authored in 2.0)
   - `.github/workflows/docs.yml` (GitHub Pages deploy)
   - `.github/CODEOWNERS`
-- **Deliberate omissions: no agent guidance files.** The bootstrap does
-  *not* install `CLAUDE.md`, `AGENTS.md`, or `.github/instructions/*.md`.
-  This is the "strict skill-only" stance — the orchestrator and phase
-  skills are the only sanctioned interface for spec-set changes. See
-  SUITE-DESIGN §2 "Phase 0: Bootstrap specifics" for the rationale.
+- **Deliberate omissions: no spec-authoring agent guidance.** The
+  bootstrap does *not* install `CLAUDE.md` or anything instructing an
+  agent to edit specs — the orchestrator and phase skills are the only
+  sanctioned interface for spec-set changes. *(Amended in v1.0.18 +
+  v1.0.19 / §6.23–6.24: consumption guidance IS shipped —
+  `docs/implementation-guide.md` canonical, with `AGENTS.md` +
+  `.github/instructions/` as discovery pointers. See SUITE-DESIGN §2.)*
 - [x] Author `skills/domain-bootstrap/template_manifest.yaml` listing
   every file the bootstrap owns (path + expected sha256). The bootstrap's
   `--force` re-run consults this manifest to decide what may be
@@ -1374,6 +1376,85 @@ spec-dog-walking.
       `GLOSSARY-COVERS-ATTRIBUTES`).
 - [x] `template_manifest.yaml` regenerated; pytest + ruff +
       questions-coverage green; Items fixture passes gate 1.4.
+
+### 6.24 v1.0.19 — consumption round 2: homepage dedupe, authority map, agent-agnostic implementation guidance — [x]
+
+Richard's second consumption pass on the gate-1.4 output (2026-07-06):
+the docs homepage duplicated itself (Start-here list + Specifications
+table), the Start-here contracts link landed on raw YAML, the
+"domain model is source of truth" claim collided with the deliberate
+open-enum inversion (model holds 12 representative breeds, openapi
+authoritatively ~211) with no stated authority model, the domain
+overview declared no purpose and its back link was broken
+(`./index.html` under `/specifications/`), the traceability page
+didn't explain what it brings, and the implementation guide was a
+`.github/instructions` one-off while everything else is a skill —
+resolved as: agent-agnostic canonical guide + native discovery
+pointers per ecosystem. No check semantics change → gate stays 1.4;
+suite → v1.0.19.
+
+**A. Homepage** (`index.md.template`, `mkdocs.yml.template`)
+
+- [x] One numbered "Read in this order" table (Document / What it
+      answers / Authoritative for) replaces both the Start-here list
+      and the Specifications table; contracts row links the three
+      interactive references (raw YAML footnote); implementation
+      guide closes the order.
+- [x] Separate "Generated views" table framed derived-never-
+      authoritative.
+- [x] Key Principles 3–7 replaced by an **Authority Map** table,
+      including the open-enum row (contract authoritative for open-
+      enum full value lists; model holds a representative subset).
+- [x] mkdocs nav gains the Implementation Guide page; Tasks section
+      docs:generate description updated.
+
+**B. Domain overview** (`scripts/generate_domain_overview.py`)
+
+- [x] Purpose banner (generated orientation; derived, never
+      authoritative).
+- [x] Nav: back link `./index.html` → `../`; add traceability +
+      datacontract-reference links.
+- [x] Enumerations: open enums note "full list here authoritative;
+      model lists a representative subset"; closed enums "matches
+      the domain model exactly".
+- [x] `tests/test_overview_generator.py` extended.
+
+**C. Traceability** (`scripts/generate_traceability.py`)
+
+- [x] Coverage-dashboard purpose banner.
+- [x] Reverse-coverage section: operations no scenario exercises,
+      channels no scenario asserts (informational).
+- [x] Same top-nav as the overview (`../` back link).
+- [x] `tests/test_traceability.py` extended.
+
+**D. Agent-agnostic implementation guidance**
+
+- [x] Canonical guide → new bootstrap template
+      `docs/implementation-guide.md` (content from the gate-1.4
+      guide + authority-map alignment + "scaffold an AGENTS.md in
+      the implementation repo" closing section); published in the
+      site nav.
+- [x] New bootstrap template `AGENTS.md` (spec-repo root, thin):
+      spec-authoritative repo, changes via orchestrator only, to
+      implement see docs/implementation-guide.md. SUITE-DESIGN §2
+      amended (authoring guidance still banned; consumption pointers
+      are shell); 2.2's "no AGENTS.md" note annotated.
+- [x] `.github/instructions/api-implementation.instructions.md`
+      slims to a frontmattered Copilot pointer at the canonical
+      guide.
+- [x] New skill `skills/domain-implement/SKILL.md` — post-audit,
+      outside phase progression (like domain-review): audit-green
+      pre-flight, stack interview, implementation-repo scaffold
+      (incl. its AGENTS.md binding), build loop in the canonical
+      guide's order with scenarios as the test suite. No mechanical
+      gate yet — first real use (dog-rescue implementation) drives
+      what gets mechanised. Smoke-test skill set + README updated.
+
+**E. Release mechanics**
+
+- [x] `suite-version.yaml` → 1.0.19 (no gate bump);
+      `template_manifest.yaml` regenerated; pytest + ruff +
+      questions-coverage green.
 
 ---
 

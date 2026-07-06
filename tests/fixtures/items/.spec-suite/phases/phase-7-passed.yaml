@@ -50,7 +50,7 @@ files_signed:
   sha256: 0369c920d5887eb5a73ba47f443f9dfbc437e143aa674e21a2586be2ffafce3b
   mtime: '2026-05-25T16:14:00Z'
 - path: docs/specifications/acceptance-scenarios.md
-  sha256: 32b87cc0e5a2a0cc7e3873f515be787a803931e73746e9058e8a7eb32fc5358d
+  sha256: 5171466916605bac0366bb0b993f678fc3ce96cda36e2fd2ff48edfe3fa6f00f
   mtime: '2026-05-25T16:14:30Z'
 - path: docs/specifications/contracts/openapi.yaml
   sha256: 4a57786733f9b18c6922190394e117fc193601a2e787ca28810e4722eecd3783

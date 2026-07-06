@@ -29,6 +29,7 @@ if str(_SUITE_ROOT) not in sys.path:
 
 from shared.spec_parsers import (  # noqa: E402
     domain_model_aggregates,
+    domain_model_enums,
     domain_model_events,
 )
 
@@ -355,21 +356,38 @@ def _schema_type(prop):
     return display
 
 
-def build_enumerations_section(openapi):
+def build_enumerations_section(openapi, model_enums=None):
+    """model_enums: the domain model's `## Enumerations` parse
+    ({name: {"values": [...], "open": bool}}) — the authoritative
+    open/closed declaration. Enums the model doesn't declare fall back
+    to the value-count heuristic."""
     enums = _collect_named_enums(openapi)
     if not enums:
         return ""
+    model_enums = model_enums or {}
 
     blocks = []
     for name, schema in enums.items():
         values = schema.get("enum", [])
         description = (schema.get("description") or "").strip()
-        is_open = len(values) > _ENUM_OPEN_THRESHOLD
+        declared = model_enums.get(name)
+        is_open = declared["open"] if declared is not None else len(values) > _ENUM_OPEN_THRESHOLD
         badge_class = "enum-open" if is_open else "enum-closed"
         badge_text = "open" if is_open else "closed"
 
-        chips = " ".join(f"<code>{h(v)}</code>" for v in values)
         if is_open:
+            authority_note = (
+                "<p class='enum-authority'>Open enum — this full list is "
+                "authoritative; the domain model lists a representative "
+                "subset. Additions are a minor version bump.</p>"
+            )
+        else:
+            authority_note = (
+                "<p class='enum-authority'>Closed enum — matches the domain model exactly.</p>"
+            )
+
+        chips = " ".join(f"<code>{h(v)}</code>" for v in values)
+        if len(values) > _ENUM_OPEN_THRESHOLD:
             values_html = (
                 f'<details class="enum-values">'
                 f"<summary>Show all {len(values)} values</summary>"
@@ -386,6 +404,7 @@ def build_enumerations_section(openapi):
             f"<h3><code>{h(name)}</code> "
             f'<span class="badge {badge_class}">{badge_text}</span></h3>'
             f"{desc_html}"
+            f"{authority_note}"
             f"{values_html}"
             f"</div>"
         )
@@ -393,9 +412,10 @@ def build_enumerations_section(openapi):
     return f"""
 <section id="enumerations" class="card">
   <h2>🔤 Enumerations</h2>
-  <p>Named enum schemas authored in <code>openapi.yaml</code>. Closed enums are
-  fixed sets; open enums (e.g. <code>Breed</code>) carry the authoritative full
-  list in the contract and may grow on a minor-version bump.</p>
+  <p>Named enum schemas authored in <code>openapi.yaml</code>. Closed enums
+  match the domain model exactly; open enums carry the authoritative full
+  list here while the model holds a representative subset (see the Authority
+  Map on the docs home).</p>
   {"".join(blocks)}
 </section>
 """
@@ -547,7 +567,9 @@ def build_erd_section(openapi, aggregates=None):
 # ---------------------------------------------------------------------------
 
 
-def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=None):
+def build_page(
+    openapi, asyncapi, datacontract, model_events=None, aggregates=None, model_enums=None
+):
     title = openapi.get("info", {}).get("title", "Domain")
     generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
@@ -555,7 +577,7 @@ def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=No
     operations = build_operations_section(openapi)
     events = build_events_section(asyncapi)
     correlation = build_event_operation_correlation(openapi, asyncapi, model_events)
-    enumerations = build_enumerations_section(openapi)
+    enumerations = build_enumerations_section(openapi, model_enums)
     entities = build_entities_section(openapi)
     contract = build_data_contract_section(datacontract)
     erd = build_erd_section(openapi, aggregates)
@@ -624,6 +646,13 @@ def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=No
       color: var(--muted);
       font-size: 0.85rem;
     }}
+    #page-header .purpose {{
+      color: var(--muted);
+      font-size: 0.85rem;
+      max-width: 720px;
+      margin: 0.6rem auto 0;
+    }}
+    #page-header .purpose a {{ color: var(--accent); }}
 
     /* ── TOC / Jump nav ── */
     #toc {{
@@ -724,6 +753,7 @@ def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=No
     .enum-block    {{ margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px dashed var(--border); }}
     .enum-block:last-child {{ border-bottom: none; }}
     .enum-chips    {{ display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.25rem; }}
+    .enum-authority {{ color: var(--muted); font-size: 0.8rem; margin: 0.15rem 0 0.35rem; }}
     .enum-values   {{ margin-top: 0.25rem; }}
     .enum-values summary {{ cursor: pointer; color: var(--accent); font-size: 12px; }}
 
@@ -774,11 +804,15 @@ def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=No
 <body>
 
 <nav id="docs-nav">
-  <a href="./index.html">&larr; Back to Docs</a>
+  <a href="../">&larr; Back to Docs</a>
+  <span class="sep">|</span>
+  <a href="./traceability.html">Traceability</a>
   <span class="sep">|</span>
   <a href="./api-reference.html">API Reference</a>
   <span class="sep">|</span>
   <a href="./asyncapi-reference.html">AsyncAPI Events</a>
+  <span class="sep">|</span>
+  <a href="./datacontract-reference.html">Data Contract</a>
   <span class="sep">|</span>
   <a href="./contracts/openapi.yaml">openapi.yaml</a>
   <span class="sep">|</span>
@@ -790,6 +824,10 @@ def build_page(openapi, asyncapi, datacontract, model_events=None, aggregates=No
 <header id="page-header">
   <h1>{h(title)} — Domain Overview</h1>
   <p class="subtitle">Deterministically generated from OpenAPI, AsyncAPI &amp; Data Contract · {generated_at}</p>
+  <p class="purpose">Generated orientation — rebuilt from the contracts (and the domain
+  model's Domain Events / Aggregates tables) on every docs build. Derived, never
+  authoritative: for detail, read the specs in the
+  <a href="../">reading order on the docs home</a>.</p>
 </header>
 
 <nav id="toc">
@@ -872,13 +910,15 @@ def main():
     # tables sharpen the correlation table and ER diagram when present.
     model_events = None
     aggregates = None
+    model_enums = None
     domain_model_path = pathlib.Path(specs_dir) / "domain-model.md"
     if domain_model_path.is_file():
         model_events = domain_model_events(domain_model_path)
         aggregates = domain_model_aggregates(domain_model_path)
+        model_enums = domain_model_enums(domain_model_path)
 
     print("Generating domain overview…")
-    html = build_page(openapi, asyncapi, datacontract, model_events, aggregates)
+    html = build_page(openapi, asyncapi, datacontract, model_events, aggregates, model_enums)
 
     with open(output_file, "w", encoding="utf-8") as fh:
         fh.write(html)
