@@ -168,6 +168,8 @@ Bootstrap produces:
 - `.github/workflows/audit.yml` (Section 9, PR-time conformance audit)
 - `.github/workflows/docs.yml` (Section 9, GitHub Pages deploy on push to main)
 - `.github/CODEOWNERS`
+- `.github/instructions/api-implementation.instructions.md` (the
+  technology-agnostic implementation-consumption guide — see below)
 - Empty `.spec-suite/progress.yaml` with Phase 0 marked complete and Phase 1 ready
 - `.spec-suite/bootstrap.yaml` recording the suite and gate versions that produced
   the shell
@@ -175,12 +177,23 @@ Bootstrap produces:
   `--force` re-bootstrap and `task suite:upgrade-shell` to know what may
   be overwritten)
 
-Bootstrap **deliberately ships no agent guidance files** — no
-`CLAUDE.md`, no `AGENTS.md`, no `.github/instructions/*.md`. The
-suite's orchestrator and phase skills are the only sanctioned interface
-for spec-set changes. A bootstrapped domain repo is intentionally a
-slate that the skills drive; agent guidance lives in the suite's
-`skills/*/SKILL.md` files, not in the target repo.
+Bootstrap **deliberately ships no spec-authoring agent guidance** — no
+`CLAUDE.md`, no `AGENTS.md`. The suite's orchestrator and phase skills
+are the only sanctioned interface for spec-set changes. A bootstrapped
+domain repo is intentionally a slate that the skills drive; authoring
+guidance lives in the suite's `skills/*/SKILL.md` files, not in the
+target repo.
+
+The one instruction file bootstrap *does* ship —
+`.github/instructions/api-implementation.instructions.md` — is aimed
+at the opposite direction of travel: it guides engineers and AI coding
+agents **consuming** the finished spec set to build an implementation
+(reading order, authority hierarchy, build workflow, verification
+loop). It never authorises spec edits; it explicitly routes spec
+changes back through the orchestrator. (Amended in gate 1.4 /
+v1.0.18 — earlier revisions banned `.github/instructions/*.md`
+outright, while the generated docs index had referenced this file
+since M2.0.)
 
 After Bootstrap, the orchestrator immediately prompts to start Phase 1.
 
