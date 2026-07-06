@@ -66,34 +66,34 @@
   reflect_template: |
     Adding glossary entry for '{{entity_name}}': {{summary}}. Sound right?
 
-- id: GLOSSARY-COVERS-ATTRIBUTES
-  binds_to_check: GLOSSARY-COVERS-ATTRIBUTES
+- id: GLOSSARY-COVERS-DOMAIN-TERMS
+  binds_to_check: GLOSSARY-COVERS-DOMAIN-TERMS
 
   lead_in: |
-    Attribute '{{attribute_name}}' on entity '{{entity_name}}' is in
-    domain-model.md but not in glossary.md. What's the one-sentence
-    business meaning of this attribute?
+    The domain model names '{{term_name}}' (an event or enumeration)
+    but glossary.md has no entry for it. What's the one-sentence
+    definition a reader meeting the term for the first time needs?
 
   probes:
-    - trigger: "answer restates the attribute name without defining it"
+    - trigger: "answer restates the term name without defining it"
       ask: |
-        A glossary entry has to add information beyond the name.
-        What constraint, default, or business meaning applies that a
-        reader couldn't guess from the name alone?
+        A glossary entry has to add information beyond the name. For
+        an event: when is it published and what does it carry? For an
+        enumeration: what does it classify and is it open or closed?
 
   good_example: |
-    "`status`: enum, one of `active` / `archived`. Defaults to
-     `active` on creation; the contributor toggles it."
+    "ItemRemoved — published on `items.item.removed` whenever an item
+     is removed from the catalogue. Payload is reduced to id,
+     contributorId, and removedAt."
 
   bad_example:
-    answer: "status is the status of the item."
+    answer: "ItemRemoved means an item was removed."
     rebuttal: |
-      That doesn't say anything. What values can it take, what
-      defaults, what triggers a change?
+      That's just the name again. When does it fire, on which
+      channel, and what does the payload carry?
 
   reflect_template: |
-    Adding glossary entry for '{{entity_name}}.{{attribute_name}}':
-    {{summary}}. Sound right?
+    Adding glossary entry for '{{term_name}}': {{summary}}. Sound right?
 
 - id: MODEL-ENTITY-HAS-ID-TIMESTAMPS
   binds_to_check: MODEL-ENTITY-HAS-ID-TIMESTAMPS

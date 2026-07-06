@@ -39,22 +39,27 @@ tasks:
       - python3 scripts/glossary_skeleton.py
 
   openapi:skeleton:
-    desc: 'Generate contracts/openapi.yaml skeleton from auth-matrix.md + domain-model.md + error-catalogue.md. Wires Idempotency-Key on every POST. Idempotent on template; --force to overwrite a real one.'
+    desc: 'Generate contracts/openapi.yaml skeleton from auth-matrix.md + domain-model.md + error-catalogue.md. Wires Idempotency-Key on every POST, declares entity + enum schemas, and emits TODO-marked descriptions for the agent to fill. Idempotent on template; --force to overwrite a real one.'
     cmds:
       - python3 scripts/openapi_skeleton.py {{.CLI_ARGS}}
 
   asyncapi:skeleton:
-    desc: 'Generate contracts/asyncapi.yaml skeleton from domain-model.md events + entities + aggregates. Idempotent on template; --force to overwrite a real one.'
+    desc: 'Generate contracts/asyncapi.yaml skeleton from domain-model.md events + entities + aggregates. Wires the CloudEvents envelope, full-state payloads, and aggregate-child collections. Idempotent on template; --force to overwrite a real one.'
     cmds:
       - python3 scripts/asyncapi_skeleton.py {{.CLI_ARGS}}
 
   datacontract:skeleton:
-    desc: 'Generate contracts/datacontract.yaml skeleton from asyncapi.yaml + nfr.md. Run AFTER asyncapi:skeleton. Idempotent on template; --force to overwrite a real one.'
+    desc: 'Generate contracts/datacontract.yaml skeleton from asyncapi.yaml + nfr.md. Mirrors event payloads into ODCS records with nested aggregate fields. Run AFTER asyncapi:skeleton. Idempotent on template; --force to overwrite a real one.'
     cmds:
       - python3 scripts/datacontract_skeleton.py {{.CLI_ARGS}}
 
+  docs:render-datacontract:
+    desc: Render the data contract as a standalone HTML reference page via datacontract-cli
+    cmds:
+      - datacontract export html docs/specifications/contracts/datacontract.yaml --output docs/specifications/datacontract-reference.html
+
   docs:generate:
-    desc: 'Generate the domain overview HTML page from OpenAPI, AsyncAPI, and Data Contract specs. The generator lives in the suite (DOMAIN_SPEC_SUITE_ROOT or ../domain-spec-suite/), not in this repo — same resolution as task audit.'
+    desc: 'Generate the domain overview + traceability HTML pages and the data contract HTML reference. Generators live in the suite (DOMAIN_SPEC_SUITE_ROOT or ../domain-spec-suite/), not in this repo — same resolution as task audit.'
     vars:
       SUITE: '{{.DOMAIN_SPEC_SUITE_ROOT | default "../domain-spec-suite"}}'
     cmds:
@@ -66,6 +71,8 @@ tasks:
           exit 1
         fi
         mise exec -- python3 "{{.SUITE}}/scripts/generate_domain_overview.py" --repo .
+      - mise exec -- python3 "{{.SUITE}}/scripts/generate_traceability.py" --repo .
+      - task: docs:render-datacontract
 
   docs:serve:
     desc: Serve the MkDocs site locally

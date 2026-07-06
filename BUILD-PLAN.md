@@ -1259,6 +1259,122 @@ change — templates only.
 - ✅ Fix proven on spec-dog-walking PR #2: first green Audit run since
   2026-06-06.
 
+### 6.23 v1.0.18 / gate 1.4 — consumption & layout overhaul — [x]
+
+A consumption review of the merged dog-walking set and the suite repo
+(2026-07-06) surfaced that the output is optimised for the *authoring*
+loop, not for the people and agents who consume it afterwards: no
+newcomer quickstart, a dangling implementation-guide reference, ~130
+attributes documented twice (model tables + glossary headings), no
+PRD↔scenario traceability, an event-payload-only data contract with
+no freshness/quality SLAs, and generated HTML views invisible to the
+site nav. User decisions: lexicon glossary; keep PRD/scenarios at two
+altitudes plus a generated traceability matrix; enrich the event
+contract now and design (not build) a derived-data-products
+extension; land everything in the suite first, rehearse on
+spec-dog-walking.
+
+**A. Onboarding & consumption**
+
+- [x] Suite `README.md`: user-facing quickstart at the top (how to
+      start a new domain via `domain-orchestrator`), brief
+      gates/sign-off/force-advance explainer, link to the Items
+      fixture as the worked example; version strings corrected to
+      point at `gate-version.yaml`/`gate-changelog.md` instead of
+      hardcoding stale values.
+- [x] `skills/domain-bootstrap/templates/README.md.template`: stale
+      paths fixed (`.spec-suite/progress.yaml`,
+      `.spec-suite/reviews/`).
+- [x] New bootstrap template
+      `.github/instructions/api-implementation.instructions.md` — the
+      technology-agnostic implementation-consumption guide the
+      generated `index.md` (principle 10) has referenced since M2.0
+      without the file existing. SUITE-DESIGN §2's "no
+      `.github/instructions/*.md`" stance is amended: spec-*authoring*
+      agent guidance stays banned (skills are the only authoring
+      interface); a downstream *consumption* guide for implementers is
+      part of the shell.
+- [x] `docs/index.md.template`: "Start here" section — audience
+      statement (AI coding agents + humans), reading order, link to
+      the implementation guide; stale `_progress.yaml` path fixed.
+- [x] `mkdocs.yml.template` nav: generated views (domain overview,
+      API reference, AsyncAPI reference, datacontract reference,
+      traceability) discoverable from the sidebar.
+
+**B. Lexicon glossary**
+
+- [x] `templates/glossary.md`: drop per-entity attribute sections;
+      glossary = ubiquitous-language lexicon (entities, roles, domain
+      events, enumerations, other terms — one-liners). Attribute
+      documentation lives only in `domain-model.md` tables.
+- [x] Retire `GLOSSARY-COVERS-ATTRIBUTES` (module, gate wiring,
+      questions entry). Keep `ENTITY-IN-GLOSSARY`.
+- [x] New shared check `GLOSSARY-COVERS-DOMAIN-TERMS`: every Domain
+      Events row's event name and every `## Enumerations` name has a
+      glossary `###` entry. Silent when the model lacks those
+      sections. Modeling error + audit error.
+- [x] `skills/domain-modeling/SKILL.md` + `questions.md`: lexicon
+      framing; migration note (detail that only existed in a glossary
+      attribute line moves into the model's table row).
+- [x] `skills/domain-bootstrap/templates/scripts/glossary_skeleton.py`:
+      emits lexicon stubs (entities, events, enums) instead of
+      attribute stubs.
+- [x] Items fixture glossary upgraded to lexicon shape; sign-offs
+      reseeded; tests updated.
+
+**C. Traceability**
+
+- [x] New suite script `scripts/generate_traceability.py` (reuses
+      `shared/spec_parsers.py`): emits
+      `docs/specifications/traceability.html` — per user story: PRD
+      link → scenarios → operations → events → error codes; flags
+      story ACs asserting status/error codes no scenario exercises
+      (informational). Wired into the bootstrap Taskfile
+      `docs:generate` alongside the overview generator.
+- [x] New shared check `US-HAS-SCENARIO`: every `US-xxx` id in
+      `prd.md` has a `## US-xxx` section in
+      `acceptance-scenarios.md`. NFRs-phase warning + audit error.
+      questions.md entry in `domain-nfrs`.
+- [x] PRD + scenarios templates and `domain-discovery`/`domain-nfrs`
+      SKILL.md: per-story cross-links both ways
+      (`[Scenarios](acceptance-scenarios.md#us-xxx)` and back).
+
+**D. Data contract enrichment + derived products (design)**
+
+- [x] `templates/contracts/datacontract.yaml` +
+      `skills/domain-datacontract/SKILL.md`: `slaProperties` must
+      declare freshness/latency (event lag), retention, and
+      availability; `quality:` checks (PK uniqueness, required-field
+      completeness) prescribed; optional volume expectations.
+- [x] New shared check `DATACONTRACT-SLA-COMPLETE`: slaProperties
+      contains at least latency/freshness, retention, availability.
+      Contracts error + audit error. questions.md entry via
+      `domain-contracts`.
+- [x] Derived data products designed (not built):
+      `skills/domain-datacontract/SKILL.md` section + SUITE-DESIGN
+      note defining optional `contracts/data-products/<name>.yaml`
+      ODCS contracts for summary/read-model perspectives (source
+      events, refresh cadence, own SLAs). First real use: dog-rescue.
+      Backlog entry below.
+
+**E. Domain overview fidelity**
+
+- [x] `scripts/generate_domain_overview.py`: operation→event
+      correlation derives from the Domain Events table's Trigger
+      column and ER edges from declared `## Aggregates` when present,
+      falling back to the existing name heuristics when not. (The
+      `## Relationships` section is freeform ASCII and deliberately
+      not parsed.)
+
+**F. Release mechanics**
+
+- [x] `gate-version.yaml` → 1.4 + `gate-changelog.md` entry (adds
+      `GLOSSARY-COVERS-DOMAIN-TERMS`, `US-HAS-SCENARIO`,
+      `DATACONTRACT-SLA-COMPLETE`; retires
+      `GLOSSARY-COVERS-ATTRIBUTES`).
+- [x] `template_manifest.yaml` regenerated; pytest + ruff +
+      questions-coverage green; Items fixture passes gate 1.4.
+
 ---
 
 ## Post-v1 Backlog
@@ -1268,6 +1384,10 @@ Things noted during design but not in scope for v1:
 - ADR (Architectural Decision Record) support — phase or fold into existing
 - Multi-user collaboration — locking, merge resolution
 - Field-level update mode — finer than phase-level
+- Derived data products (`contracts/data-products/<name>.yaml`) —
+  authoring skill guidance + gate checks for summary/read-model ODCS
+  contracts, designed in 6.23D; build when dog-rescue needs its first
+  read model
 - Generic (non-SKILL.md) packaging for portability to other agents
 - Capacity / sizing doc as a separate phase
 - Integrations / external dependencies doc

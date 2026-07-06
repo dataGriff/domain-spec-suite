@@ -15,3 +15,5 @@ signs_files:
 checks:
   - id: NFR-THRESHOLD-MEASURABLE
   - id: ACCEPTANCE-SCENARIO-GWT
+  # Soft warning here (scenarios' owning phase); audit re-runs at error.
+  - id: US-HAS-SCENARIO

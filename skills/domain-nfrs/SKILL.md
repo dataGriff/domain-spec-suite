@@ -144,6 +144,20 @@ rubric_findings:
 
 - `NFR-THRESHOLD-MEASURABLE` — every NFR has a digit / percentage /
   time / percentile token (otherwise must be marked n-a with reason)
+- `US-HAS-SCENARIO` — every PRD story id has a `## US-xxx` section in
+  acceptance-scenarios.md (audit re-runs this at error severity)
+
+### Cross-linking convention
+
+When writing a story's scenario section, add the bidirectional links:
+the `## US-xxx` section opens with
+`*Story: [US-xxx](prd.md#us-xxx-title-slug)*`, and the PRD story gains
+a matching `*Scenarios: [US-xxx](acceptance-scenarios.md#us-xxx-title-slug)*`
+line after its acceptance criteria (anchor slug = target heading
+lowercased, punctuation dropped, spaces → hyphens). After the phase's
+files settle, `task docs:generate` refreshes `traceability.html` —
+review its coverage flags: a story AC that names a status or error
+code no scenario asserts is usually a missing scenario.
 
 ### Rubrics (in SKILL.md prose, emitted via engagement loop)
 

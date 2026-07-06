@@ -1,10 +1,12 @@
 # Glossary — [Domain]
 
-> The ubiquitous language for the [Domain] domain. Every entity name
-> and every attribute name used in `domain-model.md`,
-> `contracts/openapi.yaml`, `contracts/asyncapi.yaml`, and
-> `contracts/datacontract.yaml` appears here exactly as it is used.
-> Code, docs, and conversation must use these terms.
+> The ubiquitous language for the [Domain] domain — a lexicon, not a
+> reference manual. Every entity, role, domain event, enumeration,
+> and key term used in the spec set has a one- or two-sentence entry
+> here under the exact name the other documents use. Attribute-level
+> detail lives in `domain-model.md`'s entity tables (the single
+> attribute authority), not here. Code, docs, and conversation must
+> use these terms.
 
 ---
 
@@ -14,30 +16,7 @@
 
 [One- or two-sentence description of what a [Resource1] is in this
 domain. Reference its lifecycle and ownership relationships in plain
-language.]
-
----
-
-## [Resource1] attributes
-
-### id
-
-UUID. Unique identifier of a [Resource1]. Immutable.
-
-### [attribute1]
-
-[Describe each attribute in turn: type, format, what it means in
-business terms, whether it's immutable, any uniqueness or relational
-constraints.]
-
-### createdAt
-
-ISO 8601 timestamp. The moment the [Resource1] was first persisted.
-Immutable.
-
-### updatedAt
-
-ISO 8601 timestamp. The moment the [Resource1] was last modified.
+language — don't enumerate attributes; the domain model owns those.]
 
 ---
 
@@ -60,6 +39,17 @@ Published on `[domain].[resource1].created` whenever a new
 
 Published on `[domain].[resource1].updated` whenever a [Resource1]
 changes. Payload is the full record post-change.
+
+---
+
+## Enumerations
+
+### [EnumName]
+
+[One sentence: what this enumeration classifies, whether it is open
+or closed, and where the authoritative value list lives (the domain
+model's `## Enumerations` section; the openapi schema for open
+enums).]
 
 ---
 

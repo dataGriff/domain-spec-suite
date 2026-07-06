@@ -29,10 +29,17 @@
 5. **POST scenarios carry the `Idempotency-Key` header** when the
    contract requires it — strictly read, a POST scenario without it
    tests a 400.
+6. **Every `## US-xxx` section opens with a back-link to its PRD
+   story** (`*Story: [US-xxx](prd.md#us-xxx-title-slug)*`), mirroring
+   the PRD's forward link. The generated traceability matrix
+   (`task docs:generate` → `traceability.html`) shows the full
+   story → scenario → operation → event → error-code picture.
 
 ---
 
 ## US-001: [User story title]
+
+*Story: [US-001](prd.md#us-001-title-slug)*
 
 ### Scenario US-001-A: [Happy-path scenario name]
 
@@ -56,6 +63,8 @@ And the response body code equals "[ERROR_CODE]"
 ---
 
 ## US-002: [User story title]
+
+*Story: [US-002](prd.md#us-002-title-slug)*
 
 ### Scenario US-002-A: [Happy-path]
 

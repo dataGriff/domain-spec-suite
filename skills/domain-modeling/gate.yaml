@@ -16,7 +16,7 @@ checks:
   # Hard errors — these must pass for sign-off.
   - id: MODEL-ENTITY-NAME-UNIQUE
   - id: ENTITY-IN-GLOSSARY
-  - id: GLOSSARY-COVERS-ATTRIBUTES
+  - id: GLOSSARY-COVERS-DOMAIN-TERMS
 
   # Soft warnings — each must be addressed in warnings_responded.
   - id: MODEL-ENTITY-HAS-ID-TIMESTAMPS

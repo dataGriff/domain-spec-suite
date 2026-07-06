@@ -41,7 +41,12 @@ TODO: Replace with your domain's problem statement.
 
 ## User Stories
 
-<!-- Format: As a [persona], I want to [action] so that [benefit]. Include acceptance criteria. -->
+<!-- Format: As a [persona], I want to [action] so that [benefit]. Include
+     acceptance criteria. Every story ends with a `Scenarios:` link to its
+     `## US-xxx` section in acceptance-scenarios.md (added when Phase 5
+     writes the scenarios) — US-HAS-SCENARIO enforces the section exists.
+     Anchor slug = the target heading lowercased, punctuation dropped,
+     spaces → hyphens (e.g. `## US-001: Register` → #us-001-register). -->
 
 ### [Feature Area]
 
@@ -54,6 +59,8 @@ TODO: Replace with your domain's problem statement.
 **Acceptance Criteria:**
 - [ ] TODO
 
+*Scenarios: [US-001](acceptance-scenarios.md#us-001-title-slug)*
+
 #### US-002: [Title]
 
 **As a** [persona],  
@@ -62,6 +69,8 @@ TODO: Replace with your domain's problem statement.
 
 **Acceptance Criteria:**
 - [ ] TODO
+
+*Scenarios: [US-002](acceptance-scenarios.md#us-002-title-slug)*
 
 ## Constraints
 

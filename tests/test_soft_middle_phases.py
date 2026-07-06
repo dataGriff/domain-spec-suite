@@ -28,7 +28,7 @@ PHASE_EXPECTATIONS = {
         "expected_ids": {
             "MODEL-ENTITY-NAME-UNIQUE",
             "ENTITY-IN-GLOSSARY",
-            "GLOSSARY-COVERS-ATTRIBUTES",
+            "GLOSSARY-COVERS-DOMAIN-TERMS",
             "MODEL-ENTITY-HAS-ID-TIMESTAMPS",
             "MODEL-ENTITY-BUSINESS-RULE",
             "MODEL-LIFECYCLE-DEFINED",
@@ -61,6 +61,7 @@ PHASE_EXPECTATIONS = {
         "expected_ids": {
             "NFR-THRESHOLD-MEASURABLE",
             "ACCEPTANCE-SCENARIO-GWT",
+            "US-HAS-SCENARIO",
         },
         "expected_warnings_for_items": {"NFR-THRESHOLD-MEASURABLE"},
     },

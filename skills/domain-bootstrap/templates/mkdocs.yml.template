@@ -31,6 +31,15 @@ nav:
     - Sequence Diagrams: specifications/sequence-diagrams.md
     - Non-Functional Requirements: specifications/nfr.md
     - Acceptance Scenarios: specifications/acceptance-scenarios.md
+  # Generated HTML views live in docs/specifications/ but aren't MkDocs
+  # pages, so they're linked absolutely (via site_url) to stay valid
+  # from any page depth. Regenerate with `task docs:generate`.
+  - Generated Views:
+    - Domain Overview: {{site_url}}/specifications/domain-overview.html
+    - Traceability Matrix: {{site_url}}/specifications/traceability.html
+    - API Reference: {{site_url}}/specifications/api-reference.html
+    - AsyncAPI Reference: {{site_url}}/specifications/asyncapi-reference.html
+    - Data Contract Reference: {{site_url}}/specifications/datacontract-reference.html
 
 # Suite bookkeeping now lives in `.spec-suite/` (outside `docs/`), so
 # nothing in `docs/specifications/` needs to be hidden from the site.

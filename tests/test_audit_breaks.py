@@ -142,6 +142,25 @@ def _user_story_nonexistent_persona(repo: pathlib.Path) -> None:
     p.write_text(text[:next_section] + new_story + text[next_section:])
 
 
+def _story_without_scenario_section(repo: pathlib.Path) -> None:
+    """Insert a valid-persona story that has no `## US-xxx` section in
+    acceptance-scenarios.md."""
+    p = repo / "docs/specifications/prd.md"
+    text = p.read_text()
+    stories_idx = text.find("## User Stories")
+    assert stories_idx >= 0, "fixture: no '## User Stories' heading"
+    next_section = text.find("\n## ", stories_idx + len("## User Stories"))
+    assert next_section >= 0, "fixture: '## User Stories' is the last section"
+    new_story = (
+        "\n#### US-998: Export the catalogue\n\n"
+        "**As a** Operations Analyst,\n"
+        "**I want to** export all items as CSV,\n"
+        "**So that** I can analyse the catalogue offline.\n\n"
+        "**Acceptance Criteria:**\n- [ ] GET export returns 200 with a CSV body\n"
+    )
+    p.write_text(text[:next_section] + new_story + text[next_section:])
+
+
 def _modify_prd_no_resign(repo: pathlib.Path) -> None:
     p = repo / "docs/specifications/prd.md"
     p.write_text(p.read_text() + "\n<!-- silent tweak, no re-sign -->\n")
@@ -225,13 +244,19 @@ def _auth_matrix_error_code_missing(repo: pathlib.Path) -> None:
     )
 
 
-def _attribute_without_glossary_entry(repo: pathlib.Path) -> None:
+def _event_without_glossary_entry(repo: pathlib.Path) -> None:
+    """Add a Domain Events row whose event name has no glossary entry."""
     p = repo / "docs/specifications/domain-model.md"
-    anchor = "| `updatedAt` | ISO 8601 | Yes | Last update timestamp |"
+    anchor = "| `ItemRemoved` | DELETE /v1/items/{itemId} → 204 | `items.item.removed` |"
     text = p.read_text()
-    assert anchor in text, "fixture: Item attribute table changed"
+    assert anchor in text, "fixture: Domain Events table changed"
     p.write_text(
-        text.replace(anchor, anchor + "\n| `sku` | string | Yes | Stock-keeping unit |", 1)
+        text.replace(
+            anchor,
+            anchor
+            + "\n| `ItemArchived` | PATCH /v1/items/{itemId} → 200 | `items.item.archived` |",
+            1,
+        )
     )
 
 
@@ -403,10 +428,16 @@ BREAKS = [
         "aren't defined",
     ),
     Break(
-        "attribute_without_glossary_entry",
-        _attribute_without_glossary_entry,
-        "GLOSSARY-COVERS-ATTRIBUTES",
+        "event_without_glossary_entry",
+        _event_without_glossary_entry,
+        "GLOSSARY-COVERS-DOMAIN-TERMS",
         "not in glossary",
+    ),
+    Break(
+        "story_without_scenario_section",
+        _story_without_scenario_section,
+        "US-HAS-SCENARIO",
+        "no scenario section for: US-998",
     ),
     Break(
         "enum_missing_from_openapi",
