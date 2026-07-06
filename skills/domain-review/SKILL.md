@@ -123,6 +123,15 @@ Things that internally contradict. Check:
   entity doesn't have
 - NFR thresholds that contradict each other (e.g. read latency p95
   tighter than auth latency budget when reads require auth)
+- NFR delivery semantics vs asyncapi's promises (e.g. NFR says event
+  publication is best-effort and non-blocking while asyncapi claims
+  consumers can reconstruct everything from the stream alone —
+  best-effort delivery cannot support a completeness guarantee)
+- Entity creation timing told differently by different docs (e.g.
+  openapi returns the entity's id at invite time, domain-model says
+  it's created at acceptance, glossary says at invite — especially
+  when a required field like `userId` can't exist yet under one of
+  the tellings)
 - A Decision Log entry whose stated rationale contradicts the
   implementation (e.g. "snapshot at scheduled" decision but openapi
   or scenarios imply snapshot at completion)
@@ -140,6 +149,14 @@ Required behaviour that isn't tested or specified. Check:
   the conditions that trigger it
 - Lifecycle terminal state (e.g. `cancelled`) declared but no
   scenario covers reaching it
+- Dead contract surface: components/schemas referenced by no
+  operation (especially ones carrying `[secret]` fields — dead
+  schemas with secrets are drift waiting to leak), and response
+  fields no consumer can ever use (e.g. a refresh token issued with
+  no refresh endpoint)
+- Unobservable Then clauses: scenario assertions with no contract
+  surface to observe them through (no response field, header, event,
+  or follow-up call could verify the claim)
 
 ### 5. Decision Log drift
 

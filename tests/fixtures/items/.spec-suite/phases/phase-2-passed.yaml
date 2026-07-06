@@ -21,7 +21,7 @@ rubric_findings: []
 
 files_signed:
   - path: docs/specifications/domain-model.md
-    sha256: "82e94d71b9cdba00a9563440b0269f4e26fabd44fb78df99aaa48c8821fd46eb"
+    sha256: "1640b99b2baf787976016c99ef057165856614ac5b296931098970a18538ab2e"
     mtime: "2026-05-25T15:19:00Z"
   - path: docs/specifications/glossary.md
     sha256: "967969172615b9bb99df5b9da61a89e7afbe06257787804627335c3eabe8ec2a"

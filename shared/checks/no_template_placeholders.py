@@ -1,10 +1,13 @@
 """Audit check: no template placeholder strings remain in the spec set.
 
 Scans every markdown and YAML file under `docs/specifications/`.
-Looks for the standard placeholder shapes: `[Resource1]`,
-`[Domain]`, and `{{...}}`. Template skeletons (with placeholders
-intact) live in the suite at `<suite>/templates/` and are outside
-this directory, so they're not scanned.
+Looks for the standard placeholder shapes — `[Resource1]`,
+`[Domain]`, `{{...}}` — plus unfinished-work markers (`TODO`,
+`TBD`, `FIXME`): a spec set whose Constraints section reads
+`1. TODO` is not complete, whatever the other gates say. Template
+skeletons (with placeholders intact) live in the suite at
+`<suite>/templates/` and are outside this directory, so they're
+not scanned.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ metadata = {
     "prerequisites": [],
 }
 
-PLACEHOLDER = re.compile(r"\[Resource1\]|\[Domain\]|\{\{")
+PLACEHOLDER = re.compile(r"\[Resource1\]|\[Domain\]|\{\{|\b(?:TODO|TBD|FIXME)\b")
 
 
 def run(repo_root: pathlib.Path) -> CheckResult:
@@ -50,10 +53,11 @@ def run(repo_root: pathlib.Path) -> CheckResult:
         return CheckResult.ok()
 
     return CheckResult.fail(
-        "Template placeholders are still in the spec set. Each of the "
-        "lines below carries a `[Resource1]`, `[Domain]`, or `{{...}}` "
-        "marker that should have been replaced with real domain content "
-        "by the phase that produced the file. Which value belongs in "
-        "each of these positions?",
+        "Template placeholders or unfinished-work markers are still in "
+        "the spec set. Each of the lines below carries a `[Resource1]`, "
+        "`[Domain]`, `{{...}}`, `TODO`, `TBD`, or `FIXME` marker that "
+        "should have been replaced with real domain content by the "
+        "phase that produced the file. Which value belongs in each of "
+        "these positions?",
         details=offenders,
     )

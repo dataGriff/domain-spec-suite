@@ -34,10 +34,16 @@ checks:
   - id: EVENT-IN-DATACONTRACT
   - id: EVENT-PAYLOAD-COVERS-ENTITY-STATE
 
+  # Historic-record closure (gate 1.2)
+  - id: ENTITY-HAS-EVENT
+  - id: EVENT-FK-RESOLVABLE
+  - id: DATACONTRACT-REFS-RESOLVE
+
   # Access control / errors
   - id: AUTH-MATRIX-OPENAPI-MATCH
   - id: AUTH-ROLE-TRACES-TO-PERSONA
   - id: ERROR-CODE-IN-CATALOGUE
+  - id: ERROR-CODE-REPRESENTABLE
 
   # Safe-retry semantics
   - id: IDEMPOTENCY-KEY-ON-POST-OPS
@@ -46,6 +52,8 @@ checks:
   - id: PRD-STORY-PERSONA-LINK
   - id: STORY-HAS-FLOW
   - id: LIFECYCLE-IN-FLOWS
+  - id: OPERATION-HAS-SCENARIO
+  - id: SCENARIO-REFS-VALID
 
   # Generator output (runs last — it's the heaviest)
   - id: GENERATOR-CLEAN-OUTPUT

@@ -350,7 +350,7 @@ BREAKS = [
         "unreplaced_placeholder_in_glossary",
         _unreplaced_placeholder,
         "NO-TEMPLATE-PLACEHOLDERS",
-        "placeholders are still",
+        "markers are still",
     ),
     Break(
         "user_story_with_nonexistent_persona",

@@ -69,6 +69,12 @@ def test_audit_gate_lists_every_implemented_check() -> None:
         "LIFECYCLE-IN-FLOWS",
         "GENERATOR-CLEAN-OUTPUT",
         "IDEMPOTENCY-KEY-ON-POST-OPS",
+        "ENTITY-HAS-EVENT",
+        "EVENT-FK-RESOLVABLE",
+        "DATACONTRACT-REFS-RESOLVE",
+        "ERROR-CODE-REPRESENTABLE",
+        "OPERATION-HAS-SCENARIO",
+        "SCENARIO-REFS-VALID",
     }
     assert gate_ids == expected, (
         f"gate.yaml ↔ expected checks diverge:\n"

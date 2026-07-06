@@ -1056,3 +1056,155 @@ def test_force_advance_round_trip_through_audit(tmp_path: pathlib.Path) -> None:
     # 4. Audit passes again.
     exit_code, _ = run_phase.run_phase("audit", target)
     assert exit_code == 0
+
+
+# ── gate 1.2 closure checks (BUILD-PLAN 6.20) ────────────────────
+
+
+def test_error_code_representable_catches_undeclared_status(tmp_path: pathlib.Path) -> None:
+    """A catalogue code whose HTTP status no operation declares must
+    fail ERROR-CODE-REPRESENTABLE (the NFR-mandated-429 class)."""
+    from shared.checks import error_code_representable
+
+    target = _copy_fixture(tmp_path)
+    catalogue = target / "docs/specifications/error-catalogue.md"
+    catalogue.write_text(
+        catalogue.read_text()
+        + "\n\n### `RATE_LIMITED`\n\n**HTTP status:** 429 Too Many Requests\n\n"
+        "**Meaning:** Too many requests.\n"
+    )
+    result = error_code_representable.run(target)
+    assert not result.passed
+    assert any("RATE_LIMITED" in d and "429" in d for d in result.details)
+
+
+def test_error_code_representable_passes_fixture() -> None:
+    from shared.checks import error_code_representable
+
+    assert error_code_representable.run(ITEMS_FIXTURE).passed
+
+
+def test_operation_has_scenario_catches_uncovered_operation(tmp_path: pathlib.Path) -> None:
+    """An operation no acceptance scenario exercises must fail
+    OPERATION-HAS-SCENARIO (the invented-endpoint class)."""
+    from shared.checks import operation_has_scenario
+
+    target = _copy_fixture(tmp_path)
+    openapi = target / "docs/specifications/contracts/openapi.yaml"
+    openapi.write_text(
+        openapi.read_text().replace(
+            "paths:\n",
+            "paths:\n  /v1/reports:\n    get:\n      operationId: listReports\n"
+            "      summary: List reports.\n      responses:\n"
+            "        '200':\n          description: OK\n",
+            1,
+        )
+    )
+    result = operation_has_scenario.run(target)
+    assert not result.passed
+    assert any("listReports" in d for d in result.details)
+
+
+def test_scenario_refs_valid_catches_illegal_enum_literal(tmp_path: pathlib.Path) -> None:
+    """A success scenario sending an enum value the contract rejects
+    must fail SCENARIO-REFS-VALID (the `Border Collie` class)."""
+    from shared.checks import scenario_refs_valid
+
+    target = _copy_fixture(tmp_path)
+    scenarios = target / "docs/specifications/acceptance-scenarios.md"
+    scenarios.write_text(
+        scenarios.read_text() + "\n### Scenario US-999-A: Bad enum literal\n\n```gherkin\n"
+        "Given a registered contributor\n"
+        "When I POST /v1/items with\n"
+        "  | name   | Thing    |\n"
+        "  | status | Archived |\n"
+        "Then the response status is 201\n```\n"
+    )
+    result = scenario_refs_valid.run(target)
+    assert not result.passed
+    assert any('status "Archived"' in d for d in result.details)
+
+
+def test_scenario_refs_valid_ignores_illegal_literal_in_rejection_scenario(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Sending an illegal value on purpose is how rejection is tested —
+    non-2xx scenarios are exempt from the enum-literal rule."""
+    from shared.checks import scenario_refs_valid
+
+    target = _copy_fixture(tmp_path)
+    scenarios = target / "docs/specifications/acceptance-scenarios.md"
+    scenarios.write_text(
+        scenarios.read_text() + "\n### Scenario US-999-B: Rejected enum literal\n\n```gherkin\n"
+        "Given a registered contributor\n"
+        "When I POST /v1/items with\n"
+        "  | status | bogus |\n"
+        "Then the response status is 400\n```\n"
+    )
+    assert scenario_refs_valid.run(target).passed
+
+
+def test_scenario_refs_valid_catches_unknown_endpoint(tmp_path: pathlib.Path) -> None:
+    from shared.checks import scenario_refs_valid
+
+    target = _copy_fixture(tmp_path)
+    scenarios = target / "docs/specifications/acceptance-scenarios.md"
+    scenarios.write_text(
+        scenarios.read_text() + "\n### Scenario US-999-C: Ghost endpoint\n\n```gherkin\n"
+        "When I POST /v1/ghosts\nThen the response status is 201\n```\n"
+    )
+    result = scenario_refs_valid.run(target)
+    assert not result.passed
+    assert any("POST /v1/ghosts" in d for d in result.details)
+
+
+def test_event_fk_resolvable_catches_unpublished_entity(tmp_path: pathlib.Path) -> None:
+    """An entity-named FK whose entity no datacontract record publishes
+    must fail EVENT-FK-RESOLVABLE (the invisible-Walker class)."""
+    from shared.checks import event_fk_resolvable
+
+    target = _copy_fixture(tmp_path)
+    datacontract = target / "docs/specifications/contracts/datacontract.yaml"
+    text = datacontract.read_text()
+    # Point the items record at the User entity by name, then remove
+    # the user record that publishes it.
+    text = text.replace("contributorId", "userId")
+    start = text.index("  - name: user\n")
+    end = text.index("  - name: items\n")
+    datacontract.write_text(text[:start] + text[end:])
+    result = event_fk_resolvable.run(target)
+    assert not result.passed
+    assert any("userId" in d and "User" in d for d in result.details)
+
+
+def test_datacontract_refs_resolve_catches_dangling_ref(tmp_path: pathlib.Path) -> None:
+    from shared.checks import datacontract_refs_resolve
+
+    target = _copy_fixture(tmp_path)
+    datacontract = target / "docs/specifications/contracts/datacontract.yaml"
+    datacontract.write_text(
+        datacontract.read_text().replace(
+            "      - name: status\n",
+            "      - name: status\n        ref: '#/components/schemas/Nope'\n",
+            1,
+        )
+    )
+    result = datacontract_refs_resolve.run(target)
+    assert not result.passed
+    assert any("Nope" in d for d in result.details)
+
+
+def test_entity_has_event_catches_silent_entity(tmp_path: pathlib.Path) -> None:
+    """Removing UserRegistered from the Domain Events table must fail
+    ENTITY-HAS-EVENT — User would be born silently again."""
+    from shared.checks import entity_has_event
+
+    target = _copy_fixture(tmp_path)
+    model = target / "docs/specifications/domain-model.md"
+    lines = [
+        line for line in model.read_text().splitlines(keepends=True) if "UserRegistered" not in line
+    ]
+    model.write_text("".join(lines))
+    result = entity_has_event.run(target)
+    assert not result.passed
+    assert "User" in result.details

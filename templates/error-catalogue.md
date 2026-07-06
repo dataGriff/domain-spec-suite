@@ -18,7 +18,11 @@
 include a valid bearer token in the `Authorization` header.
 
 **Triggered by:**
-- [List each trigger condition.]
+- [List each trigger condition. Cover the full 401 surface: missing
+  header, malformed header, AND a token that fails signature /
+  issuer validation — the tampered-token case is the most common
+  real-world 401 and must map to a code (this one, or a dedicated
+  one).]
 
 **Response shape:** `Error` (`code`, `message`).
 
@@ -76,6 +80,27 @@ and a one-line `issue` description.
 
 ---
 
+## Rate-limit errors (429)
+
+> Required whenever `nfr.md` declares rate limits (NFR-SEC-005).
+> Delete this section only if the domain genuinely has no
+> rate-limited endpoint.
+
+### `RATE_LIMITED`
+
+**HTTP status:** 429 Too Many Requests
+
+**Meaning:** The caller exceeded the declared request limit for this
+endpoint.
+
+**Triggered by:**
+- [List each rate-limited endpoint and its limit — must match
+  NFR-SEC-005 exactly.]
+
+**Response shape:** `Error` (`code`, `message`).
+
+---
+
 ## Error code → HTTP status reference
 
 | Code | HTTP | Used by operations |
@@ -97,3 +122,14 @@ and a one-line `issue` description.
    called out explicitly in the code's description.
 4. **Messages are human-readable, not localised.** Localisation is
    downstream of v1.
+5. **Token-addressed endpoints cover the never-existed case.** An
+   endpoint addressed by a token or secret (invite acceptance,
+   password reset) has three failure states: expired, already used,
+   and *never existed*. The catalogue must say which code the third
+   returns (404, or the same 410 as expired to avoid an existence
+   oracle) — leaving it unspecified forces implementations to guess.
+6. **Every code must be returnable.** Each code's documented status
+   must be declared on its trigger operations in
+   `contracts/openapi.yaml`, bound to a response schema whose `code`
+   enum admits it. `ERROR-CODE-REPRESENTABLE` enforces this at the
+   contracts gate.

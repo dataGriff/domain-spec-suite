@@ -35,25 +35,28 @@ def _candidates(channel: str) -> list[str]:
     """Possible datacontract record names for a channel.
 
     Channel `domain.entity.action` → tries (in order):
-        domain, entity, action,
-        domain_action, entity_action, domain_entity, domain_entity_action.
+        entity, domain_entity, entity_action, domain_entity_action,
+        domain, action, domain_action.
 
-    A single data contract record per *domain* is the common case
-    (e.g. items.item.added / items.item.edited both map to a single
-    `items` record carrying the current state). Per-action records
+    Entity-qualified names rank first so a multi-entity domain
+    (e.g. `items.user.registered` alongside `items.item.added`)
+    resolves each channel to its own entity's record instead of every
+    channel collapsing onto the domain-named record. A single record
+    per *domain* remains the common case for single-entity domains
+    (both item channels map to the `items` record). Per-action records
     (e.g. `items_removed` for a reduced payload) are also matched.
     """
     parts = channel.split(".")
     if len(parts) >= 3:
         domain, entity, action = parts[0], parts[1], parts[-1]
         return [
-            domain,
             entity,
+            f"{domain}_{entity}",
+            f"{entity}_{action}",
+            f"{domain}_{entity}_{action}",
+            domain,
             action,
             f"{domain}_{action}",
-            f"{entity}_{action}",
-            f"{domain}_{entity}",
-            f"{domain}_{entity}_{action}",
         ]
     if len(parts) == 2:
         return [parts[0], parts[1], "_".join(parts)]

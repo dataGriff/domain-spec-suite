@@ -33,6 +33,16 @@ tags:
     description: Events related to the item lifecycle
 
 channels:
+  items.user.registered:
+    description: Published whenever a new user registers, so downstream consumers can resolve contributor references from the event stream alone.
+    publish:
+      operationId: onUserRegistered
+      description: Consume user registered events to maintain a local user reference without re-querying the API.
+      tags:
+        - name: Items
+      message:
+        $ref: '#/components/messages/UserRegistered'
+
   items.item.added:
     description: Published whenever a new item is added to the catalogue by a contributor.
     publish:
@@ -65,6 +75,30 @@ channels:
 
 components:
   messages:
+    UserRegistered:
+      name: UserRegistered
+      title: User Registered
+      summary: A new user has registered with the catalogue.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UserRegisteredEvent'
+      examples:
+        - name: user-registered-example
+          payload:
+            specversion: "1.0"
+            type: items.user.registered
+            source: /items
+            id: a1b2c3d4-0000-0000-0000-000000000006
+            time: "2026-06-01T08:00:00Z"
+            datacontenttype: application/json
+            data:
+              id: a1b2c3d4-0000-0000-0000-000000000003
+              email: alice@example.com
+              firstName: Alice
+              lastName: Archer
+              role: contributor
+              createdAt: "2026-06-01T08:00:00Z"
+
     ItemAdded:
       name: ItemAdded
       title: Item Added
@@ -159,6 +193,36 @@ components:
         datacontenttype:
           type: string
           const: application/json
+
+    UserData:
+      type: object
+      required: [id, email, firstName, lastName, role, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [contributor, viewer]
+        createdAt:
+          type: string
+          format: date-time
+
+    UserRegisteredEvent:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/UserData'
 
     ItemData:
       type: object

@@ -6,6 +6,53 @@ See `SUITE-DESIGN.md` §10 for the policy.
 
 ---
 
+## `1.2` — 2026-07-05 — closure checks (critique-driven hardening)
+
+Driven by the adversarial review of the dog-walking spec set
+(`spec-dog-walking/.spec-suite/reviews/2026-07-05T14-48-07Z.md`).
+The gates through `1.1` validated *mirroring of what exists*
+(enum equality, channel-per-event); `1.2` adds *closure* — that
+what the spec promises is actually reachable, resolvable, and
+exercised.
+
+New checks:
+
+- `ERROR-CODE-REPRESENTABLE` (contracts, audit — error): every
+  catalogue code's documented status is declared by ≥1 operation,
+  and (where response schemas enumerate `code` values) the code is
+  admitted by ≥1 schema bound at that status.
+- `OPERATION-HAS-SCENARIO` (contracts, audit — error): every OpenAPI
+  operation is exercised by ≥1 acceptance scenario.
+- `SCENARIO-REFS-VALID` (contracts, audit — error): scenario
+  endpoints, error codes, enum literals (2xx scenarios only), and
+  event types are legal against the contracts.
+- `EVENT-FK-RESOLVABLE` (contracts, audit — error): entity-named FKs
+  in datacontract records resolve to a record publishing that entity.
+- `DATACONTRACT-REFS-RESOLVE` (contracts, audit — error): every
+  datacontract ref resolves to a real openapi schema.
+- `ENTITY-HAS-EVENT` (modeling — warning; audit — error): every
+  non-aggregate-child entity appears in the Domain Events table.
+
+Changed semantics:
+
+- `NO-TEMPLATE-PLACEHOLDERS` also flags `TODO`/`TBD`/`FIXME` in spec
+  files.
+- Datacontract record-candidate resolution ranks entity-qualified
+  names before the bare domain name, so multi-entity domains resolve
+  per-entity records (affects `EVENT-IN-DATACONTRACT` and
+  `EVENT-PAYLOAD-COVERS-ENTITY-STATE`).
+
+The Items fixture was upgraded to the new bar (it failed
+`ENTITY-HAS-EVENT` for `User`, exactly the class the check exists to
+catch): `UserRegistered` event + `items.user.registered` channel +
+`user` datacontract record, with `password` `[secret]`-marked. This
+is the intended outcome of the tightening, per SUITE-DESIGN §10 —
+existing spec sets signed under earlier gate versions remain valid;
+re-audit is opt-in and the dog-walking set is known to fail 1.2
+until its critique findings are actioned.
+
+---
+
 ## `1.1` — 2026-07-04
 
 Retroactive reconciliation plus one new addition. The checks below
@@ -45,6 +92,8 @@ observed in the dog-walking reference build (thin events, enum
 divergence, unsafe retries). An Items-fixture audit under `1.1`
 passes; existing spec sets remain valid at `1.0` per §10's
 frozen-with-opt-in-re-audit policy.
+
+---
 
 ## `1.0` — initial
 

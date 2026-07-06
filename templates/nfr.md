@@ -73,6 +73,18 @@ All non-local traffic is served over **TLS [version] or higher**.
 bearer token. Routes without a declared `security` block in
 `contracts/openapi.yaml` are a build-time audit failure.
 
+### NFR-SEC-005: Rate limiting
+
+[List every rate-limited endpoint with its limit, e.g. ≤ N requests
+per minute per IP.] The list MUST include every publicly reachable
+endpoint whose sole authentication is a token or secret in the
+request itself (invite acceptance, password reset confirmation) —
+those are brute-forceable and need limits at least as tight as
+login. Exceeding a limit returns the catalogue's 429 code
+(`RATE_LIMITED` by convention) — the code must exist in
+`error-catalogue.md` and be declared as a response in
+`contracts/openapi.yaml`, otherwise this NFR is untestable.
+
 ---
 
 ## Data retention
@@ -88,6 +100,36 @@ match `contracts/datacontract.yaml` `slaProperties.retention`).
 explicitly declare durability is not required for this reference
 spec set. Use implementation-free language — describe the property,
 not the mechanism.]
+
+---
+
+## Privacy & data rights
+
+> Required whenever the domain stores personal data (names, contact
+> details, health information — human or otherwise identifying).
+> "Deferred to a future GDPR phase" is only acceptable as an
+> `ambiguities.md` deferral with a required-by phase, not as silence.
+
+### NFR-PRIV-001: Retention ceilings
+
+Personal data is retained **no longer than [number] months** after
+[triggering event, e.g. account closure or last activity]. Retention
+floors (NFR-DATA-*) must each have a matching ceiling here — "at
+least N months" with no maximum is not a complete retention policy.
+
+### NFR-PRIV-002: Data-subject rights
+
+[State how access/export and deletion requests are satisfied at the
+contract level — which operations, or which documented manual
+process, and within what period (e.g. ≤ 30 days). If deletion is
+tombstone-based because of the event stream's immutability, say so
+and state what is erased vs anonymised.]
+
+### NFR-PRIV-003: PII inventory
+
+Every attribute carrying personal data is listed here (or in a
+referenced section of `domain-model.md`) so the other NFR-PRIV
+targets have a definite scope: [list of `Entity.attribute`].
 
 ---
 

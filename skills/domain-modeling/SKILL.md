@@ -59,6 +59,30 @@ walk each through:
 3. Business rules (at least one if applicable)
 4. Lifecycle table (if the entity has a `status` attribute)
 
+### Every entity needs an origin event
+
+An entity that other records will reference by id must appear in
+the `## Domain Events` table — usually a creation/registration
+event. Entities born via auth or bootstrap flows (a self-registered
+Walker, a User minted at invite acceptance) are the classic escape:
+the write op sits on an exempt `/auth/` path and the entity ends up
+invisible to the historic record, leaving unresolvable FKs
+downstream. `ENTITY-HAS-EVENT` warns here and fails the audit.
+Aggregate children (declared in `## Aggregates`) are exempt — they
+travel inside their root's events.
+
+### Temporal invariants must name their attribute
+
+A business rule that promises history — "walks keep their recorded
+price", "line items reflect the rate in force at scheduling" — is
+unenforceable unless some entity attribute actually *records* the
+value at that moment. When writing such a rule, name the attribute
+that persists it (add one if missing), and make sure no other
+operation can destroy the history it depends on (a wholesale
+`PUT` replace on the source data, for instance). If the attribute
+genuinely can't exist yet, the rule belongs in `ambiguities.md` as
+a deferral, not in the model as a promise.
+
 ### Sensitive attributes — the `[secret]` marker
 
 Some attributes must never appear in event payloads or the data
