@@ -60,7 +60,7 @@ Error catalogue entries are pulled from the user stories' acceptance
 criteria — every story that mentions a 4xx/5xx code by name needs a
 matching catalogue entry.
 
-Three matrix shapes that routinely get skipped — handle each
+Five matrix shapes that routinely get skipped — handle each
 explicitly rather than leaving the row pattern to imply it:
 
 - **Singleton resources** (`GET /v1/rate-card` — no id in the path).
@@ -78,6 +78,24 @@ explicitly rather than leaving the row pattern to imply it:
   reset). The matrix marks them 🌐, but the token *is* the
   credential: they need a rate-limit note and a defined never-existed
   response, or they're a brute-force surface.
+- **List without View.** For every "List X" row, ask "who needs to
+  open *one* X, and what extra fields does the detail carry?" — the
+  dog-walking round-2 build shipped `GET /v1/clients` with no
+  `GET /v1/clients/{id}` and no contact email, leaving the walker
+  unable to see who a client actually is. A deliberately omitted
+  View row deserves a Decision Log entry, not silence. The same
+  question applies to per-parent filters on lists (e.g.
+  `?ownerId=`): name the tenancy behaviour for a filter value the
+  caller doesn't own (usually 404, no existence oracle).
+- **Instance/bootstrap status reads.** Single-instance domains
+  (one walker, one shop) need first-run detection: a public read
+  (e.g. `GET /v1/instance`) exposing the minimal projection a
+  sign-in screen needs ("is the instance claimed, and by whom") so
+  clients only offer self-registration on a genuinely fresh
+  instance. Mark it 🌐 with a deliberate-disclosure note (what it
+  reveals and why that's acceptable) and a *looser* rate limit than
+  the credential endpoints — it guards no secret and is fetched on
+  every sign-in-screen load.
 
 ## Soft-gate engagement loop
 

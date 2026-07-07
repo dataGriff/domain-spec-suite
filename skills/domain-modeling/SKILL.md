@@ -215,9 +215,39 @@ when you have a parent/child relationship where:
   with no `RateCard` is incoherent);
 - the parent's events are the audit-grade record for both.
 
-If a child entity also emits its own events (e.g. a hypothetical
-`RateCardEntryRemoved`), it's no longer just an aggregate
-member — model it as a first-class entity instead.
+A child entity that also emits its own events is usually a sign it
+should be a first-class entity instead. The exception is a child
+whose *individual* lifecycle matters to consumers while the parent's
+events remain the state authority — see Media galleries below, where
+a `DELETE` operation mechanically requires a `removed` channel
+(`WRITE-OP-HAS-ASYNCAPI-CHANNEL`) even though the parent's events
+carry the collection. In that dual form the child keeps its
+aggregate row AND declares its own channels; removal events use the
+conventional minimal payload (id, parent id, removedAt).
+
+### Media galleries (stored binary children)
+
+Domains that let users attach stored files to an entity (a dog's
+profile photos, an item's images) repeat a shape worth naming — from
+the dog-walking round-2 build (US-025):
+
+- **Model the file as a child entity** (id, parent FK, contentType
+  as a named enum, sizeBytes, timestamps) under an `## Aggregates`
+  row, so the parent's events carry the gallery and consumers see
+  whole profiles. Bytes are never in events — only metadata.
+- **One upload per POST.** Multi-part batch uploads suit atomic
+  "posts" (a walk update's moment); a managed gallery wants one file
+  per request so each upload has its own Idempotency-Key, and
+  gallery-full is a crisp error rather than a partial success.
+- **Cap the collection with a state-condition error** (409, e.g.
+  `PHOTO_LIMIT_EXCEEDED` — same rationale as a storage-quota 409: an
+  identical request succeeds after a delete, so it is not a
+  `VALIDATION_ERROR`).
+- **Serve bytes via an authenticated GET**, never a public URL, with
+  the parent's ownership rule; **DELETE frees the slot and must say
+  what happens to quota** — if the domain meters storage, the NFR
+  must state whether deletion reclaims it (the first decrement path
+  is easy to leave unspecified).
 
 The glossary is a **lexicon, not a reference manual** (gate 1.4).
 It carries one- or two-sentence entries for the domain's vocabulary:

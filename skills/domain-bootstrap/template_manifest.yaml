@@ -5,7 +5,7 @@
 
 manifest_version: "1.0"
 suite_version: "1.0.19"
-gate_version: "1.4"
+gate_version: "1.5"
 
 # Each file:
 #   path:     location relative to the bootstrap target root (the .template

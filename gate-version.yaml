@@ -3,4 +3,4 @@
 # sets are considered "current". Every bump requires a matching entry
 # in gate-changelog.md per SUITE-DESIGN §10.
 # Format: major.minor.
-gate_version: "1.4"
+gate_version: "1.5"
