@@ -6,6 +6,42 @@ See `SUITE-DESIGN.md` §10 for the policy.
 
 ---
 
+## `1.5` — 2026-07-07 — product-review findings (dog-walking round 2)
+
+Driven by product review of the dog-walking app's clients (web +
+native) against the round-1 spec set. Four defects traced back to
+authoring-phase blind spots; all four fixes are guidance/rubric, no
+structural check changes, so existing spec sets stay green.
+
+New rubric:
+
+- `RUBRIC-STORY-ACTOR-OF-RECORD` (discovery — warn): when a story
+  records a value, the actor should be the party the value belongs
+  to, or the criteria must justify proxy entry. Canonical miss:
+  US-019 had the walker record the client's tip; the story survived
+  every structural check and was removed in product review.
+
+New authoring guidance (no check changes):
+
+- domain-access-control: matrix shapes extended from three to five —
+  **List without View** (every List row prompts "who opens one, and
+  what does the detail carry?"; deliberate omissions get a Decision
+  Log entry) and **instance/bootstrap status reads** (single-instance
+  domains need a public first-run detection read with a
+  deliberate-disclosure note and a looser rate limit).
+- domain-modeling: **Media galleries (stored binary children)** —
+  file children under an Aggregates row, one upload per POST,
+  409 state-condition cap error, authenticated byte serving, and
+  quota reclamation on delete must be specified. The aggregates
+  guidance now names the dual form (aggregate child with its own
+  added/removed channels) that a DELETE operation forces via
+  `WRITE-OP-HAS-ASYNCAPI-CHANNEL`.
+
+Why guidance rather than checks: all four misses are semantic — they
+need domain judgement at interview/authoring time, not pattern
+matching over files. The rubric mechanism (SUITE-DESIGN §5.5)
+already forces an explicit response per warn at sign-off.
+
 ## `1.4` — 2026-07-06 — consumption & layout overhaul
 
 Driven by a consumption review of the merged dog-walking spec set

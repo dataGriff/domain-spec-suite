@@ -87,7 +87,7 @@ SUITE-DESIGN); the orchestrator detects an in-progress phase from
 
 ## Rubric checks
 
-Two rubric judgements live here as prose (per SUITE-DESIGN §5.5).
+Three rubric judgements live here as prose (per SUITE-DESIGN §5.5).
 Read the prose against the current `prd.md` and emit a finding for
 each rubric id below with `verdict: pass` or `verdict: warn` plus a
 short detail. Findings go into `.spec-suite/phases/phase-1-passed.yaml` under
@@ -134,6 +134,31 @@ aren't actually checkable.
 
 When emitting a `warn`, quote the metric verbatim and ask the user
 what specific number or check would prove it was met.
+
+### RUBRIC-STORY-ACTOR-OF-RECORD
+
+> When a story records a value, the persona doing the recording
+> should be the party the value **belongs to** — or the PRD must say
+> why proxy entry is acceptable.
+
+**Pass when:** Every story's actor either owns the data they enter
+(an owner declares their dog's medication; a walker sets their own
+rate card), or the acceptance criteria explicitly justify proxy
+entry ("payments happen out of band, so the walker records receipt
+of the total").
+
+**Warn when:** One persona enters a value that economically or
+legally belongs to another with no justification. The canonical
+miss: dog-walking's US-019 had the *walker* record the *client's*
+tip — one party's money keyed in by the other party's hands, with
+no owner-side surface to declare or dispute it. The story survived
+every structural check and shipped; the mismatch only surfaced in
+product review, and the fix was removing the story.
+
+When emitting a `warn`, name the story, the actor, the value, and
+the party it belongs to, and ask whether the owning party should
+declare it, confirm it, or whether proxy entry is genuinely the
+domain's reality (then say so in the criteria).
 
 ## How to run
 
